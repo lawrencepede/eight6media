@@ -1,48 +1,8 @@
 import { ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import BrandLogo from "@/components/BrandLogo";
-import mattPhoto from "@/assets/matt-photo.png";
-import jaimePhoto from "@/assets/jaime-photo.png";
-import amandaPhoto from "@/assets/amanda-photo.png";
-
-const creators = [
-  {
-    name: "Amanda Carr",
-    tagline: "Former Nurse | Mom",
-    followers: "30K Followers",
-    impressions: "4-5M Monthly Impressions",
-    audience: "70%+ Female, Ages 25-44",
-    partners: ["Oura Ring", "Cured Nutrition", "Branch Basics"],
-    image: amandaPhoto,
-  },
-  {
-    name: "Matt Choi",
-    tagline: "Endurance Athlete",
-    followers: "400K+ Followers",
-    impressions: "10-11M Monthly Impressions",
-    audience: "80% Male, Ages 25-44",
-    partners: ["Nike", "Lululemon", "Apple", "Garmin"],
-    image: mattPhoto,
-  },
-  {
-    name: "Dr. Jaime Seeman",
-    tagline: "OBGYN/Surgeon | Fitness Creator",
-    followers: "230K+ Followers",
-    impressions: "1-2M Monthly Impressions",
-    audience: "70% Female, Ages 25-44",
-    partners: ["Branch Basics", "MindBodyGreen", "Lashify"],
-    image: jaimePhoto,
-  },
-];
-
-const verticals = [
-  "Health + Wellness",
-  "Beauty",
-  "Apparel",
-  "Mom/Parenting",
-  "Pets",
-  "Fitness",
-];
+import { creators, verticals } from "@/data/creators";
 
 const TalentSection = () => {
   return (
@@ -59,7 +19,7 @@ const TalentSection = () => {
 
         {/* Creator Grid */}
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-12">
-          {creators.map((creator, index) => (
+          {creators.slice(0, 3).map((creator, index) => (
             <div
               key={index}
               className="group bg-card rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300"
@@ -99,9 +59,11 @@ const TalentSection = () => {
 
         {/* View Full Roster CTA */}
         <div className="text-center mb-16">
-          <Button variant="outline" className="group">
-            View Full Roster
-            <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          <Button variant="outline" className="group" asChild>
+            <Link to="/roster">
+              View Full Roster
+              <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </Link>
           </Button>
         </div>
 
