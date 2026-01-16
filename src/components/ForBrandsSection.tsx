@@ -36,7 +36,7 @@ const ForBrandsSection = () => {
                 For <span className="italic text-accent">Brands</span>
               </h2>
               <p className="text-primary-foreground/80 text-lg mb-8">
-                Why Choose Eight6?
+                Why Choose Eight-Six?
               </p>
 
               <div className="space-y-5 mb-10">

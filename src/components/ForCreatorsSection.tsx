@@ -71,7 +71,7 @@ const ForCreatorsSection = () => {
               className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium"
               onClick={() => window.open("https://calendly.com", "_blank")}
             >
-              Apply to Join Eight6
+              Apply to Join Eight-Six
             </Button>
           </div>
         </div>

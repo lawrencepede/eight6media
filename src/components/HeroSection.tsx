@@ -59,7 +59,7 @@ const HeroSection = () => {
               onClick={() => scrollToSection("brands")}
               className="bg-primary text-primary-foreground hover:bg-primary/90 text-base px-8 py-6"
             >
-              Partner with Eight6
+              Partner with Eight-Six
             </Button>
             <Button
               size="lg"

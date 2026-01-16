@@ -5,7 +5,7 @@ const AboutSection = () => {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="font-serif text-3xl md:text-5xl font-bold text-primary mb-4">
-              About <span className="italic text-accent">Eight6Media</span>
+              About <span className="italic text-accent">Eight-Six Media</span>
             </h2>
           </div>
 
@@ -26,13 +26,13 @@ const AboutSection = () => {
                   Founded by Elizabeth Martin
                 </h3>
                 <p className="text-muted-foreground leading-relaxed mb-4">
-                  Founded in 2023, Eight6Media has grown solely through word of mouth by creating value for creators and their audiences while delivering measurable results for brand partners.
+                  Founded in 2023, Eight-Six Media has grown solely through word of mouth by creating value for creators and their audiences while delivering measurable results for brand partners.
                 </p>
                 <p className="text-muted-foreground leading-relaxed mb-4">
                   We believe authenticity is the single most important factor for conversions and long-term audience loyalty.
                 </p>
                 <p className="text-muted-foreground leading-relaxed">
-                  Our team has grown from one to six people in the past 12 months. We now have a killer talent & brand manager team plus a COO/CFO to take Eight6 to the next level and beyond.
+                  Our team has grown from one to six people in the past 12 months. We now have a killer talent & brand manager team plus a COO/CFO to take Eight-Six to the next level and beyond.
                 </p>
               </div>
             </div>
@@ -41,7 +41,7 @@ const AboutSection = () => {
           {/* The Name Origin */}
           <div className="bg-primary text-primary-foreground rounded-3xl p-8 md:p-12 text-center">
             <h3 className="font-serif text-2xl md:text-3xl font-semibold mb-6">
-              Why "Eight6"?
+              Why "Eight-Six"?
             </h3>
             <p className="text-primary-foreground/90 text-lg leading-relaxed max-w-2xl mx-auto">
               In the crucial 7 seconds to capture attention on social media—equivalent to <span className="font-serif text-accent text-2xl font-bold">8.6 heartbeats</span>—we help make lasting impressions that drive real results.
