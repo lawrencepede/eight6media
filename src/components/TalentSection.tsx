@@ -1,5 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import mattPhoto from "@/assets/matt-photo.png";
 
 const creators = [
   {
@@ -18,7 +19,7 @@ const creators = [
     impressions: "10-11M Monthly Impressions",
     audience: "80% Male, Ages 25-44",
     partners: ["Nike", "Lululemon", "Apple", "Garmin"],
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=500&fit=crop&crop=face",
+    image: mattPhoto,
   },
   {
     name: "Dr. Jaime Seeman",
