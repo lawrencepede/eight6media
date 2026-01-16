@@ -1,5 +1,5 @@
 import { Instagram, Linkedin, Mail } from "lucide-react";
-import logo from "@/assets/eight6media-logo.png";
+import logo from "@/assets/logo-option-2.png";
 
 const Footer = () => {
   const scrollToSection = (id: string) => {
