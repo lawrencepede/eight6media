@@ -1,5 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import BrandLogo from "@/components/BrandLogo";
 import mattPhoto from "@/assets/matt-photo.png";
 import jaimePhoto from "@/assets/jaime-photo.png";
 import amandaPhoto from "@/assets/amanda-photo.png";
@@ -86,14 +87,9 @@ const TalentSection = () => {
                   <p>{creator.audience}</p>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   {creator.partners.slice(0, 3).map((partner, i) => (
-                    <span
-                      key={i}
-                      className="text-xs bg-secondary px-2 py-1 rounded-full text-secondary-foreground"
-                    >
-                      {partner}
-                    </span>
+                    <BrandLogo key={i} brand={partner} />
                   ))}
                 </div>
               </div>
