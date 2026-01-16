@@ -42,7 +42,7 @@ const Navigation = () => {
             }}
             className="block"
           >
-            <img src={logo} alt="Eight-Six Media" className="h-20 w-auto" />
+            <img src={logo} alt="Eight-Six Media" className="h-12 w-auto" />
           </a>
 
           {/* Desktop Navigation */}
