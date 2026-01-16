@@ -10,10 +10,12 @@ import ForCreatorsSection from "@/components/ForCreatorsSection";
 import AboutSection from "@/components/AboutSection";
 import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
+import LogoOptions from "@/components/LogoOptions";
 
 const Index = () => {
   return (
     <div className="min-h-screen">
+      <LogoOptions />
       <Navigation />
       <HeroSection />
       <ProblemSection />
