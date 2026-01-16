@@ -171,7 +171,7 @@ const Admin = () => {
                     <label className="text-sm font-medium text-primary block mb-4">
                       Select Creators *
                     </label>
-                    <div className="grid gap-3">
+                    <div className="grid gap-3 max-h-[400px] overflow-y-auto">
                       {creators.map((creator) => (
                         <div
                           key={creator.id}
@@ -191,12 +191,15 @@ const Admin = () => {
                             alt={creator.name}
                             className="w-12 h-12 rounded-full object-cover"
                           />
-                          <div className="flex-1">
+                          <div className="flex-1 min-w-0">
                             <p className="font-medium text-primary">{creator.name}</p>
-                            <p className="text-sm text-muted-foreground">{creator.tagline}</p>
+                            <p className="text-sm text-muted-foreground truncate">
+                              {creator.instagramHandle} • {creator.location}
+                            </p>
                           </div>
-                          <div className="text-right text-sm text-muted-foreground">
-                            <p>{creator.followers}</p>
+                          <div className="text-right text-sm text-muted-foreground shrink-0">
+                            <p>{creator.metrics?.igFollowers || creator.followers.replace(" Followers", "")}</p>
+                            <p className="text-xs">{creator.metrics?.engagementRate || "—"} eng</p>
                           </div>
                         </div>
                       ))}
