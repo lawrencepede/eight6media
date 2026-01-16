@@ -2,6 +2,7 @@ import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import mattPhoto from "@/assets/matt-photo.png";
 import jaimePhoto from "@/assets/jaime-photo.png";
+import amandaPhoto from "@/assets/amanda-photo.png";
 
 const creators = [
   {
@@ -11,7 +12,7 @@ const creators = [
     impressions: "4-5M Monthly Impressions",
     audience: "70%+ Female, Ages 25-44",
     partners: ["Oura Ring", "Cured Nutrition", "Branch Basics"],
-    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=500&fit=crop&crop=face",
+    image: amandaPhoto,
   },
   {
     name: "Matt Choi",
