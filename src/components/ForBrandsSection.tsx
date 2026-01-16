@@ -70,21 +70,21 @@ const ForBrandsSection = () => {
               </Button>
             </div>
 
-            {/* Visual element */}
-            <div className="relative">
-              <div className="aspect-square bg-accent/10 rounded-3xl flex items-center justify-center">
-                <div className="text-center p-8">
-                  <div className="font-serif text-6xl md:text-8xl font-bold text-accent mb-4">
-                    8.6
-                  </div>
-                  <p className="text-primary-foreground/80 max-w-xs mx-auto">
-                    heartbeats to make a lasting impression. We help you make them count.
+            {/* Visual element - compact */}
+            <div className="flex items-center justify-center">
+              <div className="relative inline-flex items-center gap-4 bg-accent/10 rounded-2xl px-8 py-6">
+                <div className="font-serif text-5xl md:text-6xl font-bold text-accent">
+                  8.6
+                </div>
+                <div className="text-left max-w-[180px]">
+                  <p className="text-primary-foreground/90 text-sm leading-snug">
+                    heartbeats to make a lasting impression.
+                  </p>
+                  <p className="text-accent font-medium text-sm mt-1">
+                    We help you make them count.
                   </p>
                 </div>
               </div>
-              {/* Decorative elements */}
-              <div className="absolute -top-4 -right-4 w-24 h-24 bg-accent/20 rounded-full blur-xl" />
-              <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-accent/10 rounded-full blur-2xl" />
             </div>
           </div>
         </div>
