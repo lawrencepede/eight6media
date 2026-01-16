@@ -36,11 +36,23 @@ const TalentSection = () => {
               {/* Content */}
               <div className="p-6">
                 <h3 className="font-serif text-xl font-semibold text-primary">
-                  {creator.name}
+                  <a
+                    href={`https://instagram.com/${creator.instagramHandle.replace('@', '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-accent transition-colors"
+                  >
+                    {creator.name}
+                  </a>
                 </h3>
-                <p className="text-accent text-sm font-medium mb-4">
-                  {creator.tagline}
-                </p>
+                <a
+                  href={`https://instagram.com/${creator.instagramHandle.replace('@', '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-accent text-sm font-medium mb-4 block hover:underline"
+                >
+                  {creator.instagramHandle}
+                </a>
                 
                 <div className="space-y-2 text-sm text-muted-foreground mb-4">
                   <p>{creator.followers}, {creator.impressions}</p>
