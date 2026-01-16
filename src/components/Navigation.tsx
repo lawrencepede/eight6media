@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import logo from "@/assets/logo-option-2.png";
 
 const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -40,9 +39,10 @@ const Navigation = () => {
               e.preventDefault();
               window.scrollTo({ top: 0, behavior: "smooth" });
             }}
-            className="block"
+            className="font-serif text-2xl font-bold tracking-tight"
           >
-            <img src={logo} alt="Eight-Six Media" className="h-12 w-auto" />
+            <span className="text-primary">Eight</span>
+            <span className="text-accent">-Six</span>
           </a>
 
           {/* Desktop Navigation */}
