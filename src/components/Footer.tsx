@@ -1,4 +1,5 @@
 import { Instagram, Linkedin, Mail } from "lucide-react";
+import logo from "@/assets/eight6media-logo.png";
 
 const Footer = () => {
   const scrollToSection = (id: string) => {
@@ -15,9 +16,7 @@ const Footer = () => {
           <div className="grid md:grid-cols-4 gap-12 mb-12">
             {/* Brand */}
             <div className="md:col-span-2">
-              <h3 className="font-serif text-2xl font-bold mb-4">
-                Eight6<span className="text-accent">Media</span>
-              </h3>
+              <img src={logo} alt="Eight6Media" className="h-12 w-auto mb-4 brightness-0 invert" />
               <p className="text-primary-foreground/70 mb-4 max-w-md">
                 A selective creator agency delivering authentic partnerships and measurable results for brands and creators alike.
               </p>
