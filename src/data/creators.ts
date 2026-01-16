@@ -67,7 +67,7 @@ export const creators: Creator[] = [
     id: "dr-jaime-seeman",
     name: "Dr. Jaime Seeman",
     tagline: "OBGYN/Surgeon | Fitness Creator",
-    instagramHandle: "@drfit",
+    instagramHandle: "@drfitandfabulous",
     location: "Elkhorn, NE",
     followers: "272K Followers",
     impressions: "3.4M Monthly Impressions",
