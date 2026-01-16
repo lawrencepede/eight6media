@@ -185,6 +185,7 @@ const Admin = () => {
                           <Checkbox
                             checked={selectedCreators.includes(creator.id)}
                             onCheckedChange={() => toggleCreator(creator.id)}
+                            onClick={(e) => e.stopPropagation()}
                           />
                           <img
                             src={creator.image}
