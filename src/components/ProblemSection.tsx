@@ -20,7 +20,7 @@ const ProblemSection = () => {
             <div className="space-y-4">
               <h3 className="font-serif text-2xl font-semibold text-accent">Our Solution</h3>
               <p className="text-primary-foreground/80 leading-relaxed">
-                Eight6Media delivers bottom-line impact through selective, long-term creator partnerships built on authenticity, alignment of interests, and proven performance. We go beyond vanity metrics to create partnerships that drive real, measurable results.
+                Eight-Six Media delivers bottom-line impact through selective, long-term creator partnerships built on authenticity, alignment of interests, and proven performance. We go beyond vanity metrics to create partnerships that drive real, measurable results.
               </p>
             </div>
           </div>

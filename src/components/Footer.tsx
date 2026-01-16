@@ -103,7 +103,7 @@ const Footer = () => {
           {/* Bottom bar */}
           <div className="border-t border-primary-foreground/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm text-primary-foreground/50">
-              © {new Date().getFullYear()} Eight6Media. All rights reserved.
+              © {new Date().getFullYear()} Eight-Six Media. All rights reserved.
             </p>
             <div className="flex gap-6 text-sm text-primary-foreground/50">
               <a href="#" className="hover:text-accent transition-colors">
