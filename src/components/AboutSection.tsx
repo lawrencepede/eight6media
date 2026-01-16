@@ -1,3 +1,5 @@
+import elizabethPhoto from "@/assets/elizabeth-photo.png";
+
 const AboutSection = () => {
   return (
     <section id="about" className="section-padding bg-background">
@@ -13,7 +15,7 @@ const AboutSection = () => {
             {/* Founder image placeholder */}
             <div className="aspect-[4/5] bg-secondary rounded-2xl overflow-hidden">
               <img
-                src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=500&h=625&fit=crop&crop=face"
+                src={elizabethPhoto}
                 alt="Elizabeth Martin, Founder"
                 className="w-full h-full object-cover"
               />
