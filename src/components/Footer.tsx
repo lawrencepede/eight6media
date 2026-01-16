@@ -16,7 +16,7 @@ const Footer = () => {
           <div className="grid md:grid-cols-4 gap-12 mb-12">
             {/* Brand */}
             <div className="md:col-span-2">
-              <img src={logo} alt="Eight6Media" className="h-12 w-auto mb-4 brightness-0 invert" />
+              <img src={logo} alt="Eight-Six Media" className="h-16 w-auto mb-4 brightness-0 invert" />
               <p className="text-primary-foreground/70 mb-4 max-w-md">
                 A selective creator agency delivering authentic partnerships and measurable results for brands and creators alike.
               </p>
