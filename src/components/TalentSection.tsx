@@ -1,6 +1,7 @@
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import mattPhoto from "@/assets/matt-photo.png";
+import jaimePhoto from "@/assets/jaime-photo.png";
 
 const creators = [
   {
@@ -28,7 +29,7 @@ const creators = [
     impressions: "1-2M Monthly Impressions",
     audience: "70% Female, Ages 25-44",
     partners: ["Branch Basics", "MindBodyGreen", "Lashify"],
-    image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=500&fit=crop&crop=face",
+    image: jaimePhoto,
   },
 ];
 
