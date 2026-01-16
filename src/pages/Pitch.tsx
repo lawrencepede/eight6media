@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Mail } from "lucide-react";
+import { ArrowLeft, Mail, MapPin, Instagram } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePitches } from "@/hooks/usePitches";
 import { getCreatorsByIds } from "@/data/creators";
@@ -85,9 +85,19 @@ const Pitch = () => {
                   <h3 className="font-serif text-xl font-semibold text-primary">
                     {creator.name}
                   </h3>
-                  <p className="text-accent text-sm font-medium mb-3">
+                  <p className="text-accent text-sm font-medium mb-2">
                     {creator.tagline}
                   </p>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
+                    <span className="flex items-center gap-1">
+                      <Instagram className="w-3 h-3" />
+                      {creator.instagramHandle}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <MapPin className="w-3 h-3" />
+                      {creator.location}
+                    </span>
+                  </div>
                   
                   {creator.bio && (
                     <p className="text-muted-foreground text-sm mb-4">
@@ -95,20 +105,27 @@ const Pitch = () => {
                     </p>
                   )}
 
-                  <div className="space-y-3 text-sm border-t border-border pt-4">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Followers</span>
-                      <span className="font-medium text-primary">{creator.followers}</span>
+                  <div className="grid grid-cols-2 gap-2 text-sm border-t border-border pt-4">
+                    <div className="bg-secondary/30 rounded-lg p-2">
+                      <p className="text-xs text-muted-foreground">IG Followers</p>
+                      <p className="font-semibold text-primary">{creator.metrics?.igFollowers || creator.followers.replace(" Followers", "")}</p>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Monthly Impressions</span>
-                      <span className="font-medium text-primary">{creator.impressions}</span>
+                    <div className="bg-secondary/30 rounded-lg p-2">
+                      <p className="text-xs text-muted-foreground">Engagement</p>
+                      <p className="font-semibold text-primary">{creator.metrics?.engagementRate || "—"}</p>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Audience</span>
-                      <span className="font-medium text-primary">{creator.audience}</span>
+                    <div className="bg-secondary/30 rounded-lg p-2">
+                      <p className="text-xs text-muted-foreground">Impressions</p>
+                      <p className="font-semibold text-primary">{creator.metrics?.monthlyImpressions || creator.impressions.replace(" Monthly Impressions", "")}</p>
                     </div>
+                    {creator.metrics?.storyViews && (
+                      <div className="bg-secondary/30 rounded-lg p-2">
+                        <p className="text-xs text-muted-foreground">Story Views</p>
+                        <p className="font-semibold text-primary">{creator.metrics.storyViews}</p>
+                      </div>
+                    )}
                   </div>
+                  <p className="text-xs text-muted-foreground mt-2">{creator.audience}</p>
 
                   <div className="mt-4 pt-4 border-t border-border">
                     <p className="text-xs text-muted-foreground mb-2">Past Partners</p>

@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Filter } from "lucide-react";
+import { ArrowLeft, Filter, MapPin, Instagram } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { creators, verticals } from "@/data/creators";
+import { creators, verticals, getActiveCreators } from "@/data/creators";
 import BrandLogo from "@/components/BrandLogo";
 import {
   Dialog,
@@ -24,9 +24,10 @@ const Roster = () => {
     );
   };
 
+  const activeCreators = getActiveCreators();
   const filteredCreators = selectedVerticals.length === 0
-    ? creators
-    : creators.filter(creator =>
+    ? activeCreators
+    : activeCreators.filter(creator =>
         creator.verticals.some(v => selectedVerticals.includes(v))
       );
 
@@ -149,7 +150,7 @@ const Roster = () => {
 
       {/* Creator Detail Modal */}
       <Dialog open={!!selectedCreator} onOpenChange={() => setSelectedCreator(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           {selectedCreator && (
             <>
               <DialogHeader>
@@ -168,18 +169,51 @@ const Roster = () => {
                 <div className="space-y-4">
                   <div>
                     <p className="text-accent font-medium">{selectedCreator.tagline}</p>
+                    <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Instagram className="w-4 h-4" />
+                        {selectedCreator.instagramHandle}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-4 h-4" />
+                        {selectedCreator.location}
+                      </span>
+                    </div>
                     {selectedCreator.bio && (
-                      <p className="text-muted-foreground mt-2">{selectedCreator.bio}</p>
+                      <p className="text-muted-foreground mt-3 text-sm">{selectedCreator.bio}</p>
                     )}
                   </div>
                   
+                  {/* Metrics Grid */}
                   <div className="space-y-2">
-                    <h4 className="font-semibold text-primary">Stats</h4>
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <p>{selectedCreator.followers}</p>
-                      <p>{selectedCreator.impressions}</p>
-                      <p>{selectedCreator.audience}</p>
+                    <h4 className="font-semibold text-primary">Performance Metrics</h4>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="bg-secondary/50 rounded-lg p-3">
+                        <p className="text-muted-foreground text-xs">IG Followers</p>
+                        <p className="font-semibold text-primary">{selectedCreator.metrics?.igFollowers || selectedCreator.followers.replace(" Followers", "")}</p>
+                      </div>
+                      <div className="bg-secondary/50 rounded-lg p-3">
+                        <p className="text-muted-foreground text-xs">Engagement Rate</p>
+                        <p className="font-semibold text-primary">{selectedCreator.metrics?.engagementRate || "—"}</p>
+                      </div>
+                      <div className="bg-secondary/50 rounded-lg p-3">
+                        <p className="text-muted-foreground text-xs">Monthly Impressions</p>
+                        <p className="font-semibold text-primary">{selectedCreator.metrics?.monthlyImpressions || selectedCreator.impressions.replace(" Monthly Impressions", "")}</p>
+                      </div>
+                      {selectedCreator.metrics?.storyViews && (
+                        <div className="bg-secondary/50 rounded-lg p-3">
+                          <p className="text-muted-foreground text-xs">Avg Story Views</p>
+                          <p className="font-semibold text-primary">{selectedCreator.metrics.storyViews}</p>
+                        </div>
+                      )}
+                      {selectedCreator.metrics?.tiktokFollowers && (
+                        <div className="bg-secondary/50 rounded-lg p-3">
+                          <p className="text-muted-foreground text-xs">TikTok Followers</p>
+                          <p className="font-semibold text-primary">{selectedCreator.metrics.tiktokFollowers}</p>
+                        </div>
+                      )}
                     </div>
+                    <p className="text-xs text-muted-foreground">{selectedCreator.audience}</p>
                   </div>
 
                   <div>
