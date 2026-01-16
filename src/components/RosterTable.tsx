@@ -121,7 +121,15 @@ const RosterTable = ({ creators, onUpdate }: RosterTableProps) => {
                           className="h-8 text-sm"
                         />
                       ) : (
-                        <span className="text-accent">{creator.instagramHandle}</span>
+                        <a
+                          href={`https://instagram.com/${creator.instagramHandle.replace('@', '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-accent hover:underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {creator.instagramHandle}
+                        </a>
                       )}
                     </TableCell>
 

@@ -170,10 +170,16 @@ const Roster = () => {
                   <div>
                     <p className="text-accent font-medium">{selectedCreator.tagline}</p>
                     <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
+                      <a 
+                        href={`https://instagram.com/${selectedCreator.instagramHandle.replace('@', '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 hover:text-accent transition-colors"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <Instagram className="w-4 h-4" />
                         {selectedCreator.instagramHandle}
-                      </span>
+                      </a>
                       <span className="flex items-center gap-1">
                         <MapPin className="w-4 h-4" />
                         {selectedCreator.location}
