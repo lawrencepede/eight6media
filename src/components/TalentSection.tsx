@@ -49,10 +49,13 @@ const TalentSection = () => {
                   href={`https://instagram.com/${creator.instagramHandle.replace('@', '')}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-accent text-sm font-medium mb-4 block hover:underline"
+                  className="text-accent text-sm font-medium block hover:underline"
                 >
                   {creator.instagramHandle}
                 </a>
+                <p className="text-muted-foreground text-sm mb-4">
+                  {creator.tagline}
+                </p>
                 
                 <div className="space-y-2 text-sm text-muted-foreground mb-4">
                   <p>{creator.followers}, {creator.impressions}</p>
