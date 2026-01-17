@@ -1,5 +1,12 @@
 import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 import { Play, X } from "lucide-react";
 
 interface PortfolioItem {
@@ -66,7 +73,7 @@ const PhoneMockup = ({
       onClick={onClick}
     >
       {/* Phone Frame */}
-      <div className="relative mx-auto w-[180px] md:w-[200px] lg:w-[220px]">
+      <div className="relative mx-auto w-[220px] md:w-[260px] lg:w-[280px]">
         {/* Phone outer shell */}
         <div className="relative bg-zinc-900 rounded-[2.5rem] p-2 shadow-2xl transition-transform duration-500 group-hover:scale-105 group-hover:-translate-y-2">
           {/* Dynamic Island / Notch */}
@@ -132,15 +139,28 @@ const PortfolioSection = () => {
           </p>
         </div>
 
-        {/* Phone Gallery Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 md:gap-8">
-          {portfolioItems.map((item) => (
-            <PhoneMockup
-              key={item.id}
-              item={item}
-              onClick={() => setSelectedItem(item)}
-            />
-          ))}
+        {/* Horizontal Carousel */}
+        <div className="relative px-12">
+          <Carousel
+            opts={{
+              align: "start",
+              loop: true,
+            }}
+            className="w-full"
+          >
+            <CarouselContent className="-ml-4">
+              {portfolioItems.map((item) => (
+                <CarouselItem key={item.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
+                  <PhoneMockup
+                    item={item}
+                    onClick={() => setSelectedItem(item)}
+                  />
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="left-0 bg-background/80 backdrop-blur-sm border-border hover:bg-background" />
+            <CarouselNext className="right-0 bg-background/80 backdrop-blur-sm border-border hover:bg-background" />
+          </Carousel>
         </div>
 
         {/* View More Link */}
