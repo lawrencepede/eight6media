@@ -30,7 +30,31 @@ export interface Creator {
   bio?: string;
   metrics?: CreatorMetrics;
   isActive: boolean;
+  platforms: string[];
+  gender: "Male" | "Female" | "Couple";
 }
+
+export const platforms = ["Instagram", "TikTok", "YouTube", "Podcast"];
+
+export const genders = ["Male", "Female", "Couple"];
+
+export const followerRanges = [
+  { label: "Under 50K", min: 0, max: 50000 },
+  { label: "50K - 100K", min: 50000, max: 100000 },
+  { label: "100K - 250K", min: 100000, max: 250000 },
+  { label: "250K - 500K", min: 250000, max: 500000 },
+  { label: "500K+", min: 500000, max: Infinity },
+];
+
+export const parseFollowerCount = (followers: string): number => {
+  const match = followers.match(/(\d+(?:\.\d+)?)\s*(K|M)?/i);
+  if (!match) return 0;
+  const num = parseFloat(match[1]);
+  const unit = match[2]?.toUpperCase();
+  if (unit === "K") return num * 1000;
+  if (unit === "M") return num * 1000000;
+  return num;
+};
 
 export const creators: Creator[] = [
   {
@@ -47,6 +71,8 @@ export const creators: Creator[] = [
     image: amandaPhoto,
     bio: "Former nurse turned wellness advocate, sharing authentic health tips and parenting insights with an engaged community.",
     isActive: true,
+    platforms: ["Instagram"],
+    gender: "Female",
   },
   {
     id: "matt-choi",
@@ -62,6 +88,8 @@ export const creators: Creator[] = [
     image: mattPhoto,
     bio: "Professional endurance athlete inspiring hundreds of thousands to push their limits through authentic fitness content.",
     isActive: true,
+    platforms: ["Instagram", "YouTube"],
+    gender: "Male",
   },
   {
     id: "dr-jaime-seeman",
@@ -84,6 +112,8 @@ export const creators: Creator[] = [
       audienceDemo: "18-34, USA, 60% F",
     },
     isActive: true,
+    platforms: ["Instagram", "Podcast"],
+    gender: "Female",
   },
   {
     id: "alexandria-noel",
@@ -108,6 +138,8 @@ export const creators: Creator[] = [
       audienceDemo: "18-34, USA, 60% F",
     },
     isActive: true,
+    platforms: ["Instagram", "TikTok"],
+    gender: "Female",
   },
   {
     id: "anthony-rice",
@@ -132,6 +164,8 @@ export const creators: Creator[] = [
       audienceDemo: "25-34, USA, 56% M",
     },
     isActive: true,
+    platforms: ["Instagram", "TikTok"],
+    gender: "Male",
   },
   {
     id: "ben-smith",
@@ -155,6 +189,8 @@ export const creators: Creator[] = [
       audienceDemo: "25-34, USA, 85% W",
     },
     isActive: true,
+    platforms: ["Instagram", "TikTok"],
+    gender: "Male",
   },
   {
     id: "chris-griffin",
@@ -179,6 +215,8 @@ export const creators: Creator[] = [
       audienceDemo: "25-34, USA, 53% M",
     },
     isActive: true,
+    platforms: ["Instagram", "TikTok"],
+    gender: "Male",
   },
   {
     id: "carly-durst",
@@ -201,6 +239,8 @@ export const creators: Creator[] = [
       audienceDemo: "25-34, USA, 96% W",
     },
     isActive: true,
+    platforms: ["Instagram"],
+    gender: "Female",
   },
   {
     id: "cj-erin-finley",
@@ -223,6 +263,8 @@ export const creators: Creator[] = [
       audienceDemo: "25-34, USA, 73% M",
     },
     isActive: true,
+    platforms: ["Instagram"],
+    gender: "Couple",
   },
   {
     id: "daniel-brigham",
@@ -244,6 +286,8 @@ export const creators: Creator[] = [
       audienceDemo: "25-34, USA",
     },
     isActive: true,
+    platforms: ["Instagram"],
+    gender: "Male",
   },
   {
     id: "dominic-fusco",
@@ -265,6 +309,8 @@ export const creators: Creator[] = [
       audienceDemo: "25-34, USA",
     },
     isActive: true,
+    platforms: ["Instagram"],
+    gender: "Male",
   },
   {
     id: "dr-clay-moss",
@@ -286,6 +332,8 @@ export const creators: Creator[] = [
       audienceDemo: "25-34, USA",
     },
     isActive: true,
+    platforms: ["Instagram", "TikTok"],
+    gender: "Male",
   },
   {
     id: "eric-hinman",
@@ -307,6 +355,8 @@ export const creators: Creator[] = [
       audienceDemo: "25-34, USA",
     },
     isActive: true,
+    platforms: ["Instagram", "Podcast"],
+    gender: "Male",
   },
   {
     id: "joey-miuccio",
@@ -328,6 +378,8 @@ export const creators: Creator[] = [
       audienceDemo: "25-34, USA",
     },
     isActive: true,
+    platforms: ["Instagram", "YouTube"],
+    gender: "Male",
   },
   {
     id: "john-lindsey",
@@ -349,6 +401,8 @@ export const creators: Creator[] = [
       audienceDemo: "25-34, USA",
     },
     isActive: true,
+    platforms: ["Instagram", "YouTube"],
+    gender: "Male",
   },
   {
     id: "kenny-santucci",
@@ -370,6 +424,8 @@ export const creators: Creator[] = [
       audienceDemo: "25-34, USA",
     },
     isActive: true,
+    platforms: ["Instagram"],
+    gender: "Male",
   },
   {
     id: "katey-yurko",
@@ -391,6 +447,8 @@ export const creators: Creator[] = [
       audienceDemo: "25-34, USA",
     },
     isActive: true,
+    platforms: ["Instagram", "TikTok"],
+    gender: "Female",
   },
   {
     id: "macy-pruett",
@@ -412,6 +470,8 @@ export const creators: Creator[] = [
       audienceDemo: "25-34, USA",
     },
     isActive: true,
+    platforms: ["Instagram", "TikTok"],
+    gender: "Female",
   },
 ];
 
