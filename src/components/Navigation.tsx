@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -14,13 +16,17 @@ const Navigation = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
-    }
+  const closeMobileMenu = () => {
     setIsMobileMenuOpen(false);
   };
+
+  const navLinks = [
+    { to: "/work", label: "Work" },
+    { to: "/roster", label: "Talent" },
+    { to: "/for-brands", label: "For Brands" },
+    { to: "/for-creators", label: "For Creators" },
+    { to: "/about", label: "About" },
+  ];
 
   return (
     <nav
@@ -33,55 +39,34 @@ const Navigation = () => {
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
+          <Link
+            to="/"
             className="font-serif text-2xl font-bold tracking-tight"
           >
             <span className="text-primary">Eight</span>
             <span className="text-accent">-Six</span>
-          </a>
+          </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
-            <button
-              onClick={() => scrollToSection("approach")}
-              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-            >
-              Approach
-            </button>
-            <button
-              onClick={() => scrollToSection("talent")}
-              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-            >
-              Talent
-            </button>
-            <button
-              onClick={() => scrollToSection("brands")}
-              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-            >
-              For Brands
-            </button>
-            <button
-              onClick={() => scrollToSection("creators")}
-              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-            >
-              For Creators
-            </button>
-            <button
-              onClick={() => scrollToSection("about")}
-              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-            >
-              About
-            </button>
+            {navLinks.map((link) => (
+              <Link
+                key={link.to}
+                to={link.to}
+                className={`text-sm font-medium transition-colors ${
+                  location.pathname === link.to
+                    ? "text-primary"
+                    : "text-muted-foreground hover:text-primary"
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
             <Button
-              onClick={() => scrollToSection("contact")}
+              asChild
               className="bg-accent text-accent-foreground hover:bg-accent/90 font-medium"
             >
-              Get Started
+              <Link to="/for-brands">Get Started</Link>
             </Button>
           </div>
 
@@ -98,41 +83,27 @@ const Navigation = () => {
         {isMobileMenuOpen && (
           <div className="md:hidden mt-4 pb-4 border-t border-border">
             <div className="flex flex-col gap-4 pt-4">
-              <button
-                onClick={() => scrollToSection("approach")}
-                className="text-left text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-              >
-                Approach
-              </button>
-              <button
-                onClick={() => scrollToSection("talent")}
-                className="text-left text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-              >
-                Talent
-              </button>
-              <button
-                onClick={() => scrollToSection("brands")}
-                className="text-left text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-              >
-                For Brands
-              </button>
-              <button
-                onClick={() => scrollToSection("creators")}
-                className="text-left text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-              >
-                For Creators
-              </button>
-              <button
-                onClick={() => scrollToSection("about")}
-                className="text-left text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-              >
-                About
-              </button>
+              {navLinks.map((link) => (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  onClick={closeMobileMenu}
+                  className={`text-left text-sm font-medium transition-colors ${
+                    location.pathname === link.to
+                      ? "text-primary"
+                      : "text-muted-foreground hover:text-primary"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              ))}
               <Button
-                onClick={() => scrollToSection("contact")}
+                asChild
                 className="bg-accent text-accent-foreground hover:bg-accent/90 font-medium w-fit"
               >
-                Get Started
+                <Link to="/for-brands" onClick={closeMobileMenu}>
+                  Get Started
+                </Link>
               </Button>
             </div>
           </div>
