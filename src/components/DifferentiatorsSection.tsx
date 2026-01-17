@@ -33,7 +33,7 @@ const DifferentiatorsSection = () => {
             Beyond the <span className="italic text-accent">Vanity Metrics</span>
           </h2>
           <p className="text-muted-foreground text-lg">
-            After managing influencer marketing in-house and recognizing what was missing, we built an agency around three core differentiators.
+            After managing creator marketing in-house and recognizing what was missing, we built an agency around three core differentiators.
           </p>
         </div>
 

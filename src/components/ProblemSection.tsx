@@ -4,7 +4,7 @@ const ProblemSection = () => {
       <div className="container mx-auto px-6">
         <div className="max-w-4xl mx-auto">
           <h2 className="font-serif text-3xl md:text-5xl font-bold mb-8 text-center">
-            We Fixed What's Broken in <span className="italic text-accent">Influencer Marketing</span>
+            We Fixed What's Broken in <span className="italic text-accent">Creator Marketing</span>
           </h2>
           
           <div className="grid md:grid-cols-2 gap-12 items-start">
@@ -12,7 +12,7 @@ const ProblemSection = () => {
             <div className="space-y-4">
               <h3 className="font-serif text-2xl font-semibold text-accent">The Problem</h3>
               <p className="text-primary-foreground/80 leading-relaxed">
-                Most influencer marketing delivers awareness but little to no measurable impact. One-off partnerships feel inauthentic and produce inconsistent results. Brands struggle to find creators who genuinely align with their values and can drive real conversions.
+                Most creator marketing delivers awareness but little to no measurable impact. One-off partnerships feel inauthentic and produce inconsistent results. Brands struggle to find creators who genuinely align with their values and can drive real conversions.
               </p>
             </div>
             

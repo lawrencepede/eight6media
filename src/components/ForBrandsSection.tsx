@@ -58,7 +58,7 @@ const ForBrandsSection = () => {
               </div>
 
               <blockquote className="italic text-primary-foreground/90 text-lg mb-8 border-l-4 border-accent pl-4">
-                "Ready to maximize your influencer marketing impact?"
+                "Ready to maximize your creator marketing impact?"
               </blockquote>
 
               <Button
