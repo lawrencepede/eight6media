@@ -22,7 +22,7 @@ const HeroSection = () => {
         <div className="max-w-4xl mx-auto text-center">
           {/* Main headline */}
           <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl font-bold text-primary mb-6 opacity-0 animate-fade-in" style={{ animationDelay: "0.2s" }}>
-            Authentic Creators.
+            Real life creators.
             <br />
             <span className="italic text-accent">Impact focus.</span>
           </h1>
