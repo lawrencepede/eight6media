@@ -4,6 +4,7 @@ import ProblemSection from "@/components/ProblemSection";
 import DifferentiatorsSection from "@/components/DifferentiatorsSection";
 import ApproachSection from "@/components/ApproachSection";
 import ProofSection from "@/components/ProofSection";
+import PortfolioSection from "@/components/PortfolioSection";
 import TalentSection from "@/components/TalentSection";
 import ForBrandsSection from "@/components/ForBrandsSection";
 import ForCreatorsSection from "@/components/ForCreatorsSection";
@@ -20,6 +21,7 @@ const Index = () => {
       <DifferentiatorsSection />
       <ApproachSection />
       <ProofSection />
+      <PortfolioSection />
       <TalentSection />
       <ForBrandsSection />
       <ForCreatorsSection />
