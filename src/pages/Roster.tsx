@@ -121,23 +121,9 @@ const Roster = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
-              <ArrowLeft className="w-4 h-4" />
-              <span>Back to Home</span>
-            </Link>
-            <h1 className="font-serif text-xl font-bold text-primary">Our Roster</h1>
-            <div className="w-24" /> {/* Spacer for centering */}
-          </div>
-        </div>
-      </header>
-
+    <div className="min-h-screen bg-background pt-20">
       {/* Filter Bar */}
-      <div className="sticky top-[65px] z-40 bg-background/95 backdrop-blur border-b border-border">
+      <div className="sticky top-[72px] z-40 bg-background/95 backdrop-blur border-b border-border">
         <div className="container mx-auto px-6 py-4 space-y-4">
           {/* Filter Type Selector */}
           <div className="flex items-center gap-3 flex-wrap">
