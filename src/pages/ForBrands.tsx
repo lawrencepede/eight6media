@@ -1,4 +1,3 @@
-import Navigation from "@/components/Navigation";
 import ForBrandsSection from "@/components/ForBrandsSection";
 import ApproachSection from "@/components/ApproachSection";
 import ProofSection from "@/components/ProofSection";
@@ -8,7 +7,6 @@ import Footer from "@/components/Footer";
 const ForBrands = () => {
   return (
     <div className="min-h-screen">
-      <Navigation />
       <div className="pt-20">
         <ForBrandsSection />
         <ApproachSection />

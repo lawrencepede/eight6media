@@ -1,4 +1,3 @@
-import Navigation from "@/components/Navigation";
 import ForCreatorsSection from "@/components/ForCreatorsSection";
 import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
@@ -6,7 +5,6 @@ import Footer from "@/components/Footer";
 const ForCreators = () => {
   return (
     <div className="min-h-screen">
-      <Navigation />
       <div className="pt-20">
         <ForCreatorsSection />
         <CTASection />
