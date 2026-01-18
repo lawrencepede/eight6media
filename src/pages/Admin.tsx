@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Plus, Trash2, ExternalLink, Copy, Check, Users, FileText } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, ExternalLink, Copy, Check, Users, FileText, RefreshCw, Table } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,12 +18,17 @@ import { Creator, useCreators } from "@/hooks/useCreators";
 import { usePitches, type Pitch } from "@/hooks/usePitches";
 import { toast } from "sonner";
 import RosterTable from "@/components/RosterTable";
+import { supabase } from "@/integrations/supabase/client";
+
+const GOOGLE_SHEETS_EMBED_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTl_V694GodmVDA32ZXdsKurxDilhjeC4o7KpUG7M661CwjIJzr4zR03NFoaEvISJAu7CxIEvRx95uM/pubhtml?gid=2014316368&single=true&widget=true&headers=false";
 
 const Admin = () => {
-  const { creators, isLoading, updateCreator } = useCreators();
+  const { creators, isLoading, updateCreator, refetch } = useCreators();
   const { pitches, createPitch, deletePitch } = usePitches();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [viewMode, setViewMode] = useState<"sheets" | "table">("sheets");
   
   // Form state
   const [brandName, setBrandName] = useState("");
@@ -89,6 +94,33 @@ const Admin = () => {
     await updateCreator(updatedCreator);
   };
 
+  const handleSyncFromSheets = async () => {
+    setIsSyncing(true);
+    toast.info("Syncing from Google Sheets...");
+    
+    try {
+      const { data, error } = await supabase.functions.invoke("sync-google-sheets");
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      if (data?.success) {
+        toast.success(`Sync complete: ${data.inserted} added, ${data.updated} updated`);
+        refetch(); // Refresh the creators list
+      } else {
+        toast.error(data?.error || "Sync failed");
+        console.error("Sync response:", data);
+      }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      toast.error(`Sync failed: ${errorMessage}`);
+      console.error("Sync error:", error);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   return (
     <PasswordGate>
       <div className="min-h-screen bg-background">
@@ -121,11 +153,53 @@ const Admin = () => {
 
             {/* Roster Management Tab */}
             <TabsContent value="roster">
-              <div className="mb-6">
-                <h2 className="font-serif text-2xl font-bold text-primary">Roster Management</h2>
-                <p className="text-muted-foreground">View and manage all creator data from your roster</p>
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="font-serif text-2xl font-bold text-primary">Roster Management</h2>
+                  <p className="text-muted-foreground">Edit in Google Sheets, then sync to update the Talent page</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center bg-muted rounded-lg p-1">
+                    <Button
+                      variant={viewMode === "sheets" ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => setViewMode("sheets")}
+                      className="gap-2"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      Google Sheets
+                    </Button>
+                    <Button
+                      variant={viewMode === "table" ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => setViewMode("table")}
+                      className="gap-2"
+                    >
+                      <Table className="w-4 h-4" />
+                      Table View
+                    </Button>
+                  </div>
+                  <Button
+                    onClick={handleSyncFromSheets}
+                    disabled={isSyncing}
+                    className="gap-2"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${isSyncing ? "animate-spin" : ""}`} />
+                    {isSyncing ? "Syncing..." : "Sync to Database"}
+                  </Button>
+                </div>
               </div>
-              {isLoading ? (
+
+              {viewMode === "sheets" ? (
+                <div className="rounded-lg border border-border overflow-hidden bg-card">
+                  <iframe
+                    src={GOOGLE_SHEETS_EMBED_URL}
+                    className="w-full border-0"
+                    style={{ height: "calc(100vh - 280px)", minHeight: 500 }}
+                    title="Google Sheets Roster"
+                  />
+                </div>
+              ) : isLoading ? (
                 <div className="text-center py-16">
                   <p className="text-muted-foreground">Loading creators...</p>
                 </div>
