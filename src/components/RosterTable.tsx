@@ -35,8 +35,11 @@ const RosterTable = ({ creators, onUpdate }: RosterTableProps) => {
   // Refs for synchronized scrolling
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const scrollbarRef = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<HTMLTableElement>(null);
   const [tableWidth, setTableWidth] = useState(0);
+  const [containerWidth, setContainerWidth] = useState(0);
   const [showScrollHint, setShowScrollHint] = useState(true);
+  const isSyncingRef = useRef(false);
 
   const heightValues = {
     normal: 500,
@@ -116,29 +119,52 @@ const RosterTable = ({ creators, onUpdate }: RosterTableProps) => {
     }));
   };
 
-  // Measure table width for scrollbar sync
+  // Measure table and container width for scrollbar sync
   useEffect(() => {
-    if (tableContainerRef.current) {
-      const table = tableContainerRef.current.querySelector('table');
-      if (table) {
-        setTableWidth(table.scrollWidth);
+    const measureWidths = () => {
+      if (tableRef.current && tableContainerRef.current) {
+        setTableWidth(tableRef.current.scrollWidth);
+        setContainerWidth(tableContainerRef.current.clientWidth);
       }
+    };
+
+    measureWidths();
+    
+    // Re-measure on resize
+    const resizeObserver = new ResizeObserver(measureWidths);
+    if (tableContainerRef.current) {
+      resizeObserver.observe(tableContainerRef.current);
     }
-  }, [creators]);
+    if (tableRef.current) {
+      resizeObserver.observe(tableRef.current);
+    }
+
+    return () => resizeObserver.disconnect();
+  }, [creators, tableHeight]);
 
   // Sync horizontal scroll between table and bottom scrollbar
   const handleTableScroll = () => {
+    if (isSyncingRef.current) return;
     if (tableContainerRef.current && scrollbarRef.current) {
+      isSyncingRef.current = true;
       scrollbarRef.current.scrollLeft = tableContainerRef.current.scrollLeft;
       if (tableContainerRef.current.scrollLeft > 0) {
         setShowScrollHint(false);
       }
+      requestAnimationFrame(() => {
+        isSyncingRef.current = false;
+      });
     }
   };
 
   const handleScrollbarScroll = () => {
+    if (isSyncingRef.current) return;
     if (tableContainerRef.current && scrollbarRef.current) {
+      isSyncingRef.current = true;
       tableContainerRef.current.scrollLeft = scrollbarRef.current.scrollLeft;
+      requestAnimationFrame(() => {
+        isSyncingRef.current = false;
+      });
     }
   };
 
@@ -195,10 +221,10 @@ const RosterTable = ({ creators, onUpdate }: RosterTableProps) => {
         {/* Table container - vertical scroll, hidden horizontal scrollbar (synced below) */}
         <div 
           ref={tableContainerRef}
-          className="flex-1 overflow-x-auto overflow-y-auto hide-horizontal-scrollbar"
+          className="flex-1 overflow-y-auto hide-horizontal-scrollbar"
           onScroll={handleTableScroll}
         >
-          <Table>
+          <Table ref={tableRef} noWrapper>
             <TableHeader className="sticky top-0 z-30">
               <TableRow className="bg-muted">
                 <TableHead className="sticky left-0 bg-muted z-40 min-w-[200px]">Creator</TableHead>
@@ -426,7 +452,8 @@ const RosterTable = ({ creators, onUpdate }: RosterTableProps) => {
         {/* Always visible horizontal scrollbar at bottom */}
         <div 
           ref={scrollbarRef}
-          className="h-4 overflow-x-auto overflow-y-hidden bg-muted/50 border-t border-border flex-shrink-0"
+          className="overflow-x-scroll overflow-y-hidden bg-muted/30 border-t border-border flex-shrink-0 visible-scrollbar"
+          style={{ height: 16 }}
           onScroll={handleScrollbarScroll}
         >
           <div style={{ width: tableWidth, height: 1 }} />
