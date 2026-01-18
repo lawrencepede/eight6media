@@ -14,7 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      creators: {
+        Row: {
+          bio: string | null
+          created_at: string
+          expertise: string[] | null
+          followers: string | null
+          id: string
+          image: string | null
+          instagram_handle: string
+          location: string | null
+          metrics: Json | null
+          name: string
+          niche: string | null
+          tiktok_handle: string | null
+          updated_at: string
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string
+          expertise?: string[] | null
+          followers?: string | null
+          id?: string
+          image?: string | null
+          instagram_handle: string
+          location?: string | null
+          metrics?: Json | null
+          name: string
+          niche?: string | null
+          tiktok_handle?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string
+          expertise?: string[] | null
+          followers?: string | null
+          id?: string
+          image?: string | null
+          instagram_handle?: string
+          location?: string | null
+          metrics?: Json | null
+          name?: string
+          niche?: string | null
+          tiktok_handle?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
