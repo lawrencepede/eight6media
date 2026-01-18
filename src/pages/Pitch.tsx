@@ -89,10 +89,15 @@ const Pitch = () => {
                     {creator.tagline}
                   </p>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
-                    <span className="flex items-center gap-1">
+                    <a
+                      href={`https://instagram.com/${creator.instagramHandle.replace('@', '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 hover:text-accent transition-colors"
+                    >
                       <Instagram className="w-3 h-3" />
                       {creator.instagramHandle}
-                    </span>
+                    </a>
                     <span className="flex items-center gap-1">
                       <MapPin className="w-3 h-3" />
                       {creator.location}
