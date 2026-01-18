@@ -14,12 +14,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import PasswordGate from "@/components/PasswordGate";
-import { creators, Creator } from "@/data/creators";
+import { Creator, useCreators } from "@/hooks/useCreators";
 import { usePitches, type Pitch } from "@/hooks/usePitches";
 import { toast } from "sonner";
 import RosterTable from "@/components/RosterTable";
 
 const Admin = () => {
+  const { creators, isLoading, updateCreator } = useCreators();
   const { pitches, createPitch, deletePitch } = usePitches();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -84,9 +85,8 @@ const Admin = () => {
     toast.success("URL copied to clipboard!");
   };
 
-  const handleCreatorUpdate = (updatedCreator: Creator) => {
-    // Currently data is static - this would save to backend
-    toast.info("To make edits persist, enable Lovable Cloud for database storage");
+  const handleCreatorUpdate = async (updatedCreator: Creator) => {
+    await updateCreator(updatedCreator);
   };
 
   return (
@@ -125,7 +125,13 @@ const Admin = () => {
                 <h2 className="font-serif text-2xl font-bold text-primary">Roster Management</h2>
                 <p className="text-muted-foreground">View and manage all creator data from your roster</p>
               </div>
-              <RosterTable creators={creators} onUpdate={handleCreatorUpdate} />
+              {isLoading ? (
+                <div className="text-center py-16">
+                  <p className="text-muted-foreground">Loading creators...</p>
+                </div>
+              ) : (
+                <RosterTable creators={creators} onUpdate={handleCreatorUpdate} />
+              )}
             </TabsContent>
 
             {/* Pitches Tab */}

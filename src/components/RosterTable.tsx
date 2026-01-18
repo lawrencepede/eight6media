@@ -17,7 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Creator } from "@/data/creators";
+import { Creator } from "@/hooks/useCreators";
 import { Badge } from "@/components/ui/badge";
 
 interface RosterTableProps {
