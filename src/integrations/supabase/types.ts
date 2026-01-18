@@ -27,6 +27,7 @@ export type Database = {
           metrics: Json | null
           name: string
           niche: string | null
+          slug: string | null
           tiktok_handle: string | null
           updated_at: string
         }
@@ -42,6 +43,7 @@ export type Database = {
           metrics?: Json | null
           name: string
           niche?: string | null
+          slug?: string | null
           tiktok_handle?: string | null
           updated_at?: string
         }
@@ -57,6 +59,7 @@ export type Database = {
           metrics?: Json | null
           name?: string
           niche?: string | null
+          slug?: string | null
           tiktok_handle?: string | null
           updated_at?: string
         }
