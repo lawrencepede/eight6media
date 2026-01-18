@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pencil, Save, X, ExternalLink } from "lucide-react";
+import { Pencil, Save, X, ExternalLink, Edit3, XCircle, Maximize2, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,49 +26,139 @@ interface RosterTableProps {
 }
 
 const RosterTable = ({ creators, onUpdate }: RosterTableProps) => {
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<Partial<Creator>>({});
+  const [editingIds, setEditingIds] = useState<Set<string>>(new Set());
+  const [editForms, setEditForms] = useState<Record<string, Partial<Creator>>>({});
   const [viewingCreator, setViewingCreator] = useState<Creator | null>(null);
+  const [isEditAll, setIsEditAll] = useState(false);
+  const [tableHeight, setTableHeight] = useState<"normal" | "expanded" | "fullscreen">("normal");
+
+  const heightClasses = {
+    normal: "max-h-[500px]",
+    expanded: "max-h-[700px]",
+    fullscreen: "max-h-[calc(100vh-200px)]",
+  };
 
   const startEditing = (creator: Creator) => {
-    setEditingId(creator.id);
-    setEditForm({ ...creator });
+    setEditingIds(prev => new Set(prev).add(creator.id));
+    setEditForms(prev => ({ ...prev, [creator.id]: { ...creator } }));
   };
 
-  const cancelEditing = () => {
-    setEditingId(null);
-    setEditForm({});
+  const startEditingAll = () => {
+    setIsEditAll(true);
+    const allIds = new Set(creators.map(c => c.id));
+    const allForms: Record<string, Partial<Creator>> = {};
+    creators.forEach(c => {
+      allForms[c.id] = { ...c };
+    });
+    setEditingIds(allIds);
+    setEditForms(allForms);
   };
 
-  const saveEditing = () => {
-    if (onUpdate && editForm) {
-      onUpdate(editForm as Creator);
+  const cancelEditingAll = () => {
+    setIsEditAll(false);
+    setEditingIds(new Set());
+    setEditForms({});
+  };
+
+  const cancelEditing = (creatorId: string) => {
+    setEditingIds(prev => {
+      const next = new Set(prev);
+      next.delete(creatorId);
+      return next;
+    });
+    setEditForms(prev => {
+      const { [creatorId]: _, ...rest } = prev;
+      return rest;
+    });
+    if (editingIds.size <= 1) {
+      setIsEditAll(false);
     }
-    setEditingId(null);
-    setEditForm({});
   };
 
-  const updateField = (field: keyof Creator, value: string) => {
-    setEditForm(prev => ({ ...prev, [field]: value }));
+  const saveEditing = (creatorId: string) => {
+    if (onUpdate && editForms[creatorId]) {
+      onUpdate(editForms[creatorId] as Creator);
+    }
+    cancelEditing(creatorId);
   };
 
-  const updateMetric = (field: string, value: string) => {
-    setEditForm(prev => ({
+  const saveAll = async () => {
+    if (onUpdate) {
+      for (const creatorId of editingIds) {
+        if (editForms[creatorId]) {
+          onUpdate(editForms[creatorId] as Creator);
+        }
+      }
+    }
+    cancelEditingAll();
+  };
+
+  const updateField = (creatorId: string, field: keyof Creator, value: string) => {
+    setEditForms(prev => ({
       ...prev,
-      metrics: { ...prev.metrics, [field]: value } as Creator["metrics"],
+      [creatorId]: { ...prev[creatorId], [field]: value },
     }));
+  };
+
+  const updateMetric = (creatorId: string, field: string, value: string) => {
+    setEditForms(prev => ({
+      ...prev,
+      [creatorId]: {
+        ...prev[creatorId],
+        metrics: { ...prev[creatorId]?.metrics, [field]: value } as Creator["metrics"],
+      },
+    }));
+  };
+
+  const cycleTableHeight = () => {
+    setTableHeight(prev => {
+      if (prev === "normal") return "expanded";
+      if (prev === "expanded") return "fullscreen";
+      return "normal";
+    });
   };
 
   return (
     <>
-      <div className="rounded-lg border border-border overflow-hidden relative">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          {isEditAll ? (
+            <>
+              <Button onClick={saveAll} size="sm">
+                <Save className="w-4 h-4 mr-2" />
+                Save All
+              </Button>
+              <Button onClick={cancelEditingAll} variant="outline" size="sm">
+                <XCircle className="w-4 h-4 mr-2" />
+                Cancel All
+              </Button>
+            </>
+          ) : (
+            <Button onClick={startEditingAll} variant="outline" size="sm">
+              <Edit3 className="w-4 h-4 mr-2" />
+              Edit All
+            </Button>
+          )}
+        </div>
+        <Button onClick={cycleTableHeight} variant="ghost" size="sm">
+          {tableHeight === "fullscreen" ? (
+            <Minimize2 className="w-4 h-4 mr-2" />
+          ) : (
+            <Maximize2 className="w-4 h-4 mr-2" />
+          )}
+          {tableHeight === "normal" ? "Expand" : tableHeight === "expanded" ? "Fullscreen" : "Collapse"}
+        </Button>
+      </div>
+
+      <div className={`rounded-lg border border-border overflow-hidden relative ${heightClasses[tableHeight]}`}>
         {/* Right fade indicator for more columns */}
         <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background/80 to-transparent pointer-events-none z-20" />
-        <div className="overflow-x-auto scrollbar-always-visible" style={{ scrollbarGutter: 'stable' }}>
+        <div className="overflow-x-scroll overflow-y-auto h-full scrollbar-always-visible">
           <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="sticky left-0 bg-muted/50 z-10 min-w-[200px]">Creator</TableHead>
+            <TableHeader className="sticky top-0 z-30">
+              <TableRow className="bg-muted">
+                <TableHead className="sticky left-0 bg-muted z-40 min-w-[200px]">Creator</TableHead>
                 <TableHead className="min-w-[120px]">IG Handle</TableHead>
                 <TableHead className="min-w-[140px]">Location</TableHead>
                 <TableHead className="min-w-[100px]">IG Followers</TableHead>
@@ -83,7 +173,8 @@ const RosterTable = ({ creators, onUpdate }: RosterTableProps) => {
             </TableHeader>
             <TableBody>
               {creators.map((creator) => {
-                const isEditing = editingId === creator.id;
+                const isEditing = editingIds.has(creator.id);
+                const form = editForms[creator.id] || {};
                 
                 return (
                   <TableRow key={creator.id} className="hover:bg-muted/30">
@@ -98,8 +189,8 @@ const RosterTable = ({ creators, onUpdate }: RosterTableProps) => {
                         <div>
                           {isEditing ? (
                             <Input
-                              value={editForm.name || ""}
-                              onChange={(e) => updateField("name", e.target.value)}
+                              value={form.name || ""}
+                              onChange={(e) => updateField(creator.id, "name", e.target.value)}
                               className="h-8 text-sm"
                             />
                           ) : (
@@ -118,8 +209,8 @@ const RosterTable = ({ creators, onUpdate }: RosterTableProps) => {
                     <TableCell>
                       {isEditing ? (
                         <Input
-                          value={editForm.instagramHandle || ""}
-                          onChange={(e) => updateField("instagramHandle", e.target.value)}
+                          value={form.instagramHandle || ""}
+                          onChange={(e) => updateField(creator.id, "instagramHandle", e.target.value)}
                           className="h-8 text-sm"
                         />
                       ) : (
@@ -139,8 +230,8 @@ const RosterTable = ({ creators, onUpdate }: RosterTableProps) => {
                     <TableCell>
                       {isEditing ? (
                         <Input
-                          value={editForm.location || ""}
-                          onChange={(e) => updateField("location", e.target.value)}
+                          value={form.location || ""}
+                          onChange={(e) => updateField(creator.id, "location", e.target.value)}
                           className="h-8 text-sm"
                         />
                       ) : (
@@ -152,8 +243,8 @@ const RosterTable = ({ creators, onUpdate }: RosterTableProps) => {
                     <TableCell>
                       {isEditing ? (
                         <Input
-                          value={editForm.metrics?.igFollowers || ""}
-                          onChange={(e) => updateMetric("igFollowers", e.target.value)}
+                          value={form.metrics?.igFollowers || ""}
+                          onChange={(e) => updateMetric(creator.id, "igFollowers", e.target.value)}
                           className="h-8 text-sm w-20"
                         />
                       ) : (
@@ -167,8 +258,8 @@ const RosterTable = ({ creators, onUpdate }: RosterTableProps) => {
                     <TableCell>
                       {isEditing ? (
                         <Input
-                          value={editForm.metrics?.tiktokFollowers || ""}
-                          onChange={(e) => updateMetric("tiktokFollowers", e.target.value)}
+                          value={form.metrics?.tiktokFollowers || ""}
+                          onChange={(e) => updateMetric(creator.id, "tiktokFollowers", e.target.value)}
                           className="h-8 text-sm w-20"
                         />
                       ) : (
@@ -182,8 +273,8 @@ const RosterTable = ({ creators, onUpdate }: RosterTableProps) => {
                     <TableCell>
                       {isEditing ? (
                         <Input
-                          value={editForm.metrics?.engagementRate || ""}
-                          onChange={(e) => updateMetric("engagementRate", e.target.value)}
+                          value={form.metrics?.engagementRate || ""}
+                          onChange={(e) => updateMetric(creator.id, "engagementRate", e.target.value)}
                           className="h-8 text-sm w-16"
                         />
                       ) : (
@@ -197,8 +288,8 @@ const RosterTable = ({ creators, onUpdate }: RosterTableProps) => {
                     <TableCell>
                       {isEditing ? (
                         <Input
-                          value={editForm.metrics?.storyViews || ""}
-                          onChange={(e) => updateMetric("storyViews", e.target.value)}
+                          value={form.metrics?.storyViews || ""}
+                          onChange={(e) => updateMetric(creator.id, "storyViews", e.target.value)}
                           className="h-8 text-sm w-20"
                         />
                       ) : (
@@ -212,8 +303,8 @@ const RosterTable = ({ creators, onUpdate }: RosterTableProps) => {
                     <TableCell>
                       {isEditing ? (
                         <Input
-                          value={editForm.metrics?.monthlyImpressions || ""}
-                          onChange={(e) => updateMetric("monthlyImpressions", e.target.value)}
+                          value={form.metrics?.monthlyImpressions || ""}
+                          onChange={(e) => updateMetric(creator.id, "monthlyImpressions", e.target.value)}
                           className="h-8 text-sm w-24"
                         />
                       ) : (
@@ -255,10 +346,10 @@ const RosterTable = ({ creators, onUpdate }: RosterTableProps) => {
                       <div className="flex items-center gap-1">
                         {isEditing ? (
                           <>
-                            <Button size="sm" variant="ghost" onClick={saveEditing}>
+                            <Button size="sm" variant="ghost" onClick={() => saveEditing(creator.id)}>
                               <Save className="w-4 h-4" />
                             </Button>
-                            <Button size="sm" variant="ghost" onClick={cancelEditing}>
+                            <Button size="sm" variant="ghost" onClick={() => cancelEditing(creator.id)}>
                               <X className="w-4 h-4" />
                             </Button>
                           </>
