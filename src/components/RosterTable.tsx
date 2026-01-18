@@ -473,16 +473,6 @@ const RosterTable = ({ creators, onUpdate }: RosterTableProps) => {
             </TableBody>
           </Table>
         </div>
-        
-        {/* Bottom horizontal scrollbar */}
-        <div 
-          ref={bottomScrollbarRef}
-          className="overflow-x-scroll overflow-y-hidden bg-muted flex-shrink-0 visible-scrollbar"
-          style={{ height: 14 }}
-          onScroll={handleBottomScrollbarScroll}
-        >
-          <div style={{ width: tableWidth, height: 1 }} />
-        </div>
       </div>
 
       {/* Detail View Modal */}
