@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Pencil, Save, X, ExternalLink, Edit3, XCircle, Maximize2, Minimize2 } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Pencil, Save, X, ExternalLink, Edit3, XCircle, Maximize2, Minimize2, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,11 +31,17 @@ const RosterTable = ({ creators, onUpdate }: RosterTableProps) => {
   const [viewingCreator, setViewingCreator] = useState<Creator | null>(null);
   const [isEditAll, setIsEditAll] = useState(false);
   const [tableHeight, setTableHeight] = useState<"normal" | "expanded" | "fullscreen">("normal");
+  
+  // Refs for synchronized scrolling
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const scrollbarRef = useRef<HTMLDivElement>(null);
+  const [tableWidth, setTableWidth] = useState(0);
+  const [showScrollHint, setShowScrollHint] = useState(true);
 
-  const heightClasses = {
-    normal: "max-h-[500px]",
-    expanded: "max-h-[700px]",
-    fullscreen: "max-h-[calc(100vh-200px)]",
+  const heightValues = {
+    normal: 500,
+    expanded: 700,
+    fullscreen: window.innerHeight - 250,
   };
 
   const startEditing = (creator: Creator) => {
@@ -110,6 +116,32 @@ const RosterTable = ({ creators, onUpdate }: RosterTableProps) => {
     }));
   };
 
+  // Measure table width for scrollbar sync
+  useEffect(() => {
+    if (tableContainerRef.current) {
+      const table = tableContainerRef.current.querySelector('table');
+      if (table) {
+        setTableWidth(table.scrollWidth);
+      }
+    }
+  }, [creators]);
+
+  // Sync horizontal scroll between table and bottom scrollbar
+  const handleTableScroll = () => {
+    if (tableContainerRef.current && scrollbarRef.current) {
+      scrollbarRef.current.scrollLeft = tableContainerRef.current.scrollLeft;
+      if (tableContainerRef.current.scrollLeft > 0) {
+        setShowScrollHint(false);
+      }
+    }
+  };
+
+  const handleScrollbarScroll = () => {
+    if (tableContainerRef.current && scrollbarRef.current) {
+      tableContainerRef.current.scrollLeft = scrollbarRef.current.scrollLeft;
+    }
+  };
+
   const cycleTableHeight = () => {
     setTableHeight(prev => {
       if (prev === "normal") return "expanded";
@@ -151,10 +183,21 @@ const RosterTable = ({ creators, onUpdate }: RosterTableProps) => {
         </Button>
       </div>
 
-      <div className={`rounded-lg border border-border overflow-hidden relative ${heightClasses[tableHeight]}`}>
-        {/* Right fade indicator for more columns */}
-        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background/80 to-transparent pointer-events-none z-20" />
-        <div className="overflow-x-scroll overflow-y-auto h-full scrollbar-always-visible">
+      <div className="rounded-lg border border-border overflow-hidden relative flex flex-col" style={{ height: heightValues[tableHeight] }}>
+        {/* Right scroll indicator */}
+        {showScrollHint && (
+          <div className="absolute right-0 top-1/2 -translate-y-1/2 z-30 bg-accent/90 text-accent-foreground px-2 py-1 rounded-l-lg flex items-center gap-1 text-xs font-medium shadow-lg">
+            <span>Scroll</span>
+            <ChevronRight className="w-3 h-3" />
+          </div>
+        )}
+        
+        {/* Table container - vertical scroll, hidden horizontal scrollbar (synced below) */}
+        <div 
+          ref={tableContainerRef}
+          className="flex-1 overflow-x-auto overflow-y-auto hide-horizontal-scrollbar"
+          onScroll={handleTableScroll}
+        >
           <Table>
             <TableHeader className="sticky top-0 z-30">
               <TableRow className="bg-muted">
@@ -378,6 +421,15 @@ const RosterTable = ({ creators, onUpdate }: RosterTableProps) => {
               })}
             </TableBody>
           </Table>
+        </div>
+        
+        {/* Always visible horizontal scrollbar at bottom */}
+        <div 
+          ref={scrollbarRef}
+          className="h-4 overflow-x-auto overflow-y-hidden bg-muted/50 border-t border-border flex-shrink-0"
+          onScroll={handleScrollbarScroll}
+        >
+          <div style={{ width: tableWidth, height: 1 }} />
         </div>
       </div>
 
