@@ -61,8 +61,10 @@ const RosterTable = ({ creators, onUpdate }: RosterTableProps) => {
 
   return (
     <>
-      <div className="rounded-lg border border-border overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="rounded-lg border border-border overflow-hidden relative">
+        {/* Right fade indicator for more columns */}
+        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background/80 to-transparent pointer-events-none z-20" />
+        <div className="overflow-x-auto scrollbar-always-visible" style={{ scrollbarGutter: 'stable' }}>
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">

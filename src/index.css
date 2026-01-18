@@ -126,4 +126,27 @@
   .section-padding {
     @apply py-20 md:py-28 lg:py-32;
   }
+  
+  /* Always visible scrollbar for tables */
+  .scrollbar-always-visible {
+    overflow-x: scroll;
+  }
+  
+  .scrollbar-always-visible::-webkit-scrollbar {
+    height: 12px;
+  }
+  
+  .scrollbar-always-visible::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+    border-radius: 6px;
+  }
+  
+  .scrollbar-always-visible::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 6px;
+  }
+  
+  .scrollbar-always-visible::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
 }
