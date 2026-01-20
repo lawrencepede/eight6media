@@ -19,7 +19,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        serif: ['Cormorant Garamond', 'Georgia', 'serif'],
+        display: ['Anton', 'sans-serif'],
+        script: ['Caveat', 'cursive'],
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
       colors: {
@@ -61,6 +62,8 @@ export default {
         "light-brown": "hsl(var(--light-brown))",
         chartreuse: "hsl(var(--chartreuse))",
         "soft-tan": "hsl(var(--soft-tan))",
+        olive: "hsl(var(--olive))",
+        "olive-dark": "hsl(var(--olive-dark))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",

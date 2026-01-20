@@ -1,101 +1,103 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Caveat:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Eight-Six Media Design System - Warm, organic palette with chartreuse accent */
+/* Eight-Six Media Design System - Bold, editorial black/white with olive accent */
 
 @layer base {
   :root {
-    /* Warm, organic palette */
-    --background: 30 20% 98%;
-    --foreground: 25 25% 15%;
+    /* High contrast black and white palette */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
     
-    --card: 30 15% 96%;
-    --card-foreground: 25 25% 15%;
+    --card: 0 0% 98%;
+    --card-foreground: 0 0% 0%;
     
-    --popover: 30 20% 98%;
-    --popover-foreground: 25 25% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 0%;
     
-    /* Warm brown primary */
-    --primary: 25 30% 25%;
-    --primary-foreground: 30 20% 98%;
+    /* Black primary */
+    --primary: 0 0% 0%;
+    --primary-foreground: 0 0% 100%;
     
-    /* Warm secondary */
-    --secondary: 35 20% 90%;
-    --secondary-foreground: 25 25% 20%;
+    /* Light gray secondary */
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 0%;
     
-    --muted: 30 15% 92%;
-    --muted-foreground: 25 15% 45%;
+    --muted: 0 0% 94%;
+    --muted-foreground: 0 0% 40%;
     
-    /* Chartreuse accent - the splash of color */
-    --accent: 75 70% 45%;
-    --accent-foreground: 25 25% 10%;
+    /* Olive/Gold accent - #B8AD22 converted to HSL */
+    --accent: 55 70% 43%;
+    --accent-foreground: 0 0% 0%;
+    
+    /* Secondary olive - #918031 converted to HSL */
+    --accent-dark: 48 48% 38%;
     
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     
-    --border: 30 15% 85%;
-    --input: 30 15% 85%;
-    --ring: 75 70% 45%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 55 70% 43%;
     
-    --radius: 0.75rem;
+    --radius: 0rem;
     
     /* Custom brand colors */
-    --cream: 35 30% 95%;
-    --warm-brown: 25 30% 25%;
-    --light-brown: 30 20% 40%;
-    --chartreuse: 75 70% 45%;
-    --soft-tan: 35 25% 88%;
+    --olive: 55 70% 43%;
+    --olive-dark: 48 48% 38%;
     
     --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-foreground: 0 0% 20%;
+    --sidebar-primary: 0 0% 0%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 96%;
+    --sidebar-accent-foreground: 0 0% 0%;
+    --sidebar-border: 0 0% 90%;
+    --sidebar-ring: 55 70% 43%;
   }
 
   .dark {
-    --background: 25 20% 8%;
-    --foreground: 30 15% 95%;
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
     
-    --card: 25 18% 12%;
-    --card-foreground: 30 15% 95%;
+    --card: 0 0% 5%;
+    --card-foreground: 0 0% 100%;
     
-    --popover: 25 20% 8%;
-    --popover-foreground: 30 15% 95%;
+    --popover: 0 0% 0%;
+    --popover-foreground: 0 0% 100%;
     
-    --primary: 75 70% 50%;
-    --primary-foreground: 25 25% 10%;
+    --primary: 0 0% 100%;
+    --primary-foreground: 0 0% 0%;
     
-    --secondary: 25 15% 18%;
-    --secondary-foreground: 30 15% 90%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 100%;
     
-    --muted: 25 15% 20%;
-    --muted-foreground: 30 10% 60%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 60%;
     
-    --accent: 75 70% 45%;
-    --accent-foreground: 25 25% 10%;
+    --accent: 55 70% 43%;
+    --accent-foreground: 0 0% 0%;
+    
+    --accent-dark: 48 48% 38%;
     
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     
-    --border: 25 15% 20%;
-    --input: 25 15% 20%;
-    --ring: 75 70% 50%;
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 55 70% 43%;
     
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 0 0% 5%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 55 70% 43%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: 0 0% 15%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 20%;
+    --sidebar-ring: 55 70% 43%;
   }
 }
 
@@ -105,18 +107,28 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Caveat', cursive;
   }
   
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-family: 'Anton', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
   }
 }
 
 /* Custom utilities */
 @layer utilities {
-  .font-serif {
-    font-family: 'Cormorant Garamond', Georgia, serif;
+  .font-display {
+    font-family: 'Anton', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+  
+  .font-script {
+    font-family: 'Caveat', cursive;
+    text-transform: none;
+    letter-spacing: 0;
   }
   
   .font-sans {
