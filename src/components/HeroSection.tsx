@@ -18,7 +18,7 @@ const HeroSection = () => {
         <div className="max-w-5xl mx-auto">
           {/* Main headline - Bold Anton uppercase */}
           <h1 className="font-display text-6xl md:text-8xl lg:text-[10rem] font-bold text-primary leading-[0.9] mb-8 opacity-0 animate-fade-in" style={{ animationDelay: "0.2s" }}>
-            REAL LIFE
+            RAW
             <br />
             <span className="text-accent">CREATORS.</span>
           </h1>
