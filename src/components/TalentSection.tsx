@@ -8,11 +8,11 @@ const TalentSection = () => {
   return (
     <section id="talent" className="section-padding bg-background">
       <div className="container mx-auto px-6">
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="font-serif text-3xl md:text-5xl font-bold text-primary mb-4">
-            Our <span className="italic text-accent">Talent</span>
+        <div className="max-w-2xl mb-16">
+          <h2 className="font-display text-4xl md:text-6xl lg:text-7xl text-primary mb-4">
+            OUR <span className="text-accent">TALENT</span>
           </h2>
-          <p className="text-muted-foreground text-lg">
+          <p className="font-script text-2xl md:text-3xl text-muted-foreground">
             A selective network of creators who deliver authentic value and measurable results.
           </p>
         </div>
@@ -22,7 +22,7 @@ const TalentSection = () => {
           {creators.slice(0, 3).map((creator, index) => (
             <div
               key={index}
-              className="group bg-card rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300"
+              className="group bg-card overflow-hidden border border-border hover:border-accent transition-all duration-300"
             >
               {/* Image */}
               <div className="aspect-[4/5] overflow-hidden">
@@ -35,29 +35,29 @@ const TalentSection = () => {
 
               {/* Content */}
               <div className="p-6">
-                <h3 className="font-serif text-xl font-semibold text-primary">
+                <h3 className="font-display text-xl text-primary">
                   <a
                     href={`https://instagram.com/${creator.instagramHandle.replace('@', '')}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="hover:text-accent transition-colors"
                   >
-                    {creator.name}
+                    {creator.name.toUpperCase()}
                   </a>
                 </h3>
                 <a
                   href={`https://instagram.com/${creator.instagramHandle.replace('@', '')}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-accent text-sm font-medium block hover:underline"
+                  className="text-accent font-script text-xl block hover:underline"
                 >
                   {creator.instagramHandle}
                 </a>
-                <p className="text-muted-foreground text-sm mb-4">
+                <p className="font-script text-xl text-muted-foreground mb-4">
                   {creator.tagline}
                 </p>
                 
-                <div className="space-y-2 text-sm text-muted-foreground mb-4">
+                <div className="space-y-1 font-sans text-sm text-muted-foreground mb-4">
                   <p>{creator.followers}, {creator.impressions}</p>
                   <p>{creator.audience}</p>
                 </div>
@@ -74,9 +74,9 @@ const TalentSection = () => {
 
         {/* View Full Roster CTA */}
         <div className="text-center mb-16">
-          <Button variant="outline" className="group" asChild>
+          <Button variant="outline" className="group rounded-none font-display tracking-wide border-2" asChild>
             <Link to="/roster">
-              View Full Roster
+              VIEW FULL ROSTER
               <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
           </Button>
@@ -84,17 +84,17 @@ const TalentSection = () => {
 
         {/* Verticals */}
         <div className="max-w-4xl mx-auto">
-          <h3 className="font-serif text-2xl font-semibold text-primary text-center mb-8">
-            Our Verticals
+          <h3 className="font-display text-2xl text-primary text-center mb-8">
+            OUR VERTICALS
           </h3>
           <div className="flex flex-wrap justify-center gap-4">
             {verticals.map((vertical, index) => (
               <div
                 key={index}
-                className="flex items-center gap-2 bg-accent/10 px-4 py-2 rounded-full"
+                className="flex items-center gap-2 border-2 border-accent px-4 py-2"
               >
-                <span className="text-accent">✓</span>
-                <span className="text-foreground font-medium">{vertical}</span>
+                <span className="text-accent font-display">✓</span>
+                <span className="font-script text-xl text-foreground">{vertical}</span>
               </div>
             ))}
           </div>

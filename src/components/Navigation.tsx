@@ -21,18 +21,18 @@ const Navigation = () => {
   };
 
   const navLinks = [
-    { to: "/work", label: "Work" },
-    { to: "/roster", label: "Talent" },
-    { to: "/for-brands", label: "For Brands" },
-    { to: "/for-creators", label: "For Creators" },
-    { to: "/about", label: "About" },
+    { to: "/work", label: "WORK" },
+    { to: "/roster", label: "TALENT" },
+    { to: "/for-brands", label: "FOR BRANDS" },
+    { to: "/for-creators", label: "FOR CREATORS" },
+    { to: "/about", label: "ABOUT" },
   ];
 
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled
-          ? "bg-background/95 backdrop-blur-md shadow-sm"
+          ? "bg-background/95 backdrop-blur-md border-b border-border"
           : "bg-transparent"
       }`}
     >
@@ -41,10 +41,10 @@ const Navigation = () => {
           {/* Logo */}
           <Link
             to="/"
-            className="font-serif text-2xl font-bold tracking-tight"
+            className="font-display text-2xl tracking-tight"
           >
-            <span className="text-primary">Eight</span>
-            <span className="text-accent">-Six</span>
+            <span className="text-primary">EIGHT</span>
+            <span className="text-accent">-SIX</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -53,10 +53,10 @@ const Navigation = () => {
               <Link
                 key={link.to}
                 to={link.to}
-                className={`text-sm font-medium transition-colors ${
+                className={`font-display text-sm tracking-wide transition-colors ${
                   location.pathname === link.to
-                    ? "text-primary"
-                    : "text-muted-foreground hover:text-primary"
+                    ? "text-accent"
+                    : "text-primary hover:text-accent"
                 }`}
               >
                 {link.label}
@@ -64,9 +64,9 @@ const Navigation = () => {
             ))}
             <Button
               asChild
-              className="bg-accent text-accent-foreground hover:bg-accent/90 font-medium"
+              className="bg-accent text-accent-foreground hover:bg-accent/90 font-display tracking-wide rounded-none"
             >
-              <Link to="/for-brands">Get Started</Link>
+              <Link to="/for-brands">GET STARTED</Link>
             </Button>
           </div>
 
@@ -88,10 +88,10 @@ const Navigation = () => {
                   key={link.to}
                   to={link.to}
                   onClick={closeMobileMenu}
-                  className={`text-left text-sm font-medium transition-colors ${
+                  className={`font-display text-sm tracking-wide transition-colors ${
                     location.pathname === link.to
-                      ? "text-primary"
-                      : "text-muted-foreground hover:text-primary"
+                      ? "text-accent"
+                      : "text-primary hover:text-accent"
                   }`}
                 >
                   {link.label}
@@ -99,10 +99,10 @@ const Navigation = () => {
               ))}
               <Button
                 asChild
-                className="bg-accent text-accent-foreground hover:bg-accent/90 font-medium w-fit"
+                className="bg-accent text-accent-foreground hover:bg-accent/90 font-display tracking-wide w-fit rounded-none"
               >
                 <Link to="/for-brands" onClick={closeMobileMenu}>
-                  Get Started
+                  GET STARTED
                 </Link>
               </Button>
             </div>

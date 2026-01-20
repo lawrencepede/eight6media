@@ -10,64 +10,65 @@ const HeroSection = () => {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-soft-tan via-background to-secondary">
-      {/* Organic background shapes */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-20 right-10 w-72 h-72 bg-accent/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-20 left-10 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-accent/5 rounded-full blur-3xl" />
-      </div>
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-background">
+      {/* Minimal geometric accent */}
+      <div className="absolute top-0 right-0 w-1/3 h-full bg-accent/10" />
 
       <div className="container mx-auto px-6 relative z-10">
-        <div className="max-w-4xl mx-auto text-center">
-          {/* Main headline */}
-          <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl font-bold text-primary mb-6 opacity-0 animate-fade-in" style={{ animationDelay: "0.2s" }}>
-            Real life creators.
+        <div className="max-w-5xl mx-auto">
+          {/* Main headline - Bold Anton uppercase */}
+          <h1 className="font-display text-6xl md:text-8xl lg:text-[10rem] font-bold text-primary leading-[0.9] mb-8 opacity-0 animate-fade-in" style={{ animationDelay: "0.2s" }}>
+            REAL LIFE
             <br />
-            <span className="italic text-accent">Impact focus.</span>
+            <span className="text-accent">CREATORS.</span>
           </h1>
 
-          {/* Subheadline */}
-          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 opacity-0 animate-fade-in" style={{ animationDelay: "0.4s" }}>
-            We're a selective creator agency representing trusted creators who deliver measurable results for brands—from emerging to enterprise—and authentic value for their audiences.
+          {/* Script tagline */}
+          <p className="font-script text-3xl md:text-4xl lg:text-5xl text-muted-foreground mb-12 opacity-0 animate-fade-in" style={{ animationDelay: "0.4s" }}>
+            Impact focus, authentic stories.
           </p>
 
-          {/* Key stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12 opacity-0 animate-fade-in" style={{ animationDelay: "0.6s" }}>
-            <div className="text-center">
-              <div className="font-serif text-2xl md:text-3xl font-bold text-primary">Selective</div>
-              <div className="text-sm text-muted-foreground">Creator Network</div>
+          {/* Description */}
+          <p className="font-sans text-lg md:text-xl text-muted-foreground max-w-2xl mb-12 opacity-0 animate-fade-in" style={{ animationDelay: "0.5s" }}>
+            We're a selective creator agency representing trusted creators who deliver measurable results for brands—from emerging to enterprise.
+          </p>
+
+          {/* Key stats - clean, minimal */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-16 opacity-0 animate-fade-in" style={{ animationDelay: "0.6s" }}>
+            <div className="border-l-2 border-accent pl-4">
+              <div className="font-display text-3xl md:text-4xl text-primary">SELECTIVE</div>
+              <div className="font-script text-xl text-muted-foreground">Creator Network</div>
             </div>
-            <div className="text-center">
-              <div className="font-serif text-2xl md:text-3xl font-bold text-primary">3+ Month</div>
-              <div className="text-sm text-muted-foreground">Average Contracts</div>
+            <div className="border-l-2 border-accent pl-4">
+              <div className="font-display text-3xl md:text-4xl text-primary">3+ MONTH</div>
+              <div className="font-script text-xl text-muted-foreground">Average Contracts</div>
             </div>
-            <div className="text-center">
-              <div className="font-serif text-2xl md:text-3xl font-bold text-primary">$5-40K</div>
-              <div className="text-sm text-muted-foreground">Monthly Partnerships</div>
+            <div className="border-l-2 border-accent pl-4">
+              <div className="font-display text-3xl md:text-4xl text-primary">$5-40K</div>
+              <div className="font-script text-xl text-muted-foreground">Monthly Partnerships</div>
             </div>
-            <div className="text-center">
-              <div className="font-serif text-2xl md:text-3xl font-bold text-primary">Win-Win</div>
-              <div className="text-sm text-muted-foreground">Performance Focus</div>
+            <div className="border-l-2 border-accent pl-4">
+              <div className="font-display text-3xl md:text-4xl text-primary">WIN-WIN</div>
+              <div className="font-script text-xl text-muted-foreground">Performance Focus</div>
             </div>
           </div>
 
           {/* Dual CTAs */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center opacity-0 animate-fade-in" style={{ animationDelay: "0.8s" }}>
+          <div className="flex flex-col sm:flex-row gap-4 opacity-0 animate-fade-in" style={{ animationDelay: "0.8s" }}>
             <Button
               size="lg"
               onClick={() => scrollToSection("brands")}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 text-base px-8 py-6"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 text-base px-10 py-6 rounded-none font-display tracking-wider"
             >
-              Partner with Eight-Six
+              PARTNER WITH US
             </Button>
             <Button
               size="lg"
               variant="outline"
               onClick={() => scrollToSection("creators")}
-              className="border-primary text-primary hover:bg-primary/5 text-base px-8 py-6"
+              className="border-2 border-primary text-primary hover:bg-accent hover:text-accent-foreground hover:border-accent text-base px-10 py-6 rounded-none font-display tracking-wider"
             >
-              Apply as Creator
+              APPLY AS CREATOR
             </Button>
           </div>
         </div>
@@ -78,7 +79,7 @@ const HeroSection = () => {
             onClick={() => scrollToSection("problem")}
             className="flex flex-col items-center gap-2 text-muted-foreground hover:text-accent transition-colors"
           >
-            <span className="text-sm">Scroll to explore</span>
+            <span className="font-script text-lg">scroll to explore</span>
             <ArrowDown className="w-5 h-5 animate-bounce" />
           </button>
         </div>
