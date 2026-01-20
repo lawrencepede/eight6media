@@ -3,21 +3,21 @@ import { Target, Users, Sparkles } from "lucide-react";
 const differentiators = [
   {
     icon: Target,
-    title: "Performance-Focused Results",
+    title: "PERFORMANCE-FOCUSED RESULTS",
     description:
       "We structure partnerships to deliver measurable impact aligned with your specific marketing objectives—from brand awareness to direct sales conversions.",
     highlight: "From brand awareness to direct sales",
   },
   {
     icon: Users,
-    title: "Selective Network of Creators",
+    title: "SELECTIVE NETWORK OF CREATORS",
     description:
       "We represent carefully vetted creators who align with our authenticity standards and have cultivated extremely loyal, engaged followings.",
     highlight: "Carefully vetted for authenticity",
   },
   {
     icon: Sparkles,
-    title: "Full-Service Partnerships",
+    title: "FULL-SERVICE PARTNERSHIPS",
     description:
       "Beyond matchmaking, we provide content strategy, psychological selling techniques, scripting, audience building, and end-to-end partnership execution oversight.",
     highlight: "End-to-end partnership support",
@@ -26,13 +26,13 @@ const differentiators = [
 
 const DifferentiatorsSection = () => {
   return (
-    <section className="section-padding bg-soft-tan">
+    <section className="py-24 md:py-32 bg-secondary">
       <div className="container mx-auto px-6">
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="font-serif text-3xl md:text-5xl font-bold text-primary mb-4">
-            Beyond the <span className="italic text-accent">Vanity Metrics</span>
+        <div className="max-w-2xl mb-16">
+          <h2 className="font-display text-4xl md:text-6xl text-primary mb-4">
+            BEYOND THE <span className="text-accent">VANITY METRICS</span>
           </h2>
-          <p className="text-muted-foreground text-lg">
+          <p className="font-script text-2xl text-muted-foreground">
             After managing creator marketing in-house and recognizing what was missing, we built an agency around three core differentiators.
           </p>
         </div>
@@ -41,18 +41,18 @@ const DifferentiatorsSection = () => {
           {differentiators.map((item, index) => (
             <div
               key={index}
-              className="bg-background rounded-2xl p-8 shadow-sm hover:shadow-md transition-shadow group"
+              className="bg-background border border-border p-8 hover:border-accent transition-colors group"
             >
-              <div className="w-14 h-14 bg-accent/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-accent/20 transition-colors">
-                <item.icon className="w-7 h-7 text-accent" />
+              <div className="w-14 h-14 border-2 border-accent flex items-center justify-center mb-6 group-hover:bg-accent transition-colors">
+                <item.icon className="w-7 h-7 text-accent group-hover:text-accent-foreground transition-colors" />
               </div>
-              <h3 className="font-serif text-xl font-semibold text-primary mb-3">
+              <h3 className="font-display text-xl text-primary mb-3">
                 {item.title}
               </h3>
-              <p className="text-muted-foreground mb-4 leading-relaxed">
+              <p className="font-script text-xl text-muted-foreground mb-4 leading-relaxed">
                 {item.description}
               </p>
-              <span className="text-sm font-medium text-accent">
+              <span className="font-script text-lg text-accent">
                 {item.highlight}
               </span>
             </div>

@@ -10,7 +10,7 @@ const HeroSection = () => {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-background">
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-background pt-24">
       {/* Minimal geometric accent */}
       <div className="absolute top-0 right-0 w-1/3 h-full bg-accent/10" />
 
@@ -36,25 +36,25 @@ const HeroSection = () => {
           {/* Key stats - clean, minimal */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-16 opacity-0 animate-fade-in" style={{ animationDelay: "0.6s" }}>
             <div className="border-l-2 border-accent pl-4">
-              <div className="font-display text-3xl md:text-4xl text-primary">SELECTIVE</div>
-              <div className="font-script text-xl text-muted-foreground">Creator Network</div>
+              <div className="font-display text-2xl md:text-3xl text-primary">SELECTIVE</div>
+              <div className="font-script text-lg md:text-xl text-muted-foreground">Creator Network</div>
             </div>
             <div className="border-l-2 border-accent pl-4">
-              <div className="font-display text-3xl md:text-4xl text-primary">3+ MONTH</div>
-              <div className="font-script text-xl text-muted-foreground">Average Contracts</div>
+              <div className="font-display text-2xl md:text-3xl text-primary">3+ MONTH</div>
+              <div className="font-script text-lg md:text-xl text-muted-foreground">Average Contracts</div>
             </div>
             <div className="border-l-2 border-accent pl-4">
-              <div className="font-display text-3xl md:text-4xl text-primary">$5-40K</div>
-              <div className="font-script text-xl text-muted-foreground">Monthly Partnerships</div>
+              <div className="font-display text-2xl md:text-3xl text-primary">$5-40K</div>
+              <div className="font-script text-lg md:text-xl text-muted-foreground">Monthly Partnerships</div>
             </div>
             <div className="border-l-2 border-accent pl-4">
-              <div className="font-display text-3xl md:text-4xl text-primary">WIN-WIN</div>
-              <div className="font-script text-xl text-muted-foreground">Performance Focus</div>
+              <div className="font-display text-2xl md:text-3xl text-primary">WIN-WIN</div>
+              <div className="font-script text-lg md:text-xl text-muted-foreground">Performance Focus</div>
             </div>
           </div>
 
           {/* Dual CTAs */}
-          <div className="flex flex-col sm:flex-row gap-4 opacity-0 animate-fade-in" style={{ animationDelay: "0.8s" }}>
+          <div className="flex flex-col sm:flex-row gap-4 mb-24 opacity-0 animate-fade-in" style={{ animationDelay: "0.8s" }}>
             <Button
               size="lg"
               onClick={() => scrollToSection("brands")}
