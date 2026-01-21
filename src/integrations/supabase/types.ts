@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      client_updates: {
+        Row: {
+          client_name: string | null
+          content: string | null
+          created_at: string
+          fetched_by: string | null
+          id: string
+          metadata: Json | null
+          received_at: string
+          sender: string | null
+          source: string
+          source_id: string | null
+          subject: string | null
+        }
+        Insert: {
+          client_name?: string | null
+          content?: string | null
+          created_at?: string
+          fetched_by?: string | null
+          id?: string
+          metadata?: Json | null
+          received_at?: string
+          sender?: string | null
+          source: string
+          source_id?: string | null
+          subject?: string | null
+        }
+        Update: {
+          client_name?: string | null
+          content?: string | null
+          created_at?: string
+          fetched_by?: string | null
+          id?: string
+          metadata?: Json | null
+          received_at?: string
+          sender?: string | null
+          source?: string
+          source_id?: string | null
+          subject?: string | null
+        }
+        Relationships: []
+      }
       creators: {
         Row: {
           bio: string | null
@@ -65,15 +107,99 @@ export type Database = {
         }
         Relationships: []
       }
+      gmail_tokens: {
+        Row: {
+          access_token: string
+          created_at: string
+          id: string
+          refresh_token: string
+          token_expires_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          id?: string
+          refresh_token: string
+          token_expires_at: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          id?: string
+          refresh_token?: string
+          token_expires_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      team_members: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "member"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -200,6 +326,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "member"],
+    },
   },
 } as const
