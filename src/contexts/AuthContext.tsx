@@ -34,10 +34,32 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
+
+        // Store Gmail tokens if available from Google OAuth
+        if (event === 'SIGNED_IN' && session?.provider_token && session?.provider_refresh_token) {
+          // Use setTimeout to avoid blocking the auth flow
+          setTimeout(async () => {
+            try {
+              const expiresAt = new Date(Date.now() + 3600 * 1000).toISOString(); // 1 hour from now
+              
+              await supabase.from('gmail_tokens').upsert({
+                user_id: session.user.id,
+                access_token: session.provider_token,
+                refresh_token: session.provider_refresh_token,
+                token_expires_at: expiresAt,
+              }, {
+                onConflict: 'user_id',
+              });
+              console.log('Gmail tokens stored successfully');
+            } catch (error) {
+              console.error('Failed to store Gmail tokens:', error);
+            }
+          }, 0);
+        }
       }
     );
 
