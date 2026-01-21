@@ -11,7 +11,7 @@ const ProblemSection = () => {
             {/* The Problem */}
             <div className="space-y-6">
               <h3 className="font-display text-2xl md:text-3xl text-accent">THE PROBLEM</h3>
-              <p className="font-script text-2xl md:text-3xl text-primary-foreground/90 leading-relaxed">
+              <p className="font-sans text-lg md:text-xl text-primary-foreground/90 leading-relaxed">
                 Most creator marketing delivers awareness but little to no measurable impact. One-off partnerships feel inauthentic and produce inconsistent results.
               </p>
             </div>
@@ -19,7 +19,7 @@ const ProblemSection = () => {
             {/* The Solution */}
             <div className="space-y-6">
               <h3 className="font-display text-2xl md:text-3xl text-accent">OUR SOLUTION</h3>
-              <p className="font-script text-2xl md:text-3xl text-primary-foreground/90 leading-relaxed">
+              <p className="font-sans text-lg md:text-xl text-primary-foreground/90 leading-relaxed">
                 Eight-Six Media delivers bottom-line impact through selective, long-term creator partnerships built on authenticity and proven performance.
               </p>
             </div>
