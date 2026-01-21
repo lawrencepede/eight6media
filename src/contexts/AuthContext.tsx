@@ -7,6 +7,7 @@ interface AuthContextType {
   session: Session | null;
   isLoading: boolean;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
+  connectGmail: () => Promise<{ error: Error | null }>;
   signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUpWithEmail: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -80,6 +81,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       provider: "google",
       options: {
         redirectTo: redirectUrl,
+        scopes: "openid email profile",
+      },
+    });
+    
+    return { error: error ? new Error(error.message) : null };
+  };
+
+  const connectGmail = async () => {
+    const redirectUrl = `${window.location.origin}/dashboard`;
+    
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: redirectUrl,
         queryParams: {
           access_type: "offline",
           prompt: "consent",
@@ -128,6 +143,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         session,
         isLoading,
         signInWithGoogle,
+        connectGmail,
         signInWithEmail,
         signUpWithEmail,
         signOut,
