@@ -32,7 +32,7 @@ const DifferentiatorsSection = () => {
           <h2 className="font-display text-4xl md:text-6xl text-primary mb-4">
             BEYOND THE <span className="text-accent">VANITY METRICS</span>
           </h2>
-          <p className="font-script text-2xl text-muted-foreground">
+          <p className="font-sans text-lg md:text-xl text-muted-foreground">
             After managing creator marketing in-house and recognizing what was missing, we built an agency around three core differentiators.
           </p>
         </div>
@@ -49,10 +49,10 @@ const DifferentiatorsSection = () => {
               <h3 className="font-display text-xl text-primary mb-3">
                 {item.title}
               </h3>
-              <p className="font-script text-xl text-muted-foreground mb-4 leading-relaxed">
+              <p className="font-sans text-base text-muted-foreground mb-4 leading-relaxed">
                 {item.description}
               </p>
-              <span className="font-script text-lg text-accent">
+              <span className="font-script text-lg text-accent italic">
                 {item.highlight}
               </span>
             </div>

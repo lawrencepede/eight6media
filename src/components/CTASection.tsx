@@ -15,7 +15,7 @@ const CTASection = () => {
               <h3 className="font-display text-2xl text-primary mb-4">
                 FOR BRANDS
               </h3>
-              <p className="font-script text-xl text-muted-foreground mb-6">
+              <p className="font-sans text-base text-muted-foreground mb-6">
                 Let's discuss how our authentic creators can deliver measurable results for your marketing objectives.
               </p>
               <Button
@@ -31,7 +31,7 @@ const CTASection = () => {
               <h3 className="font-display text-2xl text-primary mb-4">
                 FOR CREATORS
               </h3>
-              <p className="font-script text-xl text-muted-foreground mb-6">
+              <p className="font-sans text-base text-muted-foreground mb-6">
                 Apply to join our selective network and access premium, multi-month partnership opportunities.
               </p>
               <Button
