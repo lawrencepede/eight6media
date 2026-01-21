@@ -17,7 +17,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 
 const Dashboard = () => {
-  const { user, signOut, signInWithGoogle } = useAuth();
+  const { user, signOut, connectGmail } = useAuth();
   const { emails, isLoading: isGmailLoading, needsAuth, fetchEmails } = useGmail();
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -32,7 +32,7 @@ const Dashboard = () => {
   };
 
   const handleConnectGmail = async () => {
-    await signInWithGoogle();
+    await connectGmail();
   };
 
   // Fetch emails on mount if authenticated
