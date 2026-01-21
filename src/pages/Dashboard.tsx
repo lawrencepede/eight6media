@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useGmail } from "@/hooks/useGmail";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
@@ -13,20 +14,33 @@ import {
   User,
   Clock
 } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 
 const Dashboard = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, signInWithGoogle } = useAuth();
+  const { emails, isLoading: isGmailLoading, needsAuth, fetchEmails } = useGmail();
   const [isSyncing, setIsSyncing] = useState(false);
 
   const handleSync = async () => {
     setIsSyncing(true);
-    // TODO: Implement sync logic
-    setTimeout(() => setIsSyncing(false), 2000);
+    await fetchEmails();
+    setIsSyncing(false);
   };
 
   const handleSignOut = async () => {
     await signOut();
   };
+
+  const handleConnectGmail = async () => {
+    await signInWithGoogle();
+  };
+
+  // Fetch emails on mount if authenticated
+  useEffect(() => {
+    if (user && !needsAuth) {
+      fetchEmails();
+    }
+  }, [user]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -60,14 +74,14 @@ const Dashboard = () => {
             <h2 className="font-serif text-2xl font-bold text-primary">Client Updates</h2>
             <p className="text-muted-foreground">Latest communications from all channels</p>
           </div>
-          <Button onClick={handleSync} disabled={isSyncing} className="gap-2">
-            <RefreshCw className={`w-4 h-4 ${isSyncing ? "animate-spin" : ""}`} />
-            {isSyncing ? "Syncing..." : "Sync All Channels"}
+          <Button onClick={handleSync} disabled={isSyncing || isGmailLoading} className="gap-2">
+            <RefreshCw className={`w-4 h-4 ${isSyncing || isGmailLoading ? "animate-spin" : ""}`} />
+            {isSyncing || isGmailLoading ? "Syncing..." : "Sync All Channels"}
           </Button>
         </div>
 
         {/* Channel Tabs */}
-        <Tabs defaultValue="all" className="w-full">
+        <Tabs defaultValue="gmail" className="w-full">
           <TabsList className="mb-6">
             <TabsTrigger value="all" className="gap-2">
               <Clock className="w-4 h-4" />
@@ -88,23 +102,26 @@ const Dashboard = () => {
           </TabsList>
 
           <TabsContent value="all">
-            <EmptyState 
-              icon={<Clock className="w-12 h-12" />}
-              title="No updates yet"
-              description="Click 'Sync All Channels' to fetch the latest updates from Slack and Asana."
-            />
+            {emails.length > 0 ? (
+              <div className="space-y-3">
+                {emails.map((email) => (
+                  <EmailCard key={email.id} email={email} />
+                ))}
+              </div>
+            ) : (
+              <EmptyState 
+                icon={<Clock className="w-12 h-12" />}
+                title="No updates yet"
+                description="Click 'Sync All Channels' to fetch the latest updates."
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="slack">
             <EmptyState 
               icon={<MessageSquare className="w-12 h-12" />}
               title="Slack not connected"
-              description="Connect your Slack workspace to see channel messages."
-              action={
-                <Button variant="outline" className="mt-4">
-                  Connect Slack
-                </Button>
-              }
+              description="Slack integration coming soon."
             />
           </TabsContent>
 
@@ -112,28 +129,77 @@ const Dashboard = () => {
             <EmptyState 
               icon={<CheckSquare className="w-12 h-12" />}
               title="Asana not connected"
-              description="Connect your Asana workspace to see task updates."
-              action={
-                <Button variant="outline" className="mt-4">
-                  Connect Asana
-                </Button>
-              }
+              description="Asana integration coming soon."
             />
           </TabsContent>
 
           <TabsContent value="gmail">
-            <EmptyState 
-              icon={<Mail className="w-12 h-12" />}
-              title="Gmail access needed"
-              description="Sign in with Google to access your Gmail inbox. Each team member connects their own account."
-              action={
-                <Button variant="outline" className="mt-4">
-                  Connect Gmail
-                </Button>
-              }
-            />
+            {needsAuth ? (
+              <EmptyState 
+                icon={<Mail className="w-12 h-12" />}
+                title="Gmail access needed"
+                description="Sign in with Google to access your Gmail inbox. Each team member connects their own account."
+                action={
+                  <Button onClick={handleConnectGmail} className="mt-4 gap-2">
+                    <Mail className="w-4 h-4" />
+                    Connect Gmail
+                  </Button>
+                }
+              />
+            ) : emails.length > 0 ? (
+              <div className="space-y-3">
+                {emails.map((email) => (
+                  <EmailCard key={email.id} email={email} />
+                ))}
+              </div>
+            ) : (
+              <EmptyState 
+                icon={<Mail className="w-12 h-12" />}
+                title="No emails yet"
+                description="Click 'Sync All Channels' to fetch your latest emails."
+              />
+            )}
           </TabsContent>
         </Tabs>
+      </div>
+    </div>
+  );
+};
+
+interface EmailCardProps {
+  email: {
+    id: string;
+    subject: string;
+    from: string;
+    date: string;
+    snippet: string;
+  };
+}
+
+const EmailCard = ({ email }: EmailCardProps) => {
+  const fromName = email.from.split('<')[0].trim() || email.from;
+  let timeAgo = '';
+  try {
+    timeAgo = formatDistanceToNow(new Date(email.date), { addSuffix: true });
+  } catch {
+    timeAgo = email.date;
+  }
+
+  return (
+    <div className="bg-card rounded-xl border border-border p-4 hover:border-primary/30 transition-colors">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+              <Mail className="w-3 h-3" />
+              Gmail
+            </span>
+            <span className="text-xs text-muted-foreground">{timeAgo}</span>
+          </div>
+          <h4 className="font-medium text-primary truncate">{email.subject}</h4>
+          <p className="text-sm text-muted-foreground">{fromName}</p>
+          <p className="text-sm text-foreground/70 mt-2 line-clamp-2">{email.snippet}</p>
+        </div>
       </div>
     </div>
   );
