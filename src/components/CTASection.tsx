@@ -31,9 +31,11 @@ const CTASection = () => {
 
             {/* For Creators */}
             <div className="bg-background border-2 border-primary p-8 text-left">
-              <h3 className="font-display text-2xl text-primary mb-4">
-                FOR CREATORS
-              </h3>
+              <Link to="/for-creators">
+                <h3 className="font-display text-2xl text-primary mb-4 hover:text-accent transition-colors">
+                  FOR CREATORS
+                </h3>
+              </Link>
               <p className="font-sans text-base text-muted-foreground mb-6">
                 Apply to join our selective network and access premium, multi-month partnership opportunities.
               </p>
