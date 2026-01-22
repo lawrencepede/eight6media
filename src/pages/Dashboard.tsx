@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGmail } from "@/hooks/useGmail";
+import { useSlack } from "@/hooks/useSlack";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
@@ -18,12 +19,13 @@ import { formatDistanceToNow } from "date-fns";
 
 const Dashboard = () => {
   const { user, signOut, connectGmail } = useAuth();
-  const { emails, isLoading: isGmailLoading, needsAuth, fetchEmails } = useGmail();
+  const { emails, isLoading: isGmailLoading, needsAuth: gmailNeedsAuth, fetchEmails } = useGmail();
+  const { messages: slackMessages, isLoading: isSlackLoading, needsAuth: slackNeedsAuth, fetchMessages: fetchSlack } = useSlack();
   const [isSyncing, setIsSyncing] = useState(false);
 
   const handleSync = async () => {
     setIsSyncing(true);
-    await fetchEmails();
+    await Promise.all([fetchEmails(), fetchSlack()]);
     setIsSyncing(false);
   };
 
@@ -35,10 +37,11 @@ const Dashboard = () => {
     await connectGmail();
   };
 
-  // Fetch emails on mount if authenticated
+  // Fetch data on mount if authenticated
   useEffect(() => {
-    if (user && !needsAuth) {
-      fetchEmails();
+    if (user) {
+      if (!gmailNeedsAuth) fetchEmails();
+      if (!slackNeedsAuth) fetchSlack();
     }
   }, [user]);
 
@@ -74,9 +77,9 @@ const Dashboard = () => {
             <h2 className="font-serif text-2xl font-bold text-primary">Talent Updates</h2>
             <p className="text-muted-foreground">Latest communications from all channels</p>
           </div>
-          <Button onClick={handleSync} disabled={isSyncing || isGmailLoading} className="gap-2">
-            <RefreshCw className={`w-4 h-4 ${isSyncing || isGmailLoading ? "animate-spin" : ""}`} />
-            {isSyncing || isGmailLoading ? "Syncing..." : "Sync All Channels"}
+          <Button onClick={handleSync} disabled={isSyncing || isGmailLoading || isSlackLoading} className="gap-2">
+            <RefreshCw className={`w-4 h-4 ${isSyncing || isGmailLoading || isSlackLoading ? "animate-spin" : ""}`} />
+            {isSyncing || isGmailLoading || isSlackLoading ? "Syncing..." : "Sync All Channels"}
           </Button>
         </div>
 
@@ -102,11 +105,19 @@ const Dashboard = () => {
           </TabsList>
 
           <TabsContent value="all">
-            {emails.length > 0 ? (
+            {(emails.length > 0 || slackMessages.length > 0) ? (
               <div className="space-y-3">
-                {emails.map((email) => (
-                  <EmailCard key={email.id} email={email} />
-                ))}
+                {/* Combine and sort all updates by date */}
+                {[
+                  ...emails.map(e => ({ ...e, type: 'email' as const, sortDate: new Date(e.date) })),
+                  ...slackMessages.map(m => ({ ...m, type: 'slack' as const, sortDate: new Date(m.date) }))
+                ]
+                  .sort((a, b) => b.sortDate.getTime() - a.sortDate.getTime())
+                  .map((item) => (
+                    item.type === 'email' 
+                      ? <EmailCard key={`email-${item.id}`} email={item as any} />
+                      : <SlackCard key={`slack-${item.id}`} message={item as any} />
+                  ))}
               </div>
             ) : (
               <EmptyState 
@@ -118,11 +129,25 @@ const Dashboard = () => {
           </TabsContent>
 
           <TabsContent value="slack">
-            <EmptyState 
-              icon={<MessageSquare className="w-12 h-12" />}
-              title="Slack not connected"
-              description="Slack integration coming soon."
-            />
+            {slackNeedsAuth ? (
+              <EmptyState 
+                icon={<MessageSquare className="w-12 h-12" />}
+                title="Slack not configured"
+                description="Slack Bot Token needs to be configured by an admin."
+              />
+            ) : slackMessages.length > 0 ? (
+              <div className="space-y-3">
+                {slackMessages.map((msg) => (
+                  <SlackCard key={msg.id} message={msg} />
+                ))}
+              </div>
+            ) : (
+              <EmptyState 
+                icon={<MessageSquare className="w-12 h-12" />}
+                title="No Slack messages yet"
+                description="Click 'Sync All Channels' to fetch messages from channels the bot is in."
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="asana">
@@ -134,7 +159,7 @@ const Dashboard = () => {
           </TabsContent>
 
           <TabsContent value="gmail">
-            {needsAuth ? (
+            {gmailNeedsAuth ? (
               <EmptyState 
                 icon={<Mail className="w-12 h-12" />}
                 title="Gmail access needed"
@@ -199,6 +224,44 @@ const EmailCard = ({ email }: EmailCardProps) => {
           <h4 className="font-medium text-primary truncate">{email.subject}</h4>
           <p className="text-sm text-muted-foreground">{fromName}</p>
           <p className="text-sm text-foreground/70 mt-2 line-clamp-2">{email.snippet}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+interface SlackCardProps {
+  message: {
+    id: string;
+    channel: string;
+    sender: string;
+    content: string;
+    date: string;
+  };
+}
+
+const SlackCard = ({ message }: SlackCardProps) => {
+  let timeAgo = '';
+  try {
+    timeAgo = formatDistanceToNow(new Date(message.date), { addSuffix: true });
+  } catch {
+    timeAgo = message.date;
+  }
+
+  return (
+    <div className="bg-card rounded-xl border border-border p-4 hover:border-primary/30 transition-colors">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-accent-foreground bg-accent px-2 py-0.5 rounded-full">
+              <MessageSquare className="w-3 h-3" />
+              Slack
+            </span>
+            <span className="text-xs text-muted-foreground">{timeAgo}</span>
+          </div>
+          <h4 className="font-medium text-primary truncate">{message.channel}</h4>
+          <p className="text-sm text-muted-foreground">{message.sender}</p>
+          <p className="text-sm text-foreground/70 mt-2 line-clamp-2">{message.content}</p>
         </div>
       </div>
     </div>
