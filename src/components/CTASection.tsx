@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const CTASection = () => {
   return (
@@ -12,9 +13,11 @@ const CTASection = () => {
           <div className="grid sm:grid-cols-2 gap-8 max-w-2xl mx-auto">
             {/* For Brands */}
             <div className="bg-background border-2 border-primary p-8 text-left">
-              <h3 className="font-display text-2xl text-primary mb-4">
-                FOR BRANDS
-              </h3>
+              <Link to="/for-brands">
+                <h3 className="font-display text-2xl text-primary mb-4 hover:text-accent transition-colors">
+                  FOR BRANDS
+                </h3>
+              </Link>
               <p className="font-sans text-base text-muted-foreground mb-6">
                 Let's discuss how our authentic creators can deliver measurable results for your marketing objectives.
               </p>
