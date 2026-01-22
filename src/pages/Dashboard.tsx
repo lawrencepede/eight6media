@@ -71,7 +71,7 @@ const Dashboard = () => {
         {/* Sync Button */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="font-serif text-2xl font-bold text-primary">Client Updates</h2>
+            <h2 className="font-serif text-2xl font-bold text-primary">Talent Updates</h2>
             <p className="text-muted-foreground">Latest communications from all channels</p>
           </div>
           <Button onClick={handleSync} disabled={isSyncing || isGmailLoading} className="gap-2">

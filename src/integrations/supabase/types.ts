@@ -14,48 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      client_updates: {
-        Row: {
-          client_name: string | null
-          content: string | null
-          created_at: string
-          fetched_by: string | null
-          id: string
-          metadata: Json | null
-          received_at: string
-          sender: string | null
-          source: string
-          source_id: string | null
-          subject: string | null
-        }
-        Insert: {
-          client_name?: string | null
-          content?: string | null
-          created_at?: string
-          fetched_by?: string | null
-          id?: string
-          metadata?: Json | null
-          received_at?: string
-          sender?: string | null
-          source: string
-          source_id?: string | null
-          subject?: string | null
-        }
-        Update: {
-          client_name?: string | null
-          content?: string | null
-          created_at?: string
-          fetched_by?: string | null
-          id?: string
-          metadata?: Json | null
-          received_at?: string
-          sender?: string | null
-          source?: string
-          source_id?: string | null
-          subject?: string | null
-        }
-        Relationships: []
-      }
       creators: {
         Row: {
           bio: string | null
@@ -134,6 +92,48 @@ export type Database = {
           token_expires_at?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      talent_updates: {
+        Row: {
+          content: string | null
+          created_at: string
+          fetched_by: string | null
+          id: string
+          metadata: Json | null
+          received_at: string
+          sender: string | null
+          source: string
+          source_id: string | null
+          subject: string | null
+          talent_name: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          fetched_by?: string | null
+          id?: string
+          metadata?: Json | null
+          received_at?: string
+          sender?: string | null
+          source: string
+          source_id?: string | null
+          subject?: string | null
+          talent_name?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          fetched_by?: string | null
+          id?: string
+          metadata?: Json | null
+          received_at?: string
+          sender?: string | null
+          source?: string
+          source_id?: string | null
+          subject?: string | null
+          talent_name?: string | null
         }
         Relationships: []
       }

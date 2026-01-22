@@ -180,10 +180,10 @@ serve(async (req) => {
       }
     }
 
-    // Save to client_updates table
+    // Save to talent_updates table
     for (const email of emails) {
       const { error: insertError } = await supabaseAdmin
-        .from('client_updates')
+        .from('talent_updates')
         .upsert({
           source: 'gmail',
           source_id: email.id,
