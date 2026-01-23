@@ -152,6 +152,21 @@ serve(async (req) => {
     
     console.log(`Found ${messageIds.length} messages`)
 
+    // Helper function to decode HTML entities
+    const decodeHtmlEntities = (text: string): string => {
+      if (!text) return text;
+      return text
+        .replace(/&#39;/g, "'")
+        .replace(/&#34;/g, '"')
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&nbsp;/g, " ")
+        .replace(/&#x27;/g, "'")
+        .replace(/&#x2F;/g, "/");
+    };
+
     // Fetch details for each message
     const emails = []
     for (const msg of messageIds.slice(0, 10)) { // Limit to 10 for performance
@@ -172,10 +187,10 @@ serve(async (req) => {
         emails.push({
           id: detail.id,
           threadId: detail.threadId,
-          subject: getHeader('Subject') || '(No subject)',
+          subject: decodeHtmlEntities(getHeader('Subject') || '(No subject)'),
           from: getHeader('From'),
           date: getHeader('Date'),
-          snippet: detail.snippet,
+          snippet: decodeHtmlEntities(detail.snippet),
         })
       }
     }
