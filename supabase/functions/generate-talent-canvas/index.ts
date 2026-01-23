@@ -286,29 +286,36 @@ Return ONLY valid JSON (no markdown): { "key_updates": ["..."], "next_steps": ["
       console.error("Canvas API error:", canvasError);
     }
 
-    // Step 7: Post notification message to the channel
+    // Step 7: Post notification message to the channel (optional - don't fail if this errors)
+    let messageSent = false;
     const notificationMessage = canvasId
       ? "📋 Your Deal Updates have been posted to your canvas."
       : `📋 *Deal Updates: ${talent_name}*\n\n${canvasContent}`;
 
-    const postResponse = await fetch(`${SLACK_API_URL}/chat.postMessage`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${slackBotToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        channel: targetChannel.id,
-        text: notificationMessage,
-        mrkdwn: true,
-      }),
-    });
+    try {
+      const postResponse = await fetch(`${SLACK_API_URL}/chat.postMessage`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${slackBotToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          channel: targetChannel.id,
+          text: notificationMessage,
+          mrkdwn: true,
+        }),
+      });
 
-    const postData = await postResponse.json();
-    console.log("Message post response:", postData);
-
-    if (!postData.ok) {
-      throw new Error(`Failed to post message: ${postData.error}`);
+      const postData = await postResponse.json();
+      console.log("Message post response:", postData);
+      
+      if (postData.ok) {
+        messageSent = true;
+      } else {
+        console.warn(`Could not post notification message: ${postData.error}. Needed scope: ${postData.needed || 'unknown'}`);
+      }
+    } catch (msgError) {
+      console.warn("Failed to post notification message:", msgError);
     }
 
     return new Response(
@@ -317,8 +324,11 @@ Return ONLY valid JSON (no markdown): { "key_updates": ["..."], "next_steps": ["
         talent_name,
         channel: `#${targetChannel.name}`,
         canvas_created: !!canvasId,
+        message_sent: messageSent,
         deals_count: dealSummaries.length,
-        message: `Successfully generated canvas for ${talent_name} in #${targetChannel.name}`,
+        message: canvasId 
+          ? `Successfully created canvas for ${talent_name} in #${targetChannel.name}${!messageSent ? ' (notification message skipped - missing chat:write scope)' : ''}`
+          : `Posted deal updates for ${talent_name} in #${targetChannel.name}`,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
