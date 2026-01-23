@@ -211,11 +211,12 @@ Return ONLY valid JSON (no markdown): { "key_updates": ["..."], "next_steps": ["
     console.log("Canvas content generated:\n", canvasContent);
 
     // Step 5: Find the talent's Slack channel
-    // Convert "DR. JAIME SEEMAN" to "dr-jaime-seeman" (remove periods and extra punctuation)
+    // Convert "DR. JAIME SEEMAN" to "drjaime-seeman" (join "Dr." directly to first name)
     const channelName = talent_name
       .toLowerCase()
       .replace(/[.]+/g, "") // Remove periods
-      .replace(/\s+/g, "-") // Replace spaces with hyphens
+      .replace(/^dr\s+/i, "dr") // Join "DR " directly to first name (no hyphen)
+      .replace(/\s+/g, "-") // Replace remaining spaces with hyphens
       .replace(/-+/g, "-") // Collapse multiple hyphens
       .replace(/^-|-$/g, ""); // Trim leading/trailing hyphens
     console.log(`Looking for Slack channel: #${channelName}`);
