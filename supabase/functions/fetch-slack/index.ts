@@ -96,53 +96,65 @@ Deno.serve(async (req) => {
     }
     console.log(`Built user map with ${Object.keys(userMap).length} users`);
 
-    // Step 3: Fetch recent messages from each channel
-    const allMessages: any[] = [];
-    const oneDayAgo = Math.floor((Date.now() - 24 * 60 * 60 * 1000) / 1000);
+  // Helper function to replace Slack user mentions with real names
+  const resolveUserMentions = (text: string): string => {
+    if (!text) return text;
+    return text.replace(/<@([A-Z0-9]+)>/g, (match, userId) => {
+      const userName = userMap[userId];
+      return userName ? `@${userName}` : match;
+    });
+  };
 
-    for (const channel of botChannels) {
-      console.log(`Fetching messages from #${channel.name}`);
-      
-      const historyResponse = await fetch(
-        `${SLACK_API_URL}/conversations.history?channel=${channel.id}&oldest=${oneDayAgo}&limit=50`,
-        { headers: { Authorization: `Bearer ${SLACK_BOT_TOKEN}` } }
-      );
-      const historyData = await historyResponse.json();
+  // Step 3: Fetch recent messages from each channel
+  const allMessages: any[] = [];
+  const oneDayAgo = Math.floor((Date.now() - 24 * 60 * 60 * 1000) / 1000);
 
-      if (!historyData.ok) {
-        console.error(`Failed to fetch history for ${channel.name}:`, historyData.error);
+  for (const channel of botChannels) {
+    console.log(`Fetching messages from #${channel.name}`);
+    
+    const historyResponse = await fetch(
+      `${SLACK_API_URL}/conversations.history?channel=${channel.id}&oldest=${oneDayAgo}&limit=50`,
+      { headers: { Authorization: `Bearer ${SLACK_BOT_TOKEN}` } }
+    );
+    const historyData = await historyResponse.json();
+
+    if (!historyData.ok) {
+      console.error(`Failed to fetch history for ${channel.name}:`, historyData.error);
+      continue;
+    }
+
+    const messages = historyData.messages || [];
+    console.log(`Found ${messages.length} messages in #${channel.name}`);
+
+    for (const msg of messages) {
+      // Skip bot messages and system messages
+      if (msg.subtype === "bot_message" || msg.subtype === "channel_join" || msg.subtype === "channel_leave") {
         continue;
       }
 
-      const messages = historyData.messages || [];
-      console.log(`Found ${messages.length} messages in #${channel.name}`);
+      const senderName = userMap[msg.user] || msg.user || "Unknown";
+      const timestamp = new Date(parseFloat(msg.ts) * 1000);
+      
+      // Resolve user mentions in message text
+      const resolvedContent = resolveUserMentions(msg.text || "");
 
-      for (const msg of messages) {
-        // Skip bot messages and system messages
-        if (msg.subtype === "bot_message" || msg.subtype === "channel_join" || msg.subtype === "channel_leave") {
-          continue;
-        }
-
-        const senderName = userMap[msg.user] || msg.user || "Unknown";
-        const timestamp = new Date(parseFloat(msg.ts) * 1000);
-
-        allMessages.push({
-          source: "slack",
-          source_id: `slack_${channel.id}_${msg.ts}`,
-          sender: senderName,
-          subject: `#${channel.name}`,
-          content: msg.text || "",
-          received_at: timestamp.toISOString(),
-          fetched_by: user.id,
-          metadata: {
-            channel_id: channel.id,
-            channel_name: channel.name,
-            user_id: msg.user,
-            thread_ts: msg.thread_ts,
-          },
-        });
-      }
+      allMessages.push({
+        source: "slack",
+        source_id: `slack_${channel.id}_${msg.ts}`,
+        sender: senderName,
+        subject: `#${channel.name}`,
+        content: resolvedContent,
+        received_at: timestamp.toISOString(),
+        fetched_by: user.id,
+        metadata: {
+          channel_id: channel.id,
+          channel_name: channel.name,
+          user_id: msg.user,
+          thread_ts: msg.thread_ts,
+        },
+      });
     }
+  }
 
     console.log(`Total messages to upsert: ${allMessages.length}`);
 
