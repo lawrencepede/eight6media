@@ -23,7 +23,10 @@ import {
   User,
   Clock,
   FileText,
-  Download
+  Download,
+  Send,
+  Eye,
+  X
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -31,7 +34,7 @@ const Dashboard = () => {
   const { user, signOut, connectGmail } = useAuth();
   const { emails, isLoading: isGmailLoading, needsAuth: gmailNeedsAuth, fetchEmails } = useGmail();
   const { messages: slackMessages, isLoading: isSlackLoading, needsAuth: slackNeedsAuth, fetchMessages: fetchSlack } = useSlack();
-  const { talents, isSyncing: isDealsSyncing, isGenerating, syncDeals, generateCanvas } = useTalentDeals();
+  const { talents, isSyncing: isDealsSyncing, isGenerating, isPublishing, preview, syncDeals, generatePreview, publishCanvas, clearPreview } = useTalentDeals();
   const [isSyncing, setIsSyncing] = useState(false);
   const [selectedTalent, setSelectedTalent] = useState<string>("");
 
@@ -49,9 +52,15 @@ const Dashboard = () => {
     await connectGmail();
   };
 
-  const handleGenerateCanvas = async () => {
+  const handleGeneratePreview = async () => {
     if (selectedTalent) {
-      await generateCanvas(selectedTalent);
+      await generatePreview(selectedTalent);
+    }
+  };
+
+  const handlePublish = async () => {
+    if (selectedTalent) {
+      await publishCanvas(selectedTalent);
     }
   };
 
@@ -125,14 +134,48 @@ const Dashboard = () => {
               </SelectContent>
             </Select>
             <Button 
-              onClick={handleGenerateCanvas} 
+              onClick={handleGeneratePreview} 
               disabled={!selectedTalent || isGenerating}
               className="gap-2"
             >
-              <FileText className={`w-4 h-4 ${isGenerating ? "animate-pulse" : ""}`} />
-              {isGenerating ? "Generating..." : "Generate Canvas"}
+              <Eye className={`w-4 h-4 ${isGenerating ? "animate-pulse" : ""}`} />
+              {isGenerating ? "Generating..." : "Preview Canvas"}
             </Button>
           </div>
+          
+          {/* Preview Section */}
+          {preview && (
+            <div className="mt-4 border border-border rounded-lg overflow-hidden">
+              <div className="bg-muted/50 p-3 flex items-center justify-between border-b border-border">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-primary" />
+                  <span className="font-medium text-sm">Preview for {preview.talent_name}</span>
+                  <span className="text-xs text-muted-foreground">({preview.deals_count} deals)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={handlePublish}
+                    disabled={isPublishing}
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <Send className={`w-4 h-4 ${isPublishing ? "animate-pulse" : ""}`} />
+                    {isPublishing ? "Publishing..." : "Publish to Slack"}
+                  </Button>
+                  <Button
+                    onClick={clearPreview}
+                    variant="ghost"
+                    size="sm"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+              <div className="p-4 bg-card max-h-96 overflow-y-auto">
+                <pre className="text-xs font-mono whitespace-pre-wrap text-foreground/80">{preview.canvas_content}</pre>
+              </div>
+            </div>
+          )}
           
           {talents.length === 0 && (
             <p className="text-sm text-muted-foreground mt-3">

@@ -11,12 +11,26 @@ interface Deal {
   synced_at: string;
 }
 
+interface CanvasPreview {
+  talent_name: string;
+  canvas_content: string;
+  deals_count: number;
+  deal_summaries: Array<{
+    brand: string;
+    status: string;
+    key_updates: string[];
+    next_steps: string[];
+  }>;
+}
+
 export function useTalentDeals() {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [talents, setTalents] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [preview, setPreview] = useState<CanvasPreview | null>(null);
   const { toast } = useToast();
 
   const fetchDeals = useCallback(async () => {
@@ -75,29 +89,32 @@ export function useTalentDeals() {
     }
   }, [toast, fetchDeals]);
 
-  const generateCanvas = useCallback(async (talentName: string) => {
+  const generatePreview = useCallback(async (talentName: string) => {
     setIsGenerating(true);
+    setPreview(null);
     try {
       const { data, error } = await supabase.functions.invoke("generate-talent-canvas", {
-        body: { talent_name: talentName },
+        body: { talent_name: talentName, preview_only: true },
       });
 
       if (error) throw error;
 
-      if (data.success) {
-        toast({
-          title: "Canvas Generated",
-          description: `Posted to ${data.channel}`,
+      if (data.success && data.preview) {
+        setPreview({
+          talent_name: data.talent_name,
+          canvas_content: data.canvas_content,
+          deals_count: data.deals_count,
+          deal_summaries: data.deal_summaries,
         });
         return data;
       } else {
-        throw new Error(data.error || "Generation failed");
+        throw new Error(data.error || "Preview generation failed");
       }
     } catch (error) {
-      console.error("Error generating canvas:", error);
+      console.error("Error generating preview:", error);
       toast({
-        title: "Generation Failed",
-        description: error instanceof Error ? error.message : "Failed to generate canvas",
+        title: "Preview Failed",
+        description: error instanceof Error ? error.message : "Failed to generate preview",
         variant: "destructive",
       });
       return null;
@@ -105,6 +122,42 @@ export function useTalentDeals() {
       setIsGenerating(false);
     }
   }, [toast]);
+
+  const publishCanvas = useCallback(async (talentName: string) => {
+    setIsPublishing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-talent-canvas", {
+        body: { talent_name: talentName, preview_only: false },
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast({
+          title: "Canvas Published",
+          description: `Posted to ${data.channel}`,
+        });
+        setPreview(null);
+        return data;
+      } else {
+        throw new Error(data.error || "Publish failed");
+      }
+    } catch (error) {
+      console.error("Error publishing canvas:", error);
+      toast({
+        title: "Publish Failed",
+        description: error instanceof Error ? error.message : "Failed to publish canvas",
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setIsPublishing(false);
+    }
+  }, [toast]);
+
+  const clearPreview = useCallback(() => {
+    setPreview(null);
+  }, []);
 
   const getDealsForTalent = useCallback((talentName: string) => {
     return deals.filter(d => d.talent_name === talentName);
@@ -120,9 +173,13 @@ export function useTalentDeals() {
     isLoading,
     isSyncing,
     isGenerating,
+    isPublishing,
+    preview,
     fetchDeals,
     syncDeals,
-    generateCanvas,
+    generatePreview,
+    publishCanvas,
+    clearPreview,
     getDealsForTalent,
   };
 }
