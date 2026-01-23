@@ -105,15 +105,16 @@ Deno.serve(async (req) => {
     });
   };
 
-  // Step 3: Fetch recent messages from each channel
+  // Step 3: Fetch messages back to December 1, 2025
   const allMessages: any[] = [];
-  const oneDayAgo = Math.floor((Date.now() - 24 * 60 * 60 * 1000) / 1000);
+  const historyCutoff = Math.floor(new Date('2025-12-01T00:00:00Z').getTime() / 1000);
 
   for (const channel of botChannels) {
     console.log(`Fetching messages from #${channel.name}`);
     
+    // Fetch up to 200 messages per channel going back to Dec 1, 2025
     const historyResponse = await fetch(
-      `${SLACK_API_URL}/conversations.history?channel=${channel.id}&oldest=${oneDayAgo}&limit=50`,
+      `${SLACK_API_URL}/conversations.history?channel=${channel.id}&oldest=${historyCutoff}&limit=200`,
       { headers: { Authorization: `Bearer ${SLACK_BOT_TOKEN}` } }
     );
     const historyData = await historyResponse.json();
