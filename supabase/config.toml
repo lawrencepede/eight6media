@@ -11,3 +11,9 @@ verify_jwt = false
 
 [functions.tag-updates]
 verify_jwt = false
+
+[functions.sync-deals]
+verify_jwt = false
+
+[functions.generate-talent-canvas]
+verify_jwt = false
