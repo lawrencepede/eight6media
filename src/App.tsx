@@ -16,7 +16,10 @@ import About from "./pages/About";
 import Admin from "./pages/Admin";
 import Pitch from "./pages/Pitch";
 import Auth from "./pages/Auth";
-import Dashboard from "./pages/Dashboard";
+import BackendConsole from "./pages/BackendConsole";
+import PartnershipUpdates from "./pages/PartnershipUpdates";
+import RosterManagement from "./pages/RosterManagement";
+import PitchGenerator from "./pages/PitchGenerator";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,10 +42,34 @@ const App = () => (
             <Route path="/about" element={<About />} />
             <Route path="/auth" element={<Auth />} />
             <Route 
-              path="/dashboard" 
+              path="/console" 
               element={
                 <ProtectedRoute>
-                  <Dashboard />
+                  <BackendConsole />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/console/partnership-updates" 
+              element={
+                <ProtectedRoute>
+                  <PartnershipUpdates />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/console/roster" 
+              element={
+                <ProtectedRoute>
+                  <RosterManagement />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/console/pitch-generator" 
+              element={
+                <ProtectedRoute>
+                  <PitchGenerator />
                 </ProtectedRoute>
               } 
             />
