@@ -16,12 +16,10 @@ import {
 import { CanvasPreviewTable } from "@/components/CanvasPreviewTable";
 import { 
   ArrowLeft, 
-  LogOut, 
   Mail, 
   MessageSquare, 
   CheckSquare, 
   RefreshCw,
-  User,
   Clock,
   FileText,
   Download,
@@ -31,8 +29,8 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
-const Dashboard = () => {
-  const { user, signOut, connectGmail } = useAuth();
+const PartnershipUpdates = () => {
+  const { user, connectGmail } = useAuth();
   const { emails, isLoading: isGmailLoading, needsAuth: gmailNeedsAuth, fetchEmails } = useGmail();
   const { messages: slackMessages, isLoading: isSlackLoading, needsAuth: slackNeedsAuth, fetchMessages: fetchSlack } = useSlack();
   const { talents, isSyncing: isDealsSyncing, isGenerating, isPublishing, preview, syncDeals, generatePreview, publishCanvas, updatePreviewSummaries, clearPreview } = useTalentDeals();
@@ -44,10 +42,6 @@ const Dashboard = () => {
     setIsSyncing(true);
     await Promise.all([fetchEmails(), fetchSlack()]);
     setIsSyncing(false);
-  };
-
-  const handleSignOut = async () => {
-    await signOut();
   };
 
   const handleConnectGmail = async () => {
@@ -88,21 +82,12 @@ const Dashboard = () => {
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
+            <Link to="/console" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors font-sans">
               <ArrowLeft className="w-4 h-4" />
-              <span>Back to Site</span>
+              <span>Back to Console</span>
             </Link>
-            <h1 className="font-serif text-xl font-bold text-primary">Team Dashboard</h1>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <User className="w-4 h-4" />
-                <span>{user?.email}</span>
-              </div>
-              <Button variant="ghost" size="sm" onClick={handleSignOut}>
-                <LogOut className="w-4 h-4 mr-2" />
-                Sign Out
-              </Button>
-            </div>
+            <h1 className="font-sans text-lg font-semibold text-primary">Partnership Updates</h1>
+            <div className="w-32" />
           </div>
         </div>
       </header>
@@ -112,18 +97,18 @@ const Dashboard = () => {
         <div className="bg-card rounded-xl border border-border p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="font-serif text-lg font-bold text-primary flex items-center gap-2">
+              <h3 className="font-sans text-lg font-semibold text-primary flex items-center gap-2">
                 <FileText className="w-5 h-5" />
                 Talent Canvases
               </h3>
-              <p className="text-sm text-muted-foreground">Generate deal summary canvases for Slack channels</p>
+              <p className="text-sm text-muted-foreground font-sans">Generate deal summary canvases for Slack channels</p>
             </div>
             <Button 
               variant="outline" 
               size="sm" 
               onClick={syncDeals} 
               disabled={isDealsSyncing}
-              className="gap-2"
+              className="gap-2 font-sans"
             >
               <Download className={`w-4 h-4 ${isDealsSyncing ? "animate-spin" : ""}`} />
               {isDealsSyncing ? "Syncing..." : "Sync Deals"}
@@ -132,12 +117,12 @@ const Dashboard = () => {
           
           <div className="flex items-center gap-3">
             <Select value={selectedTalent} onValueChange={setSelectedTalent}>
-              <SelectTrigger className="w-64">
+              <SelectTrigger className="w-64 font-sans">
                 <SelectValue placeholder="Select a talent..." />
               </SelectTrigger>
               <SelectContent>
                 {talents.map((talent) => (
-                  <SelectItem key={talent} value={talent}>
+                  <SelectItem key={talent} value={talent} className="font-sans">
                     {talent}
                   </SelectItem>
                 ))}
@@ -146,7 +131,7 @@ const Dashboard = () => {
             <Button 
               onClick={handleGeneratePreview} 
               disabled={!selectedTalent || isGenerating}
-              className="gap-2"
+              className="gap-2 font-script"
             >
               <Eye className={`w-4 h-4 ${isGenerating ? "animate-pulse" : ""}`} />
               {isGenerating ? "Generating..." : "Preview Canvas"}
@@ -159,15 +144,15 @@ const Dashboard = () => {
               <div className="bg-muted/50 p-3 flex items-center justify-between border-b border-border">
                 <div className="flex items-center gap-2">
                   <FileText className="w-4 h-4 text-primary" />
-                  <span className="font-medium text-sm">Preview for {preview.talent_name}</span>
-                  <span className="text-xs text-muted-foreground">({preview.deals_count} deals)</span>
+                  <span className="font-sans font-medium text-sm">Preview for {preview.talent_name}</span>
+                  <span className="text-xs text-muted-foreground font-sans">({preview.deals_count} deals)</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
                     onClick={handlePublish}
                     disabled={isPublishing}
                     size="sm"
-                    className="gap-2"
+                    className="gap-2 font-script"
                   >
                     <Send className={`w-4 h-4 ${isPublishing ? "animate-pulse" : ""}`} />
                     {isPublishing ? "Publishing..." : "Publish to Slack"}
@@ -192,7 +177,7 @@ const Dashboard = () => {
           )}
           
           {talents.length === 0 && (
-            <p className="text-sm text-muted-foreground mt-3">
+            <p className="text-sm text-muted-foreground mt-3 font-sans">
               No deals found. Click "Sync Deals" to import from Google Sheets.
             </p>
           )}
@@ -201,10 +186,10 @@ const Dashboard = () => {
         {/* Sync Button */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="font-serif text-2xl font-bold text-primary">Talent Updates</h2>
-            <p className="text-muted-foreground">Latest communications from all channels</p>
+            <h2 className="font-display text-2xl text-primary">TALENT UPDATES</h2>
+            <p className="text-muted-foreground font-sans">Latest communications from all channels</p>
           </div>
-          <Button onClick={handleSync} disabled={isSyncing || isGmailLoading || isSlackLoading} className="gap-2">
+          <Button onClick={handleSync} disabled={isSyncing || isGmailLoading || isSlackLoading} className="gap-2 font-script">
             <RefreshCw className={`w-4 h-4 ${isSyncing || isGmailLoading || isSlackLoading ? "animate-spin" : ""}`} />
             {isSyncing || isGmailLoading || isSlackLoading ? "Syncing..." : "Sync All Channels"}
           </Button>
@@ -213,19 +198,19 @@ const Dashboard = () => {
         {/* Channel Tabs */}
         <Tabs defaultValue="gmail" className="w-full">
           <TabsList className="mb-6">
-            <TabsTrigger value="all" className="gap-2">
+            <TabsTrigger value="all" className="gap-2 font-sans">
               <Clock className="w-4 h-4" />
               All Updates
             </TabsTrigger>
-            <TabsTrigger value="slack" className="gap-2">
+            <TabsTrigger value="slack" className="gap-2 font-sans">
               <MessageSquare className="w-4 h-4" />
               Slack
             </TabsTrigger>
-            <TabsTrigger value="asana" className="gap-2">
+            <TabsTrigger value="asana" className="gap-2 font-sans">
               <CheckSquare className="w-4 h-4" />
               Asana
             </TabsTrigger>
-            <TabsTrigger value="gmail" className="gap-2">
+            <TabsTrigger value="gmail" className="gap-2 font-sans">
               <Mail className="w-4 h-4" />
               Gmail
             </TabsTrigger>
@@ -292,7 +277,7 @@ const Dashboard = () => {
                 title="Gmail access needed"
                 description="Sign in with Google to access your Gmail inbox. Each team member connects their own account."
                 action={
-                  <Button onClick={handleConnectGmail} className="mt-4 gap-2">
+                  <Button onClick={handleConnectGmail} className="mt-4 gap-2 font-script">
                     <Mail className="w-4 h-4" />
                     Connect Gmail
                   </Button>
@@ -342,15 +327,15 @@ const EmailCard = ({ email }: EmailCardProps) => {
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full font-sans">
               <Mail className="w-3 h-3" />
               Gmail
             </span>
-            <span className="text-xs text-muted-foreground">{timeAgo}</span>
+            <span className="text-xs text-muted-foreground font-sans">{timeAgo}</span>
           </div>
-          <h4 className="font-medium text-primary truncate">{email.subject}</h4>
-          <p className="text-sm text-muted-foreground">{fromName}</p>
-          <p className="text-sm text-foreground/70 mt-2 line-clamp-2">{email.snippet}</p>
+          <h4 className="font-sans font-medium text-primary truncate">{email.subject}</h4>
+          <p className="text-sm text-muted-foreground font-sans">{fromName}</p>
+          <p className="text-sm text-foreground/70 mt-2 line-clamp-2 font-sans">{email.snippet}</p>
         </div>
       </div>
     </div>
@@ -380,15 +365,15 @@ const SlackCard = ({ message }: SlackCardProps) => {
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-accent-foreground bg-accent px-2 py-0.5 rounded-full">
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-accent-foreground bg-accent px-2 py-0.5 rounded-full font-sans">
               <MessageSquare className="w-3 h-3" />
               Slack
             </span>
-            <span className="text-xs text-muted-foreground">{timeAgo}</span>
+            <span className="text-xs text-muted-foreground font-sans">{timeAgo}</span>
           </div>
-          <h4 className="font-medium text-primary truncate">{message.channel}</h4>
-          <p className="text-sm text-muted-foreground">{message.sender}</p>
-          <p className="text-sm text-foreground/70 mt-2 line-clamp-2">{message.content}</p>
+          <h4 className="font-sans font-medium text-primary truncate">{message.channel}</h4>
+          <p className="text-sm text-muted-foreground font-sans">{message.sender}</p>
+          <p className="text-sm text-foreground/70 mt-2 line-clamp-2 font-sans">{message.content}</p>
         </div>
       </div>
     </div>
@@ -405,10 +390,10 @@ interface EmptyStateProps {
 const EmptyState = ({ icon, title, description, action }: EmptyStateProps) => (
   <div className="text-center py-16 bg-card rounded-2xl border border-border">
     <div className="text-muted-foreground mb-4">{icon}</div>
-    <h3 className="font-semibold text-primary mb-2">{title}</h3>
-    <p className="text-muted-foreground max-w-md mx-auto">{description}</p>
+    <h3 className="font-sans font-semibold text-primary mb-2">{title}</h3>
+    <p className="text-muted-foreground max-w-md mx-auto font-sans">{description}</p>
     {action}
   </div>
 );
 
-export default Dashboard;
+export default PartnershipUpdates;
