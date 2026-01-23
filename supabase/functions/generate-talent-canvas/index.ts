@@ -190,25 +190,33 @@ Return ONLY valid JSON (no markdown): { "key_updates": ["..."], "next_steps": ["
       });
     }
 
-    // Step 4: Build markdown table
-    const now = new Date().toLocaleDateString("en-US", {
+    // Step 4: Build markdown table for this week's update
+    const now = new Date();
+    const weekLabel = now.toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
     });
+    
+    // Calculate week range for header
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - 7);
+    const weekRangeStr = `${weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
 
-    let canvasContent = `## Deal Updates: ${talent_name}\n`;
-    canvasContent += `*Generated: ${now}*\n\n`;
-    canvasContent += `| Brand | Status | Key Updates | Next Steps |\n`;
-    canvasContent += `|-------|--------|-------------|------------|\n`;
+    let weeklyUpdate = `## 📅 Week of ${weekRangeStr}\n`;
+    weeklyUpdate += `*Generated: ${weekLabel}*\n\n`;
+    weeklyUpdate += `| Brand | Status | Key Updates | Next Steps |\n`;
+    weeklyUpdate += `|-------|--------|-------------|------------|\n`;
 
     for (const summary of dealSummaries) {
-      const updatesStr = summary.key_updates.map(u => `• ${u}`).join("<br>");
-      const stepsStr = summary.next_steps.map(s => `• ${s}`).join("<br>");
-      canvasContent += `| ${summary.brand} | ${summary.status} | ${updatesStr} | ${stepsStr} |\n`;
+      const updatesStr = summary.key_updates.map(u => `• ${u}`).join(" ");
+      const stepsStr = summary.next_steps.map(s => `• ${s}`).join(" ");
+      weeklyUpdate += `| ${summary.brand} | ${summary.status} | ${updatesStr} | ${stepsStr} |\n`;
     }
+    
+    weeklyUpdate += `\n---\n\n`; // Separator between weeks
 
-    console.log("Canvas content generated:\n", canvasContent);
+    console.log("Weekly update content generated:\n", weeklyUpdate);
 
     // Step 5: Find the talent's Slack channel
     // Convert "DR. JAIME SEEMAN" to "drjaime-seeman" (join "Dr." directly to first name)
@@ -241,7 +249,7 @@ Return ONLY valid JSON (no markdown): { "key_updates": ["..."], "next_steps": ["
         JSON.stringify({
           success: false,
           error: `Slack channel #${channelName} not found. Make sure the bot is a member of the channel.`,
-          canvas_content: canvasContent, // Return content anyway for debugging
+          canvas_content: weeklyUpdate, // Return content anyway for debugging
         }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -249,48 +257,106 @@ Return ONLY valid JSON (no markdown): { "key_updates": ["..."], "next_steps": ["
 
     console.log(`Found channel: ${targetChannel.name} (${targetChannel.id})`);
 
-    // Step 6: Create or update the canvas
-    // First, try to find existing canvas on the channel
+    // Step 6: Check for existing canvas on the channel
     let canvasId: string | null = null;
+    let canvasUpdated = false;
+    let canvasCreated = false;
 
+    // First, get channel info to check for existing canvas
     try {
-      const canvasesResponse = await fetch(
-        `${SLACK_API_URL}/conversations.canvases.create`,
-        {
+      const channelInfoResponse = await fetch(
+        `${SLACK_API_URL}/conversations.info?channel=${targetChannel.id}`,
+        { headers: { Authorization: `Bearer ${slackBotToken}` } }
+      );
+      const channelInfo = await channelInfoResponse.json();
+      
+      if (channelInfo.ok && channelInfo.channel?.properties?.canvas?.canvas_id) {
+        canvasId = channelInfo.channel.properties.canvas.canvas_id;
+        console.log(`Found existing canvas: ${canvasId}`);
+      }
+    } catch (err) {
+      console.warn("Could not check for existing canvas:", err);
+    }
+
+    // If canvas exists, prepend new content to it
+    if (canvasId) {
+      try {
+        // Create a header for the talent if this is the first section
+        const headerContent = `# Deal Updates: ${talent_name}\n\n`;
+        
+        const editResponse = await fetch(`${SLACK_API_URL}/canvases.edit`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${slackBotToken}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            channel_id: targetChannel.id,
-            document_content: {
-              type: "markdown",
-              markdown: canvasContent,
-            },
+            canvas_id: canvasId,
+            changes: [{
+              operation: "insert_at_start",
+              document_content: {
+                type: "markdown",
+                markdown: weeklyUpdate,
+              },
+            }],
           }),
+        });
+
+        const editData = await editResponse.json();
+        console.log("Canvas edit response:", editData);
+
+        if (editData.ok) {
+          canvasUpdated = true;
+          console.log(`Canvas updated: ${canvasId}`);
+        } else {
+          console.error("Canvas edit failed:", editData.error);
         }
-      );
-
-      const canvasData = await canvasesResponse.json();
-      console.log("Canvas creation response:", canvasData);
-
-      if (canvasData.ok) {
-        canvasId = canvasData.canvas_id;
-        console.log(`Canvas created: ${canvasId}`);
-      } else {
-        console.error("Canvas creation failed:", canvasData.error);
-        // Canvas API might not be available, continue with message posting
+      } catch (editError) {
+        console.error("Canvas edit error:", editError);
       }
-    } catch (canvasError) {
-      console.error("Canvas API error:", canvasError);
+    } else {
+      // No existing canvas, create a new one
+      try {
+        const fullContent = `# Deal Updates: ${talent_name}\n\n${weeklyUpdate}`;
+        
+        const createResponse = await fetch(
+          `${SLACK_API_URL}/conversations.canvases.create`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${slackBotToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              channel_id: targetChannel.id,
+              document_content: {
+                type: "markdown",
+                markdown: fullContent,
+              },
+            }),
+          }
+        );
+
+        const createData = await createResponse.json();
+        console.log("Canvas creation response:", createData);
+
+        if (createData.ok) {
+          canvasId = createData.canvas_id;
+          canvasCreated = true;
+          console.log(`Canvas created: ${canvasId}`);
+        } else {
+          console.error("Canvas creation failed:", createData.error);
+        }
+      } catch (createError) {
+        console.error("Canvas creation error:", createError);
+      }
     }
 
     // Step 7: Post notification message to the channel (optional - don't fail if this errors)
     let messageSent = false;
     const notificationMessage = canvasId
-      ? "📋 Your Deal Updates have been posted to your canvas."
-      : `📋 *Deal Updates: ${talent_name}*\n\n${canvasContent}`;
+      ? `📋 Weekly Deal Updates have been ${canvasUpdated ? 'added to' : 'posted in'} your canvas.`
+      : `📋 *Deal Updates: ${talent_name}*\n\n${weeklyUpdate}`;
 
     try {
       const postResponse = await fetch(`${SLACK_API_URL}/chat.postMessage`, {
@@ -323,11 +389,14 @@ Return ONLY valid JSON (no markdown): { "key_updates": ["..."], "next_steps": ["
         success: true,
         talent_name,
         channel: `#${targetChannel.name}`,
-        canvas_created: !!canvasId,
+        canvas_created: canvasCreated,
+        canvas_updated: canvasUpdated,
         message_sent: messageSent,
         deals_count: dealSummaries.length,
-        message: canvasId 
-          ? `Successfully created canvas for ${talent_name} in #${targetChannel.name}${!messageSent ? ' (notification message skipped - missing chat:write scope)' : ''}`
+        message: canvasUpdated
+          ? `Successfully updated canvas for ${talent_name} in #${targetChannel.name}`
+          : canvasCreated
+          ? `Successfully created canvas for ${talent_name} in #${targetChannel.name}`
           : `Posted deal updates for ${talent_name} in #${targetChannel.name}`,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
