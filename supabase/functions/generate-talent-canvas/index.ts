@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { talent_name } = await req.json();
+    const { talent_name, preview_only = false } = await req.json();
 
     if (!talent_name) {
       return new Response(
@@ -44,6 +44,8 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    console.log(`Generating canvas for talent: ${talent_name} (preview: ${preview_only})`);
 
     console.log(`Generating canvas for talent: ${talent_name}`);
 
@@ -209,12 +211,30 @@ Return ONLY valid JSON (no markdown): { "key_updates": ["..."], "next_steps": ["
     weeklyUpdate += `|-------|--------|-------------|------------|\n`;
 
     for (const summary of dealSummaries) {
-      const updatesStr = summary.key_updates.map(u => `• ${u}`).join(" ");
-      const stepsStr = summary.next_steps.map(s => `• ${s}`).join(" ");
+      // Filter out empty strings and join with bullets
+      const validUpdates = summary.key_updates.filter(u => u && u.trim());
+      const validSteps = summary.next_steps.filter(s => s && s.trim());
+      const updatesStr = validUpdates.length > 0 ? validUpdates.map(u => `• ${u}`).join(" ") : "—";
+      const stepsStr = validSteps.length > 0 ? validSteps.map(s => `• ${s}`).join(" ") : "—";
       weeklyUpdate += `| ${summary.brand} | ${summary.status} | ${updatesStr} | ${stepsStr} |\n`;
     }
     
     weeklyUpdate += `\n---\n\n`; // Separator between weeks
+
+    // If preview_only, return the content without posting to Slack
+    if (preview_only) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          preview: true,
+          talent_name,
+          deals_count: dealSummaries.length,
+          canvas_content: weeklyUpdate,
+          deal_summaries: dealSummaries,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     console.log("Weekly update content generated:\n", weeklyUpdate);
 
