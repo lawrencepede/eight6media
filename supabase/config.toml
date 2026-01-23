@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.fetch-slack]
 verify_jwt = false
+
+[functions.tag-updates]
+verify_jwt = false
