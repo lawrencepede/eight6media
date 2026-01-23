@@ -65,6 +65,39 @@ export type Database = {
         }
         Relationships: []
       }
+      deals: {
+        Row: {
+          brand_name: string
+          created_at: string | null
+          id: string
+          notes: string | null
+          status: string
+          synced_at: string | null
+          talent_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          brand_name: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          status?: string
+          synced_at?: string | null
+          talent_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          brand_name?: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          status?: string
+          synced_at?: string | null
+          talent_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       gmail_tokens: {
         Row: {
           access_token: string

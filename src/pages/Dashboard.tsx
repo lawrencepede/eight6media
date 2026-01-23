@@ -3,8 +3,16 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGmail } from "@/hooks/useGmail";
 import { useSlack } from "@/hooks/useSlack";
+import { useTalentDeals } from "@/hooks/useTalentDeals";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { 
   ArrowLeft, 
   LogOut, 
@@ -13,7 +21,9 @@ import {
   CheckSquare, 
   RefreshCw,
   User,
-  Clock
+  Clock,
+  FileText,
+  Download
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -21,7 +31,9 @@ const Dashboard = () => {
   const { user, signOut, connectGmail } = useAuth();
   const { emails, isLoading: isGmailLoading, needsAuth: gmailNeedsAuth, fetchEmails } = useGmail();
   const { messages: slackMessages, isLoading: isSlackLoading, needsAuth: slackNeedsAuth, fetchMessages: fetchSlack } = useSlack();
+  const { talents, isSyncing: isDealsSyncing, isGenerating, syncDeals, generateCanvas } = useTalentDeals();
   const [isSyncing, setIsSyncing] = useState(false);
+  const [selectedTalent, setSelectedTalent] = useState<string>("");
 
   const handleSync = async () => {
     setIsSyncing(true);
@@ -35,6 +47,12 @@ const Dashboard = () => {
 
   const handleConnectGmail = async () => {
     await connectGmail();
+  };
+
+  const handleGenerateCanvas = async () => {
+    if (selectedTalent) {
+      await generateCanvas(selectedTalent);
+    }
   };
 
   // Fetch data on mount if authenticated
@@ -71,6 +89,58 @@ const Dashboard = () => {
       </header>
 
       <div className="container mx-auto px-6 py-8">
+        {/* Talent Canvases Section */}
+        <div className="bg-card rounded-xl border border-border p-6 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="font-serif text-lg font-bold text-primary flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                Talent Canvases
+              </h3>
+              <p className="text-sm text-muted-foreground">Generate deal summary canvases for Slack channels</p>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={syncDeals} 
+              disabled={isDealsSyncing}
+              className="gap-2"
+            >
+              <Download className={`w-4 h-4 ${isDealsSyncing ? "animate-spin" : ""}`} />
+              {isDealsSyncing ? "Syncing..." : "Sync Deals"}
+            </Button>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <Select value={selectedTalent} onValueChange={setSelectedTalent}>
+              <SelectTrigger className="w-64">
+                <SelectValue placeholder="Select a talent..." />
+              </SelectTrigger>
+              <SelectContent>
+                {talents.map((talent) => (
+                  <SelectItem key={talent} value={talent}>
+                    {talent}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button 
+              onClick={handleGenerateCanvas} 
+              disabled={!selectedTalent || isGenerating}
+              className="gap-2"
+            >
+              <FileText className={`w-4 h-4 ${isGenerating ? "animate-pulse" : ""}`} />
+              {isGenerating ? "Generating..." : "Generate Canvas"}
+            </Button>
+          </div>
+          
+          {talents.length === 0 && (
+            <p className="text-sm text-muted-foreground mt-3">
+              No deals found. Click "Sync Deals" to import from Google Sheets.
+            </p>
+          )}
+        </div>
+
         {/* Sync Button */}
         <div className="flex items-center justify-between mb-8">
           <div>
