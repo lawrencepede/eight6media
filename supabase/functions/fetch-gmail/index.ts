@@ -126,10 +126,10 @@ serve(async (req) => {
       console.log('Token refreshed successfully')
     }
 
-    // Fetch recent emails
+    // Fetch emails back to December 1, 2025
     console.log('Fetching messages from Gmail API...')
     const messagesResponse = await fetch(
-      `${GMAIL_API_URL}/users/me/messages?maxResults=20&q=is:inbox`,
+      `${GMAIL_API_URL}/users/me/messages?maxResults=100&q=is:inbox after:2025/12/01`,
       {
         headers: { Authorization: `Bearer ${accessToken}` },
       }
@@ -167,9 +167,9 @@ serve(async (req) => {
         .replace(/&#x2F;/g, "/");
     };
 
-    // Fetch details for each message
+    // Fetch details for each message (process all for historical import)
     const emails = []
-    for (const msg of messageIds.slice(0, 10)) { // Limit to 10 for performance
+    for (const msg of messageIds) {
       const detailResponse = await fetch(
         `${GMAIL_API_URL}/users/me/messages/${msg.id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date`,
         {
