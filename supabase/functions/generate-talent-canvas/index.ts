@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { talent_name, preview_only = false } = await req.json();
+    const { talent_name, preview_only = false, edited_summaries } = await req.json();
 
     if (!talent_name) {
       return new Response(
@@ -193,6 +193,9 @@ Return ONLY valid JSON (no markdown): { "key_updates": ["..."], "next_steps": ["
     }
 
     // Step 4: Build markdown table for this week's update
+    // Use edited_summaries if provided (for publishing after edit), otherwise use generated ones
+    const summariesToUse = edited_summaries && Array.isArray(edited_summaries) ? edited_summaries : dealSummaries;
+    
     const now = new Date();
     const weekLabel = now.toLocaleDateString("en-US", {
       year: "numeric",
@@ -210,12 +213,12 @@ Return ONLY valid JSON (no markdown): { "key_updates": ["..."], "next_steps": ["
     weeklyUpdate += `| Brand | Status | Key Updates | Next Steps |\n`;
     weeklyUpdate += `|-------|--------|-------------|------------|\n`;
 
-    for (const summary of dealSummaries) {
+    for (const summary of summariesToUse) {
       // Filter out empty strings and join with bullets
-      const validUpdates = summary.key_updates.filter(u => u && u.trim());
-      const validSteps = summary.next_steps.filter(s => s && s.trim());
-      const updatesStr = validUpdates.length > 0 ? validUpdates.map(u => `• ${u}`).join(" ") : "—";
-      const stepsStr = validSteps.length > 0 ? validSteps.map(s => `• ${s}`).join(" ") : "—";
+      const validUpdates = (summary.key_updates || []).filter((u: string) => u && u.trim());
+      const validSteps = (summary.next_steps || []).filter((s: string) => s && s.trim());
+      const updatesStr = validUpdates.length > 0 ? validUpdates.map((u: string) => `• ${u}`).join(" ") : "—";
+      const stepsStr = validSteps.length > 0 ? validSteps.map((s: string) => `• ${s}`).join(" ") : "—";
       weeklyUpdate += `| ${summary.brand} | ${summary.status} | ${updatesStr} | ${stepsStr} |\n`;
     }
     
@@ -228,9 +231,10 @@ Return ONLY valid JSON (no markdown): { "key_updates": ["..."], "next_steps": ["
           success: true,
           preview: true,
           talent_name,
-          deals_count: dealSummaries.length,
+          deals_count: summariesToUse.length,
           canvas_content: weeklyUpdate,
-          deal_summaries: dealSummaries,
+          week_range: weekRangeStr,
+          deal_summaries: summariesToUse,
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );

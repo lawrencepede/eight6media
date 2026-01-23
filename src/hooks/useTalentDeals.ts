@@ -11,16 +11,19 @@ interface Deal {
   synced_at: string;
 }
 
+export interface DealSummary {
+  brand: string;
+  status: string;
+  key_updates: string[];
+  next_steps: string[];
+}
+
 interface CanvasPreview {
   talent_name: string;
   canvas_content: string;
   deals_count: number;
-  deal_summaries: Array<{
-    brand: string;
-    status: string;
-    key_updates: string[];
-    next_steps: string[];
-  }>;
+  week_range: string;
+  deal_summaries: DealSummary[];
 }
 
 export function useTalentDeals() {
@@ -104,6 +107,7 @@ export function useTalentDeals() {
           talent_name: data.talent_name,
           canvas_content: data.canvas_content,
           deals_count: data.deals_count,
+          week_range: data.week_range || "",
           deal_summaries: data.deal_summaries,
         });
         return data;
@@ -123,11 +127,15 @@ export function useTalentDeals() {
     }
   }, [toast]);
 
-  const publishCanvas = useCallback(async (talentName: string) => {
+  const publishCanvas = useCallback(async (talentName: string, editedSummaries?: DealSummary[]) => {
     setIsPublishing(true);
     try {
       const { data, error } = await supabase.functions.invoke("generate-talent-canvas", {
-        body: { talent_name: talentName, preview_only: false },
+        body: { 
+          talent_name: talentName, 
+          preview_only: false,
+          edited_summaries: editedSummaries,
+        },
       });
 
       if (error) throw error;
@@ -155,6 +163,10 @@ export function useTalentDeals() {
     }
   }, [toast]);
 
+  const updatePreviewSummaries = useCallback((summaries: DealSummary[]) => {
+    setPreview(prev => prev ? { ...prev, deal_summaries: summaries } : null);
+  }, []);
+
   const clearPreview = useCallback(() => {
     setPreview(null);
   }, []);
@@ -179,6 +191,7 @@ export function useTalentDeals() {
     syncDeals,
     generatePreview,
     publishCanvas,
+    updatePreviewSummaries,
     clearPreview,
     getDealsForTalent,
   };

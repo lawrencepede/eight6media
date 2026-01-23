@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGmail } from "@/hooks/useGmail";
 import { useSlack } from "@/hooks/useSlack";
-import { useTalentDeals } from "@/hooks/useTalentDeals";
+import { useTalentDeals, DealSummary } from "@/hooks/useTalentDeals";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { CanvasPreviewTable } from "@/components/CanvasPreviewTable";
 import { 
   ArrowLeft, 
   LogOut, 
@@ -34,9 +35,10 @@ const Dashboard = () => {
   const { user, signOut, connectGmail } = useAuth();
   const { emails, isLoading: isGmailLoading, needsAuth: gmailNeedsAuth, fetchEmails } = useGmail();
   const { messages: slackMessages, isLoading: isSlackLoading, needsAuth: slackNeedsAuth, fetchMessages: fetchSlack } = useSlack();
-  const { talents, isSyncing: isDealsSyncing, isGenerating, isPublishing, preview, syncDeals, generatePreview, publishCanvas, clearPreview } = useTalentDeals();
+  const { talents, isSyncing: isDealsSyncing, isGenerating, isPublishing, preview, syncDeals, generatePreview, publishCanvas, updatePreviewSummaries, clearPreview } = useTalentDeals();
   const [isSyncing, setIsSyncing] = useState(false);
   const [selectedTalent, setSelectedTalent] = useState<string>("");
+  const [editedSummaries, setEditedSummaries] = useState<DealSummary[]>([]);
 
   const handleSync = async () => {
     setIsSyncing(true);
@@ -54,14 +56,22 @@ const Dashboard = () => {
 
   const handleGeneratePreview = async () => {
     if (selectedTalent) {
-      await generatePreview(selectedTalent);
+      const result = await generatePreview(selectedTalent);
+      if (result?.deal_summaries) {
+        setEditedSummaries(result.deal_summaries);
+      }
     }
   };
 
   const handlePublish = async () => {
     if (selectedTalent) {
-      await publishCanvas(selectedTalent);
+      await publishCanvas(selectedTalent, editedSummaries);
     }
+  };
+
+  const handleSummariesChange = (summaries: DealSummary[]) => {
+    setEditedSummaries(summaries);
+    updatePreviewSummaries(summaries);
   };
 
   // Fetch data on mount if authenticated
@@ -171,8 +181,12 @@ const Dashboard = () => {
                   </Button>
                 </div>
               </div>
-              <div className="p-4 bg-card max-h-96 overflow-y-auto">
-                <pre className="text-xs font-mono whitespace-pre-wrap text-foreground/80">{preview.canvas_content}</pre>
+              <div className="p-4 bg-card max-h-[500px] overflow-y-auto">
+                <CanvasPreviewTable
+                  dealSummaries={editedSummaries}
+                  weekRange={preview.week_range}
+                  onSummariesChange={handleSummariesChange}
+                />
               </div>
             </div>
           )}
