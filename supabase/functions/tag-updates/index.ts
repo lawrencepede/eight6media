@@ -64,10 +64,13 @@ Subject/Channel: ${update.subject || channelName || "N/A"}
 Content: ${update.content || ""}
 `.trim();
 
-      const prompt = `Analyze this message from a talent management agency. Extract:
+      const prompt = `Analyze this message from a talent management agency. Extract the following fields:
+
 1. talent_name: The name of a content creator/influencer being discussed (if any)
 2. brand_name: The company/brand being discussed for potential partnership (if any)
-3. is_noise: Whether this is marketing spam, newsletter, or irrelevant (true/false)
+3. key_point: A one-line summary of what this message is about (max 15 words)
+4. action_items: Any next steps or to-dos mentioned (array of strings, max 3 items, each max 12 words)
+5. is_noise: Whether this is marketing spam, newsletter, or irrelevant (true/false)
 
 Message:
 ${messageContext}
@@ -76,8 +79,11 @@ Rules:
 - talent_name should be a person's name (e.g., "Jenn Miller", "Dr. Nick", "Michael James")
 - brand_name should be a company name (e.g., "Nike", "Koala Eco", "Instant Hydration")
 - If channel name contains talent info (like #jenn-miller), use that as a hint
+- key_point should capture the main update or news in the message
+- action_items should be specific next steps like "Send contract", "Schedule call", "Review proposal"
 - Set is_noise=true for: marketing emails, newsletters, sales pitches, automated notifications
-- Return null for talent_name or brand_name if not clearly mentioned`;
+- Return null for talent_name or brand_name if not clearly mentioned
+- Return empty array [] for action_items if no clear next steps`;
 
       try {
         const response = await fetch(AI_GATEWAY_URL, {
@@ -97,12 +103,18 @@ Rules:
                 type: "function",
                 function: {
                   name: "tag_message",
-                  description: "Tag a message with talent name, brand name, and noise flag",
+                  description: "Tag a message with talent name, brand name, key point, action items, and noise flag",
                   parameters: {
                     type: "object",
                     properties: {
                       talent_name: { type: "string", description: "Name of the talent/creator mentioned, or null" },
                       brand_name: { type: "string", description: "Name of the brand/company mentioned, or null" },
+                      key_point: { type: "string", description: "One-line summary of the message (max 15 words)" },
+                      action_items: { 
+                        type: "array", 
+                        items: { type: "string" },
+                        description: "List of next steps or action items (max 3)" 
+                      },
                       is_noise: { type: "boolean", description: "True if this is marketing spam or irrelevant" },
                     },
                     required: ["is_noise"],
@@ -128,7 +140,7 @@ Rules:
         
         if (toolCall?.function?.arguments) {
           const extracted = JSON.parse(toolCall.function.arguments);
-          console.log(`Update ${update.id}: talent=${extracted.talent_name}, brand=${extracted.brand_name}, noise=${extracted.is_noise}`);
+          console.log(`Update ${update.id}: talent=${extracted.talent_name}, brand=${extracted.brand_name}, key_point=${extracted.key_point}, actions=${extracted.action_items?.length || 0}, noise=${extracted.is_noise}`);
 
           // Update the record - use "NONE" for null to mark as processed
           const { error: updateError } = await supabase
@@ -138,6 +150,8 @@ Rules:
               metadata: {
                 ...update.metadata,
                 brand_name: extracted.brand_name || null,
+                key_point: extracted.key_point || null,
+                action_items: extracted.action_items || [],
                 is_noise: extracted.is_noise || false,
               },
             })

@@ -16,12 +16,14 @@ export interface DealSummary {
   status: string;
   key_updates: string[];
   next_steps: string[];
+  is_new_opportunity?: boolean;
 }
 
 interface CanvasPreview {
   talent_name: string;
   canvas_content: string;
   deals_count: number;
+  new_opportunities_count: number;
   week_range: string;
   deal_summaries: DealSummary[];
 }
@@ -33,6 +35,7 @@ export function useTalentDeals() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isTagging, setIsTagging] = useState(false);
   const [preview, setPreview] = useState<CanvasPreview | null>(null);
   const { toast } = useToast();
 
@@ -92,6 +95,35 @@ export function useTalentDeals() {
     }
   }, [toast, fetchDeals]);
 
+  const tagUpdates = useCallback(async () => {
+    setIsTagging(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("tag-updates");
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast({
+          title: "Updates Tagged",
+          description: data.message,
+        });
+        return data;
+      } else {
+        throw new Error(data.error || "Tagging failed");
+      }
+    } catch (error) {
+      console.error("Error tagging updates:", error);
+      toast({
+        title: "Tagging Failed",
+        description: error instanceof Error ? error.message : "Failed to tag updates",
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setIsTagging(false);
+    }
+  }, [toast]);
+
   const generatePreview = useCallback(async (talentName: string) => {
     setIsGenerating(true);
     setPreview(null);
@@ -107,6 +139,7 @@ export function useTalentDeals() {
           talent_name: data.talent_name,
           canvas_content: data.canvas_content,
           deals_count: data.deals_count,
+          new_opportunities_count: data.new_opportunities_count || 0,
           week_range: data.week_range || "",
           deal_summaries: data.deal_summaries,
         });
@@ -186,9 +219,11 @@ export function useTalentDeals() {
     isSyncing,
     isGenerating,
     isPublishing,
+    isTagging,
     preview,
     fetchDeals,
     syncDeals,
+    tagUpdates,
     generatePreview,
     publishCanvas,
     updatePreviewSummaries,
