@@ -27,12 +27,14 @@ import {
   Eye,
   X,
   Tag,
-  Sparkles
+  Sparkles,
+  LogOut,
+  User as UserIcon
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 const PartnershipUpdates = () => {
-  const { user, connectGmail } = useAuth();
+  const { user, connectGmail, signOut } = useAuth();
   const { emails, isLoading: isGmailLoading, needsAuth: gmailNeedsAuth, fetchEmails } = useGmail();
   const { messages: slackMessages, isLoading: isSlackLoading, needsAuth: slackNeedsAuth, fetchMessages: fetchSlack } = useSlack();
   const { 
@@ -64,6 +66,10 @@ const PartnershipUpdates = () => {
 
   const handleConnectGmail = async () => {
     await connectGmail();
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
   };
 
   const handleGeneratePreview = async () => {
@@ -107,7 +113,25 @@ const PartnershipUpdates = () => {
               <span>Back to Console</span>
             </Link>
             <h1 className="font-sans text-lg font-semibold text-primary">Partnership Updates</h1>
-            <div className="w-32" />
+            <div className="flex items-center gap-4">
+              {user && (
+                <>
+                  <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
+                    <UserIcon className="w-4 h-4" />
+                    <span className="font-sans">{user.email}</span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleSignOut}
+                    className="font-sans"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </header>
