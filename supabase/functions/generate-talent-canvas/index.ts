@@ -91,6 +91,14 @@ Deno.serve(async (req) => {
 
     console.log(`Found ${updates?.length || 0} recent updates for ${talent_name}`);
 
+    // Step 1.5: If tagging metadata is missing (brand/key_point/action_items), extract it on-the-fly.
+    // This makes previews reliable even when the separate tagging job hasn't run yet.
+    const enrichedUpdates = await enrichUpdatesWithMissingInsights(
+      (updates || []) as TalentUpdate[],
+      talent_name,
+      lovableApiKey
+    );
+
     // Step 2: Get existing deals for this talent from Deal Tracker
     const { data: deals, error: dealsError } = await supabase
       .from("deals")
@@ -108,7 +116,7 @@ Deno.serve(async (req) => {
     const brandUpdatesMap: Map<string, TalentUpdate[]> = new Map();
     const brandToOriginalName: Map<string, string> = new Map();
 
-    for (const update of (updates || []) as TalentUpdate[]) {
+    for (const update of enrichedUpdates) {
       // Skip noise
       if (update.metadata?.is_noise) continue;
       
@@ -542,4 +550,163 @@ If no clear updates or next steps, provide reasonable placeholders.`;
   }
 
   return { key_updates: [], next_steps: [] };
+}
+
+async function enrichUpdatesWithMissingInsights(
+  updates: TalentUpdate[],
+  talentName: string,
+  apiKey: string
+): Promise<TalentUpdate[]> {
+  // Only enrich when essential fields are missing; cap calls to keep previews fast.
+  const MAX_AI_CALLS = 25;
+  let calls = 0;
+
+  const result: TalentUpdate[] = [];
+  for (const update of updates) {
+    const metadata = update.metadata || {};
+    const isNoise = Boolean(metadata.is_noise);
+    if (isNoise) {
+      result.push(update);
+      continue;
+    }
+
+    const needsBrand = !metadata.brand_name;
+    const needsKeyPoint = !metadata.key_point;
+    const needsActions = !Array.isArray(metadata.action_items);
+
+    if ((needsBrand || needsKeyPoint || needsActions) && calls < MAX_AI_CALLS) {
+      calls++;
+      const extracted = await extractInsightsForUpdate(update, talentName, apiKey);
+      result.push({
+        ...update,
+        metadata: {
+          ...metadata,
+          ...extracted,
+        },
+      });
+    } else {
+      result.push(update);
+    }
+  }
+
+  console.log(
+    `Enriched updates with missing insights: ${calls} AI call(s) (max ${MAX_AI_CALLS})`
+  );
+  return result;
+}
+
+async function extractInsightsForUpdate(
+  update: TalentUpdate,
+  talentNameHint: string,
+  apiKey: string
+): Promise<{ brand_name?: string; key_point?: string; action_items?: string[]; is_noise?: boolean }> {
+  try {
+    const channelName = update.metadata?.channel_name || "";
+    const messageContext = `
+Sender: ${update.sender || "Unknown"}
+Subject/Channel: ${update.subject || channelName || "N/A"}
+Content: ${update.content || ""}
+`.trim();
+
+    const prompt = `Analyze this message from a talent management agency. Extract the following fields:
+
+1. talent_name: The name of a content creator/influencer being discussed (if any)
+2. brand_name: The company/brand being discussed for potential partnership (if any)
+3. key_point: A one-line summary of what this message is about (max 15 words)
+4. action_items: Any next steps or to-dos mentioned (array of strings, max 3 items, each max 12 words)
+5. is_noise: Whether this is marketing spam, newsletter, or irrelevant (true/false)
+
+Message:
+${messageContext}
+
+Rules:
+- You can use the provided talent hint, but only if it matches the message.
+- talent hint: ${talentNameHint}
+- If channel name contains talent info (like #jenn-miller), use that as a hint.
+- Return null for talent_name or brand_name if not clearly mentioned.
+- Return empty array [] for action_items if no clear next steps.
+
+Return ONLY valid JSON via the tool call.`;
+
+    const response = await fetch(AI_GATEWAY_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        messages: [
+          {
+            role: "system",
+            content: "You extract structured data from messages. Always respond with valid JSON.",
+          },
+          { role: "user", content: prompt },
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "tag_message",
+              description:
+                "Tag a message with talent name, brand name, key point, action items, and noise flag",
+              parameters: {
+                type: "object",
+                properties: {
+                  talent_name: {
+                    type: "string",
+                    description: "Name of the talent/creator mentioned, or null",
+                  },
+                  brand_name: {
+                    type: "string",
+                    description: "Name of the brand/company mentioned, or null",
+                  },
+                  key_point: {
+                    type: "string",
+                    description: "One-line summary of the message (max 15 words)",
+                  },
+                  action_items: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "List of next steps or action items (max 3)",
+                  },
+                  is_noise: {
+                    type: "boolean",
+                    description: "True if this is marketing spam or irrelevant",
+                  },
+                },
+                required: ["is_noise"],
+              },
+            },
+          },
+        ],
+        tool_choice: { type: "function", function: { name: "tag_message" } },
+      }),
+    });
+
+    if (!response.ok) {
+      console.warn(
+        `Insight extraction failed [${response.status}] for update ${update.id}`
+      );
+      return {};
+    }
+
+    const aiResult = await response.json();
+    const toolCall = aiResult.choices?.[0]?.message?.tool_calls?.[0];
+    const args = toolCall?.function?.arguments;
+    if (!args) return {};
+
+    const extracted = JSON.parse(args);
+    return {
+      brand_name: extracted.brand_name || undefined,
+      key_point: extracted.key_point || undefined,
+      action_items: Array.isArray(extracted.action_items)
+        ? extracted.action_items
+        : undefined,
+      is_noise: Boolean(extracted.is_noise),
+    };
+  } catch (err) {
+    console.error("Error extracting insights for update:", update.id, err);
+    return {};
+  }
 }
