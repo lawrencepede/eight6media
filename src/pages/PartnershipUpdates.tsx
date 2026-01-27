@@ -25,7 +25,9 @@ import {
   Download,
   Send,
   Eye,
-  X
+  X,
+  Tag,
+  Sparkles
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -33,7 +35,20 @@ const PartnershipUpdates = () => {
   const { user, connectGmail } = useAuth();
   const { emails, isLoading: isGmailLoading, needsAuth: gmailNeedsAuth, fetchEmails } = useGmail();
   const { messages: slackMessages, isLoading: isSlackLoading, needsAuth: slackNeedsAuth, fetchMessages: fetchSlack } = useSlack();
-  const { talents, isSyncing: isDealsSyncing, isGenerating, isPublishing, preview, syncDeals, generatePreview, publishCanvas, updatePreviewSummaries, clearPreview } = useTalentDeals();
+  const { 
+    talents, 
+    isSyncing: isDealsSyncing, 
+    isGenerating, 
+    isPublishing, 
+    isTagging,
+    preview, 
+    syncDeals, 
+    tagUpdates,
+    generatePreview, 
+    publishCanvas, 
+    updatePreviewSummaries, 
+    clearPreview 
+  } = useTalentDeals();
   const [isSyncing, setIsSyncing] = useState(false);
   const [selectedTalent, setSelectedTalent] = useState<string>("");
   const [editedSummaries, setEditedSummaries] = useState<DealSummary[]>([]);
@@ -42,6 +57,9 @@ const PartnershipUpdates = () => {
     setIsSyncing(true);
     await Promise.all([fetchEmails(), fetchSlack()]);
     setIsSyncing(false);
+    
+    // Auto-trigger tagging after sync
+    await tagUpdates();
   };
 
   const handleConnectGmail = async () => {
@@ -76,6 +94,8 @@ const PartnershipUpdates = () => {
     }
   }, [user]);
 
+  const newOpportunitiesCount = preview?.new_opportunities_count || 0;
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -103,16 +123,28 @@ const PartnershipUpdates = () => {
               </h3>
               <p className="text-sm text-muted-foreground font-sans">Generate deal summary canvases for Slack channels</p>
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={syncDeals} 
-              disabled={isDealsSyncing}
-              className="gap-2 font-sans"
-            >
-              <Download className={`w-4 h-4 ${isDealsSyncing ? "animate-spin" : ""}`} />
-              {isDealsSyncing ? "Syncing..." : "Sync Deals"}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={tagUpdates} 
+                disabled={isTagging}
+                className="gap-2 font-sans"
+              >
+                <Tag className={`w-4 h-4 ${isTagging ? "animate-pulse" : ""}`} />
+                {isTagging ? "Tagging..." : "Re-tag Updates"}
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={syncDeals} 
+                disabled={isDealsSyncing}
+                className="gap-2 font-sans"
+              >
+                <Download className={`w-4 h-4 ${isDealsSyncing ? "animate-spin" : ""}`} />
+                {isDealsSyncing ? "Syncing..." : "Sync Deals"}
+              </Button>
+            </div>
           </div>
           
           <div className="flex items-center gap-3">
@@ -145,7 +177,13 @@ const PartnershipUpdates = () => {
                 <div className="flex items-center gap-2">
                   <FileText className="w-4 h-4 text-primary" />
                   <span className="font-sans font-medium text-sm">Preview for {preview.talent_name}</span>
-                  <span className="text-xs text-muted-foreground font-sans">({preview.deals_count} deals)</span>
+                  <span className="text-xs text-muted-foreground font-sans">({preview.deals_count} brands)</span>
+                  {newOpportunitiesCount > 0 && (
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-0.5 rounded-full font-sans">
+                      <Sparkles className="w-3 h-3" />
+                      {newOpportunitiesCount} new
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
@@ -189,9 +227,13 @@ const PartnershipUpdates = () => {
             <h2 className="font-display text-2xl text-primary">TALENT UPDATES</h2>
             <p className="text-muted-foreground font-sans">Latest communications from all channels</p>
           </div>
-          <Button onClick={handleSync} disabled={isSyncing || isGmailLoading || isSlackLoading} className="gap-2 font-script">
-            <RefreshCw className={`w-4 h-4 ${isSyncing || isGmailLoading || isSlackLoading ? "animate-spin" : ""}`} />
-            {isSyncing || isGmailLoading || isSlackLoading ? "Syncing..." : "Sync All Channels"}
+          <Button 
+            onClick={handleSync} 
+            disabled={isSyncing || isGmailLoading || isSlackLoading || isTagging} 
+            className="gap-2 font-script"
+          >
+            <RefreshCw className={`w-4 h-4 ${isSyncing || isGmailLoading || isSlackLoading || isTagging ? "animate-spin" : ""}`} />
+            {isTagging ? "Tagging..." : isSyncing || isGmailLoading || isSlackLoading ? "Syncing..." : "Sync All Channels"}
           </Button>
         </div>
 

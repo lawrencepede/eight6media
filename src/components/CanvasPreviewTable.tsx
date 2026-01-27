@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -8,12 +9,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Sparkles } from "lucide-react";
 
 export interface DealSummary {
   brand: string;
   status: string;
   key_updates: string[];
   next_steps: string[];
+  is_new_opportunity?: boolean;
 }
 
 interface CanvasPreviewTableProps {
@@ -59,26 +62,37 @@ export const CanvasPreviewTable = ({
           <TableHeader>
             <TableRow>
               <TableHead className="w-[150px]">Brand</TableHead>
-              <TableHead className="w-[120px]">Status</TableHead>
+              <TableHead className="w-[140px]">Status</TableHead>
               <TableHead>Key Updates</TableHead>
               <TableHead>Next Steps</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {editableSummaries.map((summary, index) => (
-              <TableRow key={`${summary.brand}-${index}`}>
+              <TableRow 
+                key={`${summary.brand}-${index}`}
+                className={summary.is_new_opportunity ? "bg-amber-50/50 dark:bg-amber-900/10" : ""}
+              >
                 <TableCell className="font-medium align-top">
-                  <Input
-                    value={summary.brand}
-                    onChange={(e) => handleFieldChange(index, "brand", e.target.value)}
-                    className="h-8 text-xs"
-                  />
+                  <div className="space-y-1">
+                    <Input
+                      value={summary.brand}
+                      onChange={(e) => handleFieldChange(index, "brand", e.target.value)}
+                      className="h-8 text-xs"
+                    />
+                    {summary.is_new_opportunity && (
+                      <Badge variant="outline" className="text-xs gap-1 bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700">
+                        <Sparkles className="w-3 h-3" />
+                        New
+                      </Badge>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell className="align-top">
                   <Input
                     value={summary.status}
                     onChange={(e) => handleFieldChange(index, "status", e.target.value)}
-                    className="h-8 text-xs"
+                    className={`h-8 text-xs ${summary.is_new_opportunity ? "text-amber-700 dark:text-amber-400" : ""}`}
                   />
                 </TableCell>
                 <TableCell className="align-top">
