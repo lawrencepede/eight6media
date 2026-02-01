@@ -16,51 +16,33 @@ serve(async (req) => {
   const stateParam = url.searchParams.get('state');
   const error = url.searchParams.get('error');
 
-  // HTML response helper
-  const htmlResponse = (message: string, success: boolean) => `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${success ? 'Connected!' : 'Connection Failed'}</title>
-        <style>
-          body { font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #0f0f0f; color: white; padding: 1rem; box-sizing: border-box; }
-          .container { text-align: center; padding: 2rem; max-width: 400px; }
-          h1 { color: ${success ? '#22c55e' : '#ef4444'}; margin-bottom: 1rem; }
-          .message { color: #9ca3af; margin-top: 1rem; white-space: pre-line; line-height: 1.6; text-align: left; }
-          .close-btn { margin-top: 2rem; padding: 0.75rem 1.5rem; background: #3b82f6; color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-size: 1rem; }
-          .close-btn:hover { background: #2563eb; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <h1>${success ? 'Instagram Connected!' : 'Connection Failed'}</h1>
-          <div class="message">${message}</div>
-          <button class="close-btn" onclick="window.close()">Close Window</button>
-        </div>
-        <script>
-          setTimeout(() => {
-            if (window.opener) {
-              window.opener.postMessage({ type: 'meta-oauth-complete', success: ${success} }, '*');
-            }
-          }, 1000);
-        </script>
-      </body>
-    </html>
-  `;
+  // Default return URL (fallback)
+  let returnUrl = 'https://eight6media.lovable.app/oauth/meta/result';
 
-  // IMPORTANT:
-  // The gateway defaults to Content-Type: text/plain and sets X-Content-Type-Options: nosniff.
-  // To ensure browsers render this as HTML, return a Blob with type text/html.
-  const respondHtml = (message: string, success: boolean, status = 200) => {
-    const body = new Blob([htmlResponse(message, success)], {
-      type: 'text/html; charset=utf-8',
-    });
+  // Decode state to get the return URL
+  let state: { creator_id?: string; return_url?: string } = {};
+  if (stateParam) {
+    try {
+      state = JSON.parse(atob(stateParam));
+      if (state.return_url) {
+        returnUrl = state.return_url;
+      }
+    } catch {
+      console.warn('Could not decode state parameter');
+    }
+  }
 
-    return new Response(body, {
-      status,
-      headers: corsHeaders,
+  // Helper to redirect with result
+  const redirectWithResult = (success: boolean, message: string) => {
+    const resultUrl = new URL(returnUrl);
+    resultUrl.searchParams.set('success', success ? 'true' : 'false');
+    resultUrl.searchParams.set('message', message);
+    return new Response(null, {
+      status: 302,
+      headers: {
+        ...corsHeaders,
+        'Location': resultUrl.toString(),
+      },
     });
   };
 
@@ -68,23 +50,24 @@ serve(async (req) => {
     if (error) {
       console.error('OAuth error:', error);
       
-      // Handle specific error cases with user-friendly messages
       let errorMessage = `OAuth was denied: ${error}`;
       
       if (error === 'access_denied') {
-        errorMessage = `Connection was denied. This usually happens because:
+        errorMessage = `Connection was denied.
 
-• The Instagram account is not a Professional account (Business or Creator)
-• You didn't grant all required permissions
+This usually happens because:
+- The Instagram account is not a Professional account (Business or Creator)
+- You didn't grant all required permissions
 
-To connect, please ensure your Instagram account is switched to a Professional account in Instagram Settings → Account → Switch to Professional Account.`;
+To connect, switch your Instagram account to a Professional account:
+Instagram app -> Settings -> Account -> Switch to Professional Account`;
       }
       
-      return respondHtml(errorMessage, false);
+      return redirectWithResult(false, errorMessage);
     }
 
     if (!code || !stateParam) {
-      return respondHtml('Missing authorization code or state', false);
+      return redirectWithResult(false, 'Missing authorization code or state');
     }
 
     const META_APP_ID = Deno.env.get('META_APP_ID');
@@ -94,14 +77,6 @@ To connect, please ensure your Instagram account is switched to a Professional a
 
     if (!META_APP_ID || !META_APP_SECRET) {
       throw new Error('Meta app credentials not configured');
-    }
-
-    // Decode state
-    let state: { creator_id?: string } = {};
-    try {
-      state = JSON.parse(atob(stateParam));
-    } catch {
-      console.warn('Could not decode state parameter');
     }
 
     const redirectUri = `${SUPABASE_URL}/functions/v1/meta-oauth-callback`;
@@ -163,10 +138,10 @@ To connect Instagram analytics, you need:
 
 To fix this:
 1. Create a Facebook Page (or use an existing one)
-2. In Instagram Settings → Account → Linked Accounts
+2. In Instagram: Settings -> Account -> Linked Accounts
 3. Connect your Facebook Page
 4. Try connecting again`;
-      return respondHtml(noPagesMessage, false);
+      return redirectWithResult(false, noPagesMessage);
     }
 
     // Get Instagram Business Account for each page
@@ -200,12 +175,12 @@ To fix this:
 
 To fix this:
 1. Open Instagram app
-2. Go to Settings → Account
+2. Go to Settings -> Account
 3. Tap "Switch to Professional Account"
 4. Choose Business or Creator
 5. Link it to a Facebook Page
 6. Try connecting again`;
-      return respondHtml(noBusinessAccountMessage, false);
+      return redirectWithResult(false, noBusinessAccountMessage);
     }
 
     // Store in database
@@ -233,14 +208,11 @@ To fix this:
       throw new Error('Failed to save connection');
     }
 
-    return respondHtml(
-      `Successfully connected @${instagramAccount.username}! You can close this window.`,
-      true
-    );
+    return redirectWithResult(true, `Successfully connected @${instagramAccount.username}!`);
 
   } catch (error: unknown) {
     console.error('Error in meta-oauth-callback:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
-    return respondHtml(`An error occurred: ${message}`, false);
+    return redirectWithResult(false, `An error occurred: ${message}`);
   }
 });

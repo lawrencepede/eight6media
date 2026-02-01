@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 serve(async (req) => {
@@ -20,12 +20,23 @@ serve(async (req) => {
 
     const url = new URL(req.url);
     const creatorId = url.searchParams.get('creator_id');
-    const returnUrl = url.searchParams.get('return_url') || `${SUPABASE_URL}/functions/v1/meta-oauth-callback`;
 
-    // Build state parameter with creator_id for the callback
+    // Determine the app origin from the request (fallback to preview URL)
+    const origin = req.headers.get('origin') || req.headers.get('referer');
+    let appBaseUrl = 'https://eight6media.lovable.app'; // Default published URL
+    if (origin) {
+      try {
+        const originUrl = new URL(origin);
+        appBaseUrl = originUrl.origin;
+      } catch {
+        // Keep default
+      }
+    }
+
+    // Build state parameter with creator_id and app return URL
     const state = JSON.stringify({
       creator_id: creatorId,
-      return_url: returnUrl,
+      return_url: `${appBaseUrl}/oauth/meta/result`,
     });
 
     const redirectUri = `${SUPABASE_URL}/functions/v1/meta-oauth-callback`;
