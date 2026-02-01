@@ -136,7 +136,7 @@ const MetaAnalytics = () => {
                     <SelectContent>
                       {creators.map((creator) => (
                         <SelectItem key={creator.id} value={creator.id}>
-                          {creator.name} • @{creator.instagramHandle}
+                          {creator.name} • {creator.instagramHandle}
                         </SelectItem>
                       ))}
                     </SelectContent>
