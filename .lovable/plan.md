@@ -1,63 +1,101 @@
 
-# Fix Meta OAuth HTML Rendering and Error Messages
+# Improve Meta Analytics Connection UI
 
-## Problem Analysis
+## Summary
+Rename and reorganize the connection buttons to be clearer, and fix the bug where creator IDs aren't being passed through the OAuth flow.
 
-Based on the screenshot, I can see:
-1. **HTML is partially rendering** - The page structure is there, but special characters (✓/✗) are rendering as garbled text (`âœ–`)
-2. **The error is technically correct** - A personal Instagram account won't have an "Instagram Business Account" linked to Facebook Pages
-3. **The flow is confusing** - User expects a clear "this isn't a Professional account" message, but instead gets a technical message about Facebook Pages
+---
 
-## Root Causes
+## UI Changes
 
-1. **Character encoding issue**: The UTF-8 special characters (✓, ✗) aren't being properly encoded in the HTML response
-2. **Error message timing**: The "No Instagram Business Account" error comes AFTER OAuth succeeds, but doesn't clearly explain it's because the account isn't Professional
-3. **Missing charset declaration**: The HTML response doesn't specify UTF-8 charset in the meta tag
+### Before
+- Button: "Connect New Account"
+- Dropdown: "Or link to a creator..."
 
-## Solution
+### After
+- Dropdown/Button: "Connect Eight-Six Talent" (shows your roster with names + Instagram handles)
+- Button: "Connect a New Account" (for non-roster connections)
 
-### 1. Fix Character Encoding
-Add proper UTF-8 meta charset declaration and use HTML entities instead of raw Unicode characters
+---
 
-### 2. Improve Error Messages
-Make the "No Instagram Business Account" error clearly explain that this happens when:
-- The Instagram account is a Personal account (not Professional)
-- Or the Professional account isn't properly linked to a Facebook Page
+## Bug Fix
+The `creator_id` is currently lost in the OAuth flow. The hook prepares it but never sends it to the edge function.
 
-### 3. Add Better User Guidance
-Include step-by-step instructions on how to:
-- Convert to a Professional account
-- Link to a Facebook Page
+**Fix in `src/hooks/useInstagramConnections.ts`:**
+```typescript
+// Before (broken - creatorId never sent)
+const { data, error } = await supabase.functions.invoke("meta-oauth-start", {
+  body: null,
+  method: "GET",
+});
 
-## Technical Changes
-
-**File: `supabase/functions/meta-oauth-callback/index.ts`**
-
-1. Add `<meta charset="UTF-8">` to the HTML template
-2. Replace Unicode symbols with HTML entities or simpler ASCII alternatives
-3. Update the "No Instagram Business Account" error message to be more user-friendly and explain the Professional account requirement
-4. Add `white-space: pre-line` CSS to properly render multi-line messages
-
+// After (fixed - pass creator_id as query param)
+const url = `meta-oauth-start${creatorId ? `?creator_id=${creatorId}` : ''}`;
+const { data, error } = await supabase.functions.invoke(url);
 ```
-Updated HTML template:
-- Add: <meta charset="UTF-8">
-- Replace: ✓ → &#10003; (or simple "Success!")
-- Replace: ✗ → &#10007; (or simple "Error")
 
-Updated error message for "No Instagram Business Account":
-"Your Instagram account must be a Professional account (Business or Creator) 
-to connect with this tool.
+---
 
-To fix this:
-1. Open Instagram → Settings → Account
-2. Switch to Professional Account
-3. Link it to a Facebook Page
-4. Try connecting again"
+## File Changes
+
+### 1. `src/hooks/useInstagramConnections.ts`
+- Fix the `startOAuth` mutation to properly pass `creator_id` to the edge function
+
+### 2. `src/pages/MetaAnalytics.tsx`
+- Rename "Connect New Account" → "Connect a New Account"
+- Replace the Select dropdown with a proper "Connect Eight-Six Talent" button that opens a dropdown
+- Add Instagram handle next to each talent name for easier identification (e.g., "Amanda • @amandasmith")
+- Reorder so "Connect Eight-Six Talent" appears first (primary action)
+
+---
+
+## Technical Details
+
+### Updated UI Component Structure
+```tsx
+<CardContent>
+  <div className="flex flex-wrap gap-4">
+    {/* Primary: Connect roster talent */}
+    <Select onValueChange={(value) => handleConnect(value)}>
+      <SelectTrigger className="w-[280px]">
+        <SelectValue placeholder="Connect Eight-Six Talent" />
+      </SelectTrigger>
+      <SelectContent>
+        {creators.map((creator) => (
+          <SelectItem key={creator.id} value={creator.id}>
+            {creator.name} • @{creator.instagramHandle}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+    
+    {/* Secondary: Connect non-roster accounts */}
+    <Button variant="outline" onClick={() => handleConnect()}>
+      <Plus className="w-4 h-4 mr-2" />
+      Connect a New Account
+    </Button>
+  </div>
+</CardContent>
 ```
+
+### Fixed Hook (passing creator_id)
+The edge function `meta-oauth-start` already reads `creator_id` from query params. We just need to send it:
+
+```typescript
+mutationFn: async (creatorId?: string) => {
+  const functionPath = creatorId 
+    ? `meta-oauth-start?creator_id=${encodeURIComponent(creatorId)}`
+    : "meta-oauth-start";
+    
+  const { data, error } = await supabase.functions.invoke(functionPath);
+  if (error) throw error;
+  return data as { auth_url: string };
+},
+```
+
+---
 
 ## Expected Result
-
-After these changes:
-- Error pages will render cleanly with proper characters
-- Users will immediately understand they need a Professional account
-- Clear step-by-step instructions will guide them to fix the issue
+1. Clear two-option UI: "Connect Eight-Six Talent" (dropdown) and "Connect a New Account" (button)
+2. When talent is selected from dropdown, their `creator_id` is properly saved with the connection
+3. Connected accounts show "Linked to [Creator Name]" when they were connected via roster selection
