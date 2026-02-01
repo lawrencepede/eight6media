@@ -128,6 +128,109 @@ export type Database = {
         }
         Relationships: []
       }
+      instagram_connections: {
+        Row: {
+          access_token: string
+          connected_by: string | null
+          created_at: string
+          creator_id: string | null
+          id: string
+          instagram_user_id: string
+          instagram_username: string
+          page_id: string | null
+          page_name: string | null
+          token_expires_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          connected_by?: string | null
+          created_at?: string
+          creator_id?: string | null
+          id?: string
+          instagram_user_id: string
+          instagram_username: string
+          page_id?: string | null
+          page_name?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          connected_by?: string | null
+          created_at?: string
+          creator_id?: string | null
+          id?: string
+          instagram_user_id?: string
+          instagram_username?: string
+          page_id?: string | null
+          page_name?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instagram_connections_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      instagram_insights: {
+        Row: {
+          connection_id: string
+          created_at: string
+          engagement_rate: number | null
+          followers_count: number | null
+          id: string
+          impressions: number | null
+          media_count: number | null
+          metric_date: string
+          profile_views: number | null
+          raw_data: Json | null
+          reach: number | null
+          website_clicks: number | null
+        }
+        Insert: {
+          connection_id: string
+          created_at?: string
+          engagement_rate?: number | null
+          followers_count?: number | null
+          id?: string
+          impressions?: number | null
+          media_count?: number | null
+          metric_date: string
+          profile_views?: number | null
+          raw_data?: Json | null
+          reach?: number | null
+          website_clicks?: number | null
+        }
+        Update: {
+          connection_id?: string
+          created_at?: string
+          engagement_rate?: number | null
+          followers_count?: number | null
+          id?: string
+          impressions?: number | null
+          media_count?: number | null
+          metric_date?: string
+          profile_views?: number | null
+          raw_data?: Json | null
+          reach?: number | null
+          website_clicks?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instagram_insights_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "instagram_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       talent_updates: {
         Row: {
           content: string | null

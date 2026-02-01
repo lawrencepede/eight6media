@@ -8,7 +8,8 @@ import {
   Users,
   Sparkles,
   Settings,
-  ArrowRight
+  ArrowRight,
+  BarChart3
 } from "lucide-react";
 import PasswordGate from "@/components/PasswordGate";
 
@@ -76,6 +77,13 @@ const BackendConsole = () => {
       description: "Create branded pitch decks with curated creator selections",
       icon: <Sparkles className="w-6 h-6" />,
       to: "/console/pitch-generator",
+      available: true,
+    },
+    {
+      title: "Meta Analytics",
+      description: "Connect Instagram accounts and track real-time insights",
+      icon: <BarChart3 className="w-6 h-6" />,
+      to: "/console/meta-analytics",
       available: true,
     },
     {
