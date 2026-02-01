@@ -21,19 +21,22 @@ serve(async (req) => {
     <!DOCTYPE html>
     <html>
       <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${success ? 'Connected!' : 'Connection Failed'}</title>
         <style>
-          body { font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #0f0f0f; color: white; }
-          .container { text-align: center; padding: 2rem; }
-          h1 { color: ${success ? '#22c55e' : '#ef4444'}; }
-          p { color: #9ca3af; margin-top: 1rem; }
+          body { font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #0f0f0f; color: white; padding: 1rem; box-sizing: border-box; }
+          .container { text-align: center; padding: 2rem; max-width: 400px; }
+          h1 { color: ${success ? '#22c55e' : '#ef4444'}; margin-bottom: 1rem; }
+          .message { color: #9ca3af; margin-top: 1rem; white-space: pre-line; line-height: 1.6; text-align: left; }
           .close-btn { margin-top: 2rem; padding: 0.75rem 1.5rem; background: #3b82f6; color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-size: 1rem; }
+          .close-btn:hover { background: #2563eb; }
         </style>
       </head>
       <body>
         <div class="container">
-          <h1>${success ? '✓ Instagram Connected!' : '✗ Connection Failed'}</h1>
-          <p>${message}</p>
+          <h1>${success ? 'Instagram Connected!' : 'Connection Failed'}</h1>
+          <div class="message">${message}</div>
           <button class="close-btn" onclick="window.close()">Close Window</button>
         </div>
         <script>
@@ -142,8 +145,19 @@ To connect, please ensure your Instagram account is switched to a Professional a
     const pages = pagesData.data || [];
 
     if (pages.length === 0) {
-      return new Response(htmlResponse('No Facebook Pages found. Please ensure your Instagram Business account is connected to a Facebook Page.', false), {
-        headers: { 'Content-Type': 'text/html' },
+      const noPagesMessage = `No Facebook Pages found linked to your account.
+
+To connect Instagram analytics, you need:
+1. A Professional Instagram account (Business or Creator)
+2. That account linked to a Facebook Page
+
+To fix this:
+1. Create a Facebook Page (or use an existing one)
+2. In Instagram Settings → Account → Linked Accounts
+3. Connect your Facebook Page
+4. Try connecting again`;
+      return new Response(htmlResponse(noPagesMessage, false), {
+        headers: { 'Content-Type': 'text/html; charset=utf-8' },
       });
     }
 
@@ -174,8 +188,17 @@ To connect, please ensure your Instagram account is switched to a Professional a
     }
 
     if (!instagramAccount) {
-      return new Response(htmlResponse('No Instagram Business Account found connected to your Facebook Pages.', false), {
-        headers: { 'Content-Type': 'text/html' },
+      const noBusinessAccountMessage = `Your Instagram account must be a Professional account (Business or Creator) to connect.
+
+To fix this:
+1. Open Instagram app
+2. Go to Settings → Account
+3. Tap "Switch to Professional Account"
+4. Choose Business or Creator
+5. Link it to a Facebook Page
+6. Try connecting again`;
+      return new Response(htmlResponse(noBusinessAccountMessage, false), {
+        headers: { 'Content-Type': 'text/html; charset=utf-8' },
       });
     }
 
