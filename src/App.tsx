@@ -20,6 +20,7 @@ import BackendConsole from "./pages/BackendConsole";
 import PartnershipUpdates from "./pages/PartnershipUpdates";
 import RosterManagement from "./pages/RosterManagement";
 import PitchGenerator from "./pages/PitchGenerator";
+import MetaAnalytics from "./pages/MetaAnalytics";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -70,6 +71,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <PitchGenerator />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/console/meta-analytics" 
+              element={
+                <ProtectedRoute>
+                  <MetaAnalytics />
                 </ProtectedRoute>
               } 
             />
