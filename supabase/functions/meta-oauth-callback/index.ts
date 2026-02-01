@@ -50,7 +50,20 @@ serve(async (req) => {
   try {
     if (error) {
       console.error('OAuth error:', error);
-      return new Response(htmlResponse(`OAuth was denied: ${error}`, false), {
+      
+      // Handle specific error cases with user-friendly messages
+      let errorMessage = `OAuth was denied: ${error}`;
+      
+      if (error === 'access_denied') {
+        errorMessage = `Connection was denied. This usually happens because:
+
+• The Instagram account is not a Professional account (Business or Creator)
+• You didn't grant all required permissions
+
+To connect, please ensure your Instagram account is switched to a Professional account in Instagram Settings → Account → Switch to Professional Account.`;
+      }
+      
+      return new Response(htmlResponse(errorMessage, false), {
         headers: { 'Content-Type': 'text/html' },
       });
     }
