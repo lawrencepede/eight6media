@@ -127,28 +127,31 @@ const MetaAnalytics = () => {
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-4">
-                <Button
-                  onClick={() => handleConnect()}
-                  disabled={startOAuth.isPending}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  {startOAuth.isPending ? "Connecting..." : "Connect New Account"}
-                </Button>
-                
+                {/* Primary: Connect roster talent */}
                 {creators.length > 0 && (
-                  <Select onValueChange={(value) => handleConnect(value)}>
-                    <SelectTrigger className="w-[250px]">
-                      <SelectValue placeholder="Or link to a creator..." />
+                  <Select onValueChange={(value) => handleConnect(value)} disabled={startOAuth.isPending}>
+                    <SelectTrigger className="w-[280px]">
+                      <SelectValue placeholder="Connect Eight-Six Talent" />
                     </SelectTrigger>
                     <SelectContent>
                       {creators.map((creator) => (
                         <SelectItem key={creator.id} value={creator.id}>
-                          {creator.name}
+                          {creator.name} • @{creator.instagramHandle}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 )}
+                
+                {/* Secondary: Connect non-roster accounts */}
+                <Button
+                  variant="outline"
+                  onClick={() => handleConnect()}
+                  disabled={startOAuth.isPending}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {startOAuth.isPending ? "Connecting..." : "Connect a New Account"}
+                </Button>
               </div>
             </CardContent>
           </Card>
