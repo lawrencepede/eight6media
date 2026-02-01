@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 serve(async (req) => {
@@ -50,6 +50,20 @@ serve(async (req) => {
     </html>
   `;
 
+  // IMPORTANT:
+  // The gateway defaults to Content-Type: text/plain and sets X-Content-Type-Options: nosniff.
+  // To ensure browsers render this as HTML, return a Blob with type text/html.
+  const respondHtml = (message: string, success: boolean, status = 200) => {
+    const body = new Blob([htmlResponse(message, success)], {
+      type: 'text/html; charset=utf-8',
+    });
+
+    return new Response(body, {
+      status,
+      headers: corsHeaders,
+    });
+  };
+
   try {
     if (error) {
       console.error('OAuth error:', error);
@@ -66,15 +80,11 @@ serve(async (req) => {
 To connect, please ensure your Instagram account is switched to a Professional account in Instagram Settings → Account → Switch to Professional Account.`;
       }
       
-      return new Response(htmlResponse(errorMessage, false), {
-        headers: { 'Content-Type': 'text/html' },
-      });
+      return respondHtml(errorMessage, false);
     }
 
     if (!code || !stateParam) {
-      return new Response(htmlResponse('Missing authorization code or state', false), {
-        headers: { 'Content-Type': 'text/html' },
-      });
+      return respondHtml('Missing authorization code or state', false);
     }
 
     const META_APP_ID = Deno.env.get('META_APP_ID');
@@ -156,9 +166,7 @@ To fix this:
 2. In Instagram Settings → Account → Linked Accounts
 3. Connect your Facebook Page
 4. Try connecting again`;
-      return new Response(htmlResponse(noPagesMessage, false), {
-        headers: { 'Content-Type': 'text/html; charset=utf-8' },
-      });
+      return respondHtml(noPagesMessage, false);
     }
 
     // Get Instagram Business Account for each page
@@ -197,9 +205,7 @@ To fix this:
 4. Choose Business or Creator
 5. Link it to a Facebook Page
 6. Try connecting again`;
-      return new Response(htmlResponse(noBusinessAccountMessage, false), {
-        headers: { 'Content-Type': 'text/html; charset=utf-8' },
-      });
+      return respondHtml(noBusinessAccountMessage, false);
     }
 
     // Store in database
@@ -227,17 +233,14 @@ To fix this:
       throw new Error('Failed to save connection');
     }
 
-    return new Response(
-      htmlResponse(`Successfully connected @${instagramAccount.username}! You can close this window.`, true),
-      { headers: { 'Content-Type': 'text/html' } }
+    return respondHtml(
+      `Successfully connected @${instagramAccount.username}! You can close this window.`,
+      true
     );
 
   } catch (error: unknown) {
     console.error('Error in meta-oauth-callback:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(
-      htmlResponse(`An error occurred: ${message}`, false),
-      { headers: { 'Content-Type': 'text/html' } }
-    );
+    return respondHtml(`An error occurred: ${message}`, false);
   }
 });
