@@ -21,6 +21,7 @@ import PartnershipUpdates from "./pages/PartnershipUpdates";
 import RosterManagement from "./pages/RosterManagement";
 import PitchGenerator from "./pages/PitchGenerator";
 import MetaAnalytics from "./pages/MetaAnalytics";
+import MetaOAuthResult from "./pages/MetaOAuthResult";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -84,6 +85,7 @@ const App = () => (
             />
             <Route path="/admin" element={<Admin />} />
             <Route path="/pitch/:slug" element={<Pitch />} />
+            <Route path="/oauth/meta/result" element={<MetaOAuthResult />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
