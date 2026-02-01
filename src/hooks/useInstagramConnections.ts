@@ -55,15 +55,11 @@ export function useInstagramConnections() {
 
   const startOAuth = useMutation({
     mutationFn: async (creatorId?: string) => {
-      const params = new URLSearchParams();
-      if (creatorId) {
-        params.set("creator_id", creatorId);
-      }
+      const functionPath = creatorId 
+        ? `meta-oauth-start?creator_id=${encodeURIComponent(creatorId)}`
+        : "meta-oauth-start";
 
-      const { data, error } = await supabase.functions.invoke("meta-oauth-start", {
-        body: null,
-        method: "GET",
-      });
+      const { data, error } = await supabase.functions.invoke(functionPath);
 
       if (error) throw error;
       return data as { auth_url: string };
