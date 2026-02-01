@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,27 +7,12 @@ const MetaOAuthResult = () => {
   const [searchParams] = useSearchParams();
   const success = searchParams.get("success") === "true";
   const message = searchParams.get("message") || (success ? "Instagram connected successfully!" : "Connection failed.");
-  const [countdown, setCountdown] = useState(3);
 
   useEffect(() => {
     // Post message to opener (parent window)
     if (window.opener) {
       window.opener.postMessage({ type: "meta-oauth-complete", success }, "*");
     }
-
-    // Auto-close countdown
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          window.close();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
   }, [success]);
 
   return (
@@ -45,11 +30,7 @@ const MetaOAuthResult = () => {
 
         <p className="text-muted-foreground whitespace-pre-line">{message}</p>
 
-        <p className="text-sm text-muted-foreground">
-          This window will close in {countdown} second{countdown !== 1 ? "s" : ""}...
-        </p>
-
-        <Button variant="outline" onClick={() => window.close()}>
+        <Button onClick={() => window.close()}>
           Close Window
         </Button>
       </div>
