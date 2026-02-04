@@ -83,6 +83,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       options: {
         redirectTo: redirectUrl,
         scopes: "openid email profile",
+        queryParams: {
+          prompt: "select_account",
+        },
       },
     });
     
