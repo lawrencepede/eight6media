@@ -134,6 +134,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const signOut = async () => {
+    // Optimistically clear local auth state so UI updates immediately
+    // (prevents brief redirects caused by stale `user` state)
+    setSession(null);
+    setUser(null);
+    setIsLoading(false);
+
     await supabase.auth.signOut();
   };
 

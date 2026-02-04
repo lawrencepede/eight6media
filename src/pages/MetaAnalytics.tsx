@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,6 +42,7 @@ import {
 
 const MetaAnalytics = () => {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const { connections, isLoading, startOAuth, fetchInsights, deleteConnection } = useInstagramConnections();
   const { creators } = useCreators();
   const [selectedConnectionId, setSelectedConnectionId] = useState<string | undefined>();
@@ -49,6 +50,7 @@ const MetaAnalytics = () => {
 
   const handleSignOut = async () => {
     await signOut();
+    navigate("/auth", { replace: true });
   };
 
   const handleConnect = (creatorId?: string) => {
