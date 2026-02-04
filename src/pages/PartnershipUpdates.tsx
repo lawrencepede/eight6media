@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGmail } from "@/hooks/useGmail";
 import { useSlack } from "@/hooks/useSlack";
@@ -35,6 +35,7 @@ import { formatDistanceToNow } from "date-fns";
 
 const PartnershipUpdates = () => {
   const { user, connectGmail, signOut } = useAuth();
+  const navigate = useNavigate();
   const { emails, isLoading: isGmailLoading, needsAuth: gmailNeedsAuth, fetchEmails } = useGmail();
   const { messages: slackMessages, isLoading: isSlackLoading, needsAuth: slackNeedsAuth, fetchMessages: fetchSlack } = useSlack();
   const { 
@@ -70,6 +71,7 @@ const PartnershipUpdates = () => {
 
   const handleSignOut = async () => {
     await signOut();
+    navigate("/auth", { replace: true });
   };
 
   const handleGeneratePreview = async () => {

@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { 
@@ -52,9 +52,11 @@ const ToolCard = ({ title, description, icon, to, available = true }: ToolCardPr
 
 const BackendConsole = () => {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const handleSignOut = async () => {
     await signOut();
+    navigate("/auth", { replace: true });
   };
 
   const tools = [
