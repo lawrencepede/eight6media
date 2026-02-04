@@ -22,7 +22,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || "/dashboard";
+  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || "/console";
 
   useEffect(() => {
     if (user && !isLoading) {
