@@ -32,7 +32,7 @@ const Auth = () => {
 
   const handleGoogleSignIn = async () => {
     setIsSubmitting(true);
-    const { error } = await signInWithGoogle();
+    const { error } = await signInWithGoogle(from);
     if (error) {
       toast.error(error.message);
     }

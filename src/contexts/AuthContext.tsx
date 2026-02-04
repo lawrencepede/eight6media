@@ -6,7 +6,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
-  signInWithGoogle: () => Promise<{ error: Error | null }>;
+  signInWithGoogle: (returnTo?: string) => Promise<{ error: Error | null }>;
   connectGmail: () => Promise<{ error: Error | null }>;
   signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUpWithEmail: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
@@ -74,8 +74,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signInWithGoogle = async () => {
-    const redirectUrl = `${window.location.origin}/`;
+  const signInWithGoogle = async (returnTo?: string) => {
+    // Use provided returnTo, or default to /console for authenticated areas
+    const redirectUrl = `${window.location.origin}${returnTo || '/console'}`;
     
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
