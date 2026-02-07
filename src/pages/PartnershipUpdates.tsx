@@ -13,6 +13,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { CanvasPreviewTable } from "@/components/CanvasPreviewTable";
 import { 
   ArrowLeft, 
@@ -105,38 +111,53 @@ const PartnershipUpdates = () => {
   const newOpportunitiesCount = preview?.new_opportunities_count || 0;
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <Link to="/console" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors font-sans">
-              <ArrowLeft className="w-4 h-4" />
-              <span>Back to Console</span>
-            </Link>
-            <h1 className="font-sans text-lg font-semibold text-primary">Partnership Updates</h1>
-            <div className="flex items-center gap-4">
-              {user && (
-                <>
-                  <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
-                    <UserIcon className="w-4 h-4" />
-                    <span className="font-sans">{user.email}</span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleSignOut}
-                    className="font-sans"
-                  >
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Sign Out
-                  </Button>
-                </>
-              )}
+    <TooltipProvider>
+      <div className="min-h-screen bg-background">
+        {/* Header */}
+        <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
+          <div className="container mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link to="/console" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors font-sans">
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Back to Console</span>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Return to the main console dashboard</p>
+                </TooltipContent>
+              </Tooltip>
+              <h1 className="font-sans text-lg font-semibold text-primary">Partnership Updates</h1>
+              <div className="flex items-center gap-4">
+                {user && (
+                  <>
+                    <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
+                      <UserIcon className="w-4 h-4" />
+                      <span className="font-sans">{user.email}</span>
+                    </div>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleSignOut}
+                          className="font-sans"
+                        >
+                          <LogOut className="w-4 h-4 mr-2" />
+                          Sign Out
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Sign out of your account</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
       <div className="container mx-auto px-6 py-8">
         {/* Talent Canvases Section */}
@@ -150,26 +171,40 @@ const PartnershipUpdates = () => {
               <p className="text-sm text-muted-foreground font-sans">Generate deal summary canvases for Slack channels</p>
             </div>
             <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={tagUpdates} 
-                disabled={isTagging}
-                className="gap-2 font-sans"
-              >
-                <Tag className={`w-4 h-4 ${isTagging ? "animate-pulse" : ""}`} />
-                {isTagging ? "Tagging..." : "Re-tag Updates"}
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={syncDeals} 
-                disabled={isDealsSyncing}
-                className="gap-2 font-sans"
-              >
-                <Download className={`w-4 h-4 ${isDealsSyncing ? "animate-spin" : ""}`} />
-                {isDealsSyncing ? "Syncing..." : "Sync Deals"}
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={tagUpdates} 
+                    disabled={isTagging}
+                    className="gap-2 font-sans"
+                  >
+                    <Tag className={`w-4 h-4 ${isTagging ? "animate-pulse" : ""}`} />
+                    {isTagging ? "Tagging..." : "Re-tag Updates"}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Use AI to tag updates with talent names</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={syncDeals} 
+                    disabled={isDealsSyncing}
+                    className="gap-2 font-sans"
+                  >
+                    <Download className={`w-4 h-4 ${isDealsSyncing ? "animate-spin" : ""}`} />
+                    {isDealsSyncing ? "Syncing..." : "Sync Deals"}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Import latest deals from Google Sheets</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
           </div>
           
@@ -186,14 +221,21 @@ const PartnershipUpdates = () => {
                 ))}
               </SelectContent>
             </Select>
-            <Button 
-              onClick={handleGeneratePreview} 
-              disabled={!selectedTalent || isGenerating}
-              className="gap-2 font-script"
-            >
-              <Eye className={`w-4 h-4 ${isGenerating ? "animate-pulse" : ""}`} />
-              {isGenerating ? "Generating..." : "Preview Canvas"}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  onClick={handleGeneratePreview} 
+                  disabled={!selectedTalent || isGenerating}
+                  className="gap-2 font-script"
+                >
+                  <Eye className={`w-4 h-4 ${isGenerating ? "animate-pulse" : ""}`} />
+                  {isGenerating ? "Generating..." : "Preview Canvas"}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Generate a deal summary canvas for the selected talent</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
           
           {/* Preview Section */}
@@ -212,22 +254,36 @@ const PartnershipUpdates = () => {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button
-                    onClick={handlePublish}
-                    disabled={isPublishing}
-                    size="sm"
-                    className="gap-2 font-script"
-                  >
-                    <Send className={`w-4 h-4 ${isPublishing ? "animate-pulse" : ""}`} />
-                    {isPublishing ? "Publishing..." : "Publish to Slack"}
-                  </Button>
-                  <Button
-                    onClick={clearPreview}
-                    variant="ghost"
-                    size="sm"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={handlePublish}
+                        disabled={isPublishing}
+                        size="sm"
+                        className="gap-2 font-script"
+                      >
+                        <Send className={`w-4 h-4 ${isPublishing ? "animate-pulse" : ""}`} />
+                        {isPublishing ? "Publishing..." : "Publish to Slack"}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Post this canvas to the talent's Slack channel</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={clearPreview}
+                        variant="ghost"
+                        size="sm"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Close preview</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
               <div className="p-4 bg-card max-h-[500px] overflow-y-auto">
@@ -253,14 +309,21 @@ const PartnershipUpdates = () => {
             <h2 className="font-display text-2xl text-primary">TALENT UPDATES</h2>
             <p className="text-muted-foreground font-sans">Latest communications from all channels</p>
           </div>
-          <Button 
-            onClick={handleSync} 
-            disabled={isSyncing || isGmailLoading || isSlackLoading || isTagging} 
-            className="gap-2 font-script"
-          >
-            <RefreshCw className={`w-4 h-4 ${isSyncing || isGmailLoading || isSlackLoading || isTagging ? "animate-spin" : ""}`} />
-            {isTagging ? "Tagging..." : isSyncing || isGmailLoading || isSlackLoading ? "Syncing..." : "Sync All Channels"}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                onClick={handleSync} 
+                disabled={isSyncing || isGmailLoading || isSlackLoading || isTagging} 
+                className="gap-2 font-script"
+              >
+                <RefreshCw className={`w-4 h-4 ${isSyncing || isGmailLoading || isSlackLoading || isTagging ? "animate-spin" : ""}`} />
+                {isTagging ? "Tagging..." : isSyncing || isGmailLoading || isSlackLoading ? "Syncing..." : "Sync All Channels"}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Fetch latest updates from Gmail and Slack</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
 
         {/* Channel Tabs */}
@@ -345,10 +408,17 @@ const PartnershipUpdates = () => {
                 title="Gmail access needed"
                 description="Sign in with Google to access your Gmail inbox. Each team member connects their own account."
                 action={
-                  <Button onClick={handleConnectGmail} className="mt-4 gap-2 font-script">
-                    <Mail className="w-4 h-4" />
-                    Connect Gmail
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button onClick={handleConnectGmail} className="mt-4 gap-2 font-script">
+                        <Mail className="w-4 h-4" />
+                        Connect Gmail
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Link your Gmail account to sync emails</p>
+                    </TooltipContent>
+                  </Tooltip>
                 }
               />
             ) : emails.length > 0 ? (
@@ -368,6 +438,7 @@ const PartnershipUpdates = () => {
         </Tabs>
       </div>
     </div>
+    </TooltipProvider>
   );
 };
 
