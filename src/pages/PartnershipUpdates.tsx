@@ -20,6 +20,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { CanvasPreviewTable } from "@/components/CanvasPreviewTable";
+import { EmailAgentChat } from "@/components/EmailAgentChat";
 import { 
   ArrowLeft, 
   Mail, 
@@ -160,6 +161,9 @@ const PartnershipUpdates = () => {
         </header>
 
       <div className="container mx-auto px-6 py-8">
+        {/* AI Assistant */}
+        <EmailAgentChat />
+
         {/* Talent Canvases Section */}
         <div className="bg-card rounded-xl border border-border p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
