@@ -1,57 +1,43 @@
 
 
-## AI Assistant for Partnership Updates
+## Add Gmail Drafts Syncing and Increase Sync Volume
 
-Add a conversational AI prompt box to the Partnership Updates page that lets you ask natural language questions about your emails, Slack messages, and deals.
+### What Changes
 
-### What You'll Get
+1. **Sync your Gmail Drafts** -- The current sync only pulls inbox messages. Drafts live in a separate Gmail API endpoint (`/users/me/drafts`) that we're not calling at all. This update will fetch all drafts and store them in `talent_updates` with source `gmail-draft` so the AI assistant can search them.
 
-A collapsible chat panel at the top of the Partnership Updates page with:
-- A text input where you type questions like "What brands have replied in the past two weeks that I still need to follow up with?"
-- Streaming AI responses that appear in real-time
-- The AI has access to your synced emails, Slack messages, and deal data to answer intelligently
-
-### Example Queries It Can Handle
-- "Look at my draft emails and compile a list of any that mention 'new talent'"
-- "What brands have replied to me in the past two weeks that I still need to follow up with?"
-- "Summarize all updates about [talent name] this week"
-- "Which deals are stalled with no recent activity?"
+2. **Pagination to get ALL messages** -- The Gmail API caps each request at 500 results and uses a `nextPageToken` for pagination. Currently we only fetch a single page of 100. This update will paginate through all available inbox messages and drafts so you get your full history, not just the most recent 100.
 
 ### How It Works
 
-1. You type a question in the prompt box
-2. A backend function queries your `talent_updates` and `deals` tables for relevant data
-3. That data is sent to the AI along with your question
-4. The AI analyzes the data and streams back a useful answer
+The `fetch-gmail` edge function will be updated to:
+
+- **Fetch drafts**: Call the Gmail Drafts API (`/users/me/drafts`) with pagination, get each draft's metadata (To, Subject, Date, body snippet), and upsert them into `talent_updates` with `source: 'gmail-draft'`
+- **Paginate inbox messages**: Loop using `nextPageToken` until all inbox messages since Dec 1, 2025 are fetched (instead of stopping at 100)
+- **Paginate drafts**: Same pagination loop for drafts
+- **Batch processing**: Process messages in batches of 50 to stay within edge function time limits
+
+The AI assistant (`email-agent`) already queries all `talent_updates` records, so once drafts are synced they'll automatically be searchable -- no changes needed to the assistant itself.
+
+### What You'll Be Able to Ask the AI
+
+- "Look at my draft emails and compile a list of any that mention 'new talent'"
+- "Which drafts have Instagram links in them?"
+- "Show me all drafts I haven't sent yet about brand partnerships"
 
 ---
 
 ### Technical Details
 
-**New Edge Function: `supabase/functions/email-agent/index.ts`**
-- Accepts the user's natural language query + auth token
-- Queries `talent_updates` (emails, Slack messages) and `deals` tables for recent data
-- Sends the data context + user question to Lovable AI (Gemini Flash) for analysis
-- Streams the response back via SSE for real-time rendering
-- Handles 429/402 rate limit errors gracefully
+**Modified file: `supabase/functions/fetch-gmail/index.ts`**
 
-**New Hook: `src/hooks/useEmailAgent.ts`**
-- Manages chat state (messages, loading, streaming)
-- Handles SSE streaming with token-by-token rendering
-- Exposes a `sendQuery(text)` function
+1. Add a pagination helper that follows `nextPageToken` until all pages are fetched
+2. Change inbox fetch from `maxResults=100` (single page) to `maxResults=500` with pagination loop
+3. Add a new section to fetch drafts via `GET /users/me/drafts` with pagination
+4. For each draft, fetch metadata via `GET /users/me/drafts/{id}` (which returns the underlying message)
+5. Extract To, Subject, Date headers and snippet from draft messages
+6. Upsert drafts into `talent_updates` with `source: 'gmail-draft'` and `source_id` set to the draft ID
+7. Return combined counts of inbox messages and drafts in the response
 
-**New Component: `src/components/EmailAgentChat.tsx`**
-- Collapsible panel with a text input and submit button
-- Displays conversation history with markdown rendering
-- Shows streaming responses as they arrive
-- Includes example query chips for quick access
+**No other files need to change** -- the AI assistant edge function and the frontend hook/component already work with all `talent_updates` records regardless of source.
 
-**Updated: `src/pages/PartnershipUpdates.tsx`**
-- Adds the `EmailAgentChat` component between the header and the Talent Canvases section
-
-**Updated: `supabase/config.toml`**
-- Registers the new `email-agent` function with `verify_jwt = false`
-
-**Dependencies:**
-- Will add `react-markdown` for rendering AI responses with proper formatting
-- Uses existing `LOVABLE_API_KEY` (already configured) -- no new secrets needed
