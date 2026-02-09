@@ -15,6 +15,9 @@ interface GmailEmail {
 interface GmailResponse {
   success?: boolean;
   count?: number;
+  inboxCount?: number;
+  draftsCount?: number;
+  totalCount?: number;
   emails?: GmailEmail[];
   error?: string;
   needsAuth?: boolean;
@@ -67,12 +70,11 @@ export const useGmail = () => {
         return;
       }
 
-      if (data?.emails) {
-        setEmails(data.emails);
+      if (data?.success) {
         setNeedsAuth(false);
         toast({
           title: "Success",
-          description: `Fetched ${data.count} emails from Gmail`,
+          description: `Synced ${data.inboxCount ?? 0} inbox messages and ${data.draftsCount ?? 0} drafts`,
         });
       }
     } catch (err) {
