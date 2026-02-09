@@ -7,8 +7,9 @@ const corsHeaders = {
 }
 
 const GMAIL_API_URL = 'https://www.googleapis.com/gmail/v1'
+const BATCH_SIZE = 25
+const MAX_DRAFTS = 500
 
-// Decode common HTML entities in email subjects/snippets
 const decodeHtmlEntities = (text: string): string => {
   if (!text) return text
   return text
@@ -23,7 +24,6 @@ const decodeHtmlEntities = (text: string): string => {
     .replace(/&#x2F;/g, "/")
 }
 
-// Paginate through a Gmail list endpoint, collecting all IDs
 async function fetchAllIds(
   url: string,
   accessToken: string,
@@ -57,65 +57,129 @@ async function fetchAllIds(
   return allItems
 }
 
-// Fetch message metadata for a batch of message IDs
-async function fetchMessageDetails(
+function parseMessageDetail(detail: any, idOverride?: string) {
+  const headers = detail.payload?.headers || []
+  const getHeader = (name: string) =>
+    headers.find((h: any) => h.name.toLowerCase() === name.toLowerCase())?.value || ''
+
+  return {
+    id: idOverride || detail.id,
+    threadId: detail.threadId,
+    subject: decodeHtmlEntities(getHeader('Subject') || '(No subject)'),
+    from: getHeader('From'),
+    to: getHeader('To'),
+    date: getHeader('Date') || new Date().toISOString(),
+    snippet: decodeHtmlEntities(detail.snippet),
+  }
+}
+
+// Fetch message details in parallel batches
+async function fetchMessageDetailsBatched(
   messageIds: string[],
   accessToken: string
 ): Promise<any[]> {
   const emails: any[] = []
 
-  for (const id of messageIds) {
-    const res = await fetch(
-      `${GMAIL_API_URL}/users/me/messages/${id}?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Subject&metadataHeaders=Date`,
-      { headers: { Authorization: `Bearer ${accessToken}` } }
-    )
-
-    if (res.ok) {
-      const detail = await res.json()
-      const headers = detail.payload?.headers || []
-      const getHeader = (name: string) =>
-        headers.find((h: any) => h.name.toLowerCase() === name.toLowerCase())?.value || ''
-
-      emails.push({
-        id: detail.id,
-        threadId: detail.threadId,
-        subject: decodeHtmlEntities(getHeader('Subject') || '(No subject)'),
-        from: getHeader('From'),
-        to: getHeader('To'),
-        date: getHeader('Date'),
-        snippet: decodeHtmlEntities(detail.snippet),
+  for (let i = 0; i < messageIds.length; i += BATCH_SIZE) {
+    const batch = messageIds.slice(i, i + BATCH_SIZE)
+    const results = await Promise.all(
+      batch.map(async (id) => {
+        try {
+          const res = await fetch(
+            `${GMAIL_API_URL}/users/me/messages/${id}?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Subject&metadataHeaders=Date`,
+            { headers: { Authorization: `Bearer ${accessToken}` } }
+          )
+          if (res.ok) return parseMessageDetail(await res.json())
+          await res.text() // consume body
+        } catch (e) {
+          console.error(`Error fetching message ${id}:`, e)
+        }
+        return null
       })
-    }
+    )
+    emails.push(...results.filter(Boolean))
   }
 
   return emails
 }
 
-// Upsert emails into talent_updates
-async function upsertEmails(
+// Fetch draft details in parallel batches
+async function fetchDraftDetailsBatched(
+  drafts: any[],
+  accessToken: string
+): Promise<any[]> {
+  const emails: any[] = []
+
+  for (let i = 0; i < drafts.length; i += BATCH_SIZE) {
+    const batch = drafts.slice(i, i + BATCH_SIZE)
+    const results = await Promise.all(
+      batch.map(async (draft) => {
+        try {
+          const res = await fetch(
+            `${GMAIL_API_URL}/users/me/drafts/${draft.id}`,
+            { headers: { Authorization: `Bearer ${accessToken}` } }
+          )
+          if (!res.ok) { await res.text(); return null }
+
+          const draftData = await res.json()
+          const message = draftData.message
+          if (!message) return null
+
+          const msgRes = await fetch(
+            `${GMAIL_API_URL}/users/me/messages/${message.id}?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Subject&metadataHeaders=Date`,
+            { headers: { Authorization: `Bearer ${accessToken}` } }
+          )
+          if (!msgRes.ok) { await msgRes.text(); return null }
+
+          return parseMessageDetail(await msgRes.json(), draft.id)
+        } catch (e) {
+          console.error(`Error fetching draft ${draft.id}:`, e)
+          return null
+        }
+      })
+    )
+    emails.push(...results.filter(Boolean))
+  }
+
+  return emails
+}
+
+// Bulk upsert emails into talent_updates
+async function upsertEmailsBulk(
   supabaseAdmin: any,
   emails: any[],
   source: string,
   userId: string
-) {
-  let count = 0
-  for (const email of emails) {
-    const { error } = await supabaseAdmin
-      .from('talent_updates')
-      .upsert({
-        source,
-        source_id: email.id,
-        sender: source === 'gmail-draft' ? (email.to || email.from) : email.from,
-        subject: email.subject,
-        content: email.snippet,
-        received_at: new Date(email.date).toISOString(),
-        fetched_by: userId,
-        metadata: { threadId: email.threadId },
-      }, { onConflict: 'source,source_id' })
+): Promise<number> {
+  if (emails.length === 0) return 0
 
-    if (!error) count++
-    else console.log(`Upsert error (${source}):`, error.message)
+  const rows = emails.map((email) => ({
+    source,
+    source_id: email.id,
+    sender: source === 'gmail-draft' ? (email.to || email.from) : email.from,
+    subject: email.subject,
+    content: email.snippet,
+    received_at: new Date(email.date).toISOString(),
+    fetched_by: userId,
+    metadata: { threadId: email.threadId },
+  }))
+
+  let count = 0
+  // Upsert in chunks of 100 rows
+  for (let i = 0; i < rows.length; i += 100) {
+    const chunk = rows.slice(i, i + 100)
+    const { error, data } = await supabaseAdmin
+      .from('talent_updates')
+      .upsert(chunk, { onConflict: 'source,source_id' })
+      .select('id')
+
+    if (error) {
+      console.error(`Bulk upsert error (${source}):`, error.message)
+    } else {
+      count += data?.length || chunk.length
+    }
   }
+
   return count
 }
 
@@ -214,24 +278,24 @@ serve(async (req) => {
       console.log('Token refreshed successfully')
     }
 
-    // ---- INBOX MESSAGES (paginated) ----
-    console.log('Fetching all inbox messages with pagination...')
+    // ---- INBOX MESSAGES (paginated + batched) ----
+    console.log('Fetching all inbox messages...')
     const allMessages = await fetchAllIds(
       `${GMAIL_API_URL}/users/me/messages?maxResults=500&q=is:inbox after:2025/12/01`,
       accessToken,
       'messages'
     )
-    console.log(`Found ${allMessages.length} inbox messages total`)
+    console.log(`Found ${allMessages.length} inbox messages, fetching details in batches of ${BATCH_SIZE}...`)
 
-    const inboxEmails = await fetchMessageDetails(
+    const inboxEmails = await fetchMessageDetailsBatched(
       allMessages.map((m: any) => m.id),
       accessToken
     )
-    const inboxUpserted = await upsertEmails(supabaseAdmin, inboxEmails, 'gmail', user.id)
+    const inboxUpserted = await upsertEmailsBulk(supabaseAdmin, inboxEmails, 'gmail', user.id)
     console.log(`Upserted ${inboxUpserted} inbox messages`)
 
-    // ---- DRAFTS (paginated) ----
-    console.log('Fetching all drafts with pagination...')
+    // ---- DRAFTS (paginated + batched, capped) ----
+    console.log('Fetching drafts...')
     const allDrafts = await fetchAllIds(
       `${GMAIL_API_URL}/users/me/drafts?maxResults=500`,
       accessToken,
@@ -239,45 +303,11 @@ serve(async (req) => {
     )
     console.log(`Found ${allDrafts.length} drafts total`)
 
-    // Fetch each draft's message details
-    const draftEmails: any[] = []
-    for (const draft of allDrafts) {
-      const res = await fetch(
-        `${GMAIL_API_URL}/users/me/drafts/${draft.id}`,
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      )
+    const draftsToFetch = allDrafts.slice(0, MAX_DRAFTS)
+    console.log(`Fetching details for ${draftsToFetch.length} most recent drafts in batches of ${BATCH_SIZE}...`)
 
-      if (res.ok) {
-        const draftData = await res.json()
-        const message = draftData.message
-        if (!message) continue
-
-        // Fetch full message metadata
-        const msgRes = await fetch(
-          `${GMAIL_API_URL}/users/me/messages/${message.id}?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Subject&metadataHeaders=Date`,
-          { headers: { Authorization: `Bearer ${accessToken}` } }
-        )
-
-        if (msgRes.ok) {
-          const detail = await msgRes.json()
-          const headers = detail.payload?.headers || []
-          const getHeader = (name: string) =>
-            headers.find((h: any) => h.name.toLowerCase() === name.toLowerCase())?.value || ''
-
-          draftEmails.push({
-            id: draft.id, // Use draft ID as source_id for drafts
-            threadId: detail.threadId,
-            subject: decodeHtmlEntities(getHeader('Subject') || '(No subject)'),
-            from: getHeader('From'),
-            to: getHeader('To'),
-            date: getHeader('Date') || new Date().toISOString(),
-            snippet: decodeHtmlEntities(detail.snippet),
-          })
-        }
-      }
-    }
-
-    const draftsUpserted = await upsertEmails(supabaseAdmin, draftEmails, 'gmail-draft', user.id)
+    const draftEmails = await fetchDraftDetailsBatched(draftsToFetch, accessToken)
+    const draftsUpserted = await upsertEmailsBulk(supabaseAdmin, draftEmails, 'gmail-draft', user.id)
     console.log(`Upserted ${draftsUpserted} drafts`)
 
     return new Response(
@@ -285,6 +315,7 @@ serve(async (req) => {
         success: true,
         inboxCount: inboxEmails.length,
         draftsCount: draftEmails.length,
+        totalDraftsAvailable: allDrafts.length,
         totalCount: inboxEmails.length + draftEmails.length,
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
