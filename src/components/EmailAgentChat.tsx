@@ -7,13 +7,47 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Bot, ChevronDown, ChevronUp, Send, Trash2 } from "lucide-react";
+import { Bot, ChevronDown, ChevronUp, Send, Trash2, Download, Copy, Check } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const EXAMPLE_QUERIES = [
   "What brands replied in the past two weeks I need to follow up with?",
   "Summarize all updates this week",
-  "Which deals are stalled with no recent activity?",
+  "Which drafts have Instagram links in them?",
 ];
+
+/** Extract markdown tables from text and convert to CSV */
+function markdownTablesToCsv(text: string): string | null {
+  const lines = text.split("\n");
+  const csvRows: string[] = [];
+  let inTable = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
+      // Skip separator rows like |---|---|
+      if (/^\|[\s\-:|]+\|$/.test(trimmed)) {
+        inTable = true;
+        continue;
+      }
+      const cells = trimmed
+        .slice(1, -1)
+        .split("|")
+        .map((c) => c.trim().replace(/"/g, '""'));
+      csvRows.push(cells.map((c) => `"${c}"`).join(","));
+      inTable = true;
+    } else if (inTable) {
+      // Table ended
+      inTable = false;
+    }
+  }
+
+  return csvRows.length > 1 ? csvRows.join("\n") : null;
+}
+
+function hasMarkdownTable(text: string): boolean {
+  return /\|.+\|/.test(text) && /\|[\s\-:|]+\|/.test(text);
+}
 
 export function EmailAgentChat() {
   const { messages, isLoading, sendQuery, clearChat } = useEmailAgent();
@@ -52,7 +86,7 @@ export function EmailAgentChat() {
                 AI Assistant
               </span>
               <span className="text-xs text-muted-foreground font-sans">
-                Ask about your emails, Slack, &amp; deals
+                Ask about your emails, drafts, Slack, &amp; deals
               </span>
             </div>
             {isOpen ? (
@@ -65,11 +99,10 @@ export function EmailAgentChat() {
 
         <CollapsibleContent>
           <div className="px-4 pb-4 space-y-3">
-            {/* Messages */}
             {messages.length > 0 && (
               <div
                 ref={scrollRef}
-                className="max-h-[400px] overflow-y-auto space-y-3 pr-1"
+                className="max-h-[500px] overflow-y-auto space-y-3 pr-1"
               >
                 {messages.map((msg, i) => (
                   <MessageBubble key={i} message={msg} />
@@ -84,7 +117,6 @@ export function EmailAgentChat() {
               </div>
             )}
 
-            {/* Example chips when empty */}
             {messages.length === 0 && (
               <div className="flex flex-wrap gap-2">
                 {EXAMPLE_QUERIES.map((q) => (
@@ -99,7 +131,6 @@ export function EmailAgentChat() {
               </div>
             )}
 
-            {/* Input */}
             <form onSubmit={handleSubmit} className="flex gap-2">
               <input
                 type="text"
@@ -138,10 +169,33 @@ export function EmailAgentChat() {
 
 function MessageBubble({ message }: { message: ChatMessage }) {
   const isUser = message.role === "user";
+  const showExport = !isUser && hasMarkdownTable(message.content);
+  const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
+
+  const handleExportCsv = () => {
+    const csv = markdownTablesToCsv(message.content);
+    if (!csv) return;
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "assistant-results.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "Exported", description: "CSV downloaded" });
+  };
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(message.content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
       <div
-        className={`max-w-[85%] rounded-lg px-3 py-2 text-sm font-sans ${
+        className={`max-w-[90%] rounded-lg px-3 py-2 text-sm font-sans ${
           isUser
             ? "bg-primary text-primary-foreground"
             : "bg-muted text-foreground"
@@ -150,9 +204,33 @@ function MessageBubble({ message }: { message: ChatMessage }) {
         {isUser ? (
           message.content
         ) : (
-          <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
-            <ReactMarkdown>{message.content}</ReactMarkdown>
-          </div>
+          <>
+            <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_table]:w-full [&_table]:text-xs [&_th]:px-2 [&_th]:py-1 [&_th]:text-left [&_th]:border-b [&_th]:border-border [&_td]:px-2 [&_td]:py-1 [&_td]:border-b [&_td]:border-border/50 overflow-x-auto">
+              <ReactMarkdown>{message.content}</ReactMarkdown>
+            </div>
+            <div className="flex gap-1 mt-2 justify-end">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCopy}
+                className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+              >
+                {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                <span className="ml-1">{copied ? "Copied" : "Copy"}</span>
+              </Button>
+              {showExport && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleExportCsv}
+                  className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  <Download className="w-3 h-3" />
+                  <span className="ml-1">Export CSV</span>
+                </Button>
+              )}
+            </div>
+          </>
         )}
       </div>
     </div>

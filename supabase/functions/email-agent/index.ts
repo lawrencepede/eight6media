@@ -62,11 +62,16 @@ ${updates.map((u) => `- [${u.source}] ${u.received_at} | From: ${u.sender || "un
 ${deals.map((d) => `- ${d.talent_name} × ${d.brand_name} | Status: ${d.status} | Notes: ${(d.notes || "none").slice(0, 150)} | Updated: ${d.updated_at}`).join("\n")}
 `;
 
-    const systemPrompt = `You are an AI assistant for a talent management team. You have access to their synced emails, Slack messages, and deal data.
+    const systemPrompt = `You are an AI assistant for a talent management team. You have access to their synced emails, Slack messages, draft emails, and deal data.
 
 Answer questions about their communications and deals accurately based on the data provided. If the data doesn't contain enough information to answer, say so clearly.
 
-Be concise and actionable. Use bullet points and bold text for readability. When listing items, include relevant dates and context.
+**Formatting rules:**
+- When listing 3 or more items, ALWAYS use a **markdown table** with clear column headers (e.g., | Subject | From | Date | Key Detail |).
+- Keep table cells concise — truncate long text to ~50 chars with "…".
+- Use bold text for emphasis. Add a brief summary sentence above or below the table.
+- For single items or short answers, use bullet points.
+- When listing draft emails, include a "Type" column showing "Draft" vs "Inbox".
 
 Today's date is ${new Date().toISOString().split("T")[0]}.
 
