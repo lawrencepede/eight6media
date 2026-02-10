@@ -7,14 +7,13 @@ import {
   User,
   ArrowLeft,
   Instagram,
-  Plus,
   RefreshCw,
   Trash2,
   Users,
   Eye,
   MousePointer,
   TrendingUp,
-  AlertCircle
+  Search,
 } from "lucide-react";
 import PasswordGate from "@/components/PasswordGate";
 import { useInstagramConnections, useInstagramInsights } from "@/hooks/useInstagramConnections";
@@ -39,22 +38,39 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const MetaAnalytics = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const { connections, isLoading, startOAuth, fetchInsights, deleteConnection } = useInstagramConnections();
+  const { connections, isLoading, discoverAccounts, connectAccount, fetchInsights, deleteConnection } = useInstagramConnections();
   const { creators } = useCreators();
   const [selectedConnectionId, setSelectedConnectionId] = useState<string | undefined>();
   const { data: insights } = useInstagramInsights(selectedConnectionId);
+  const [showDiscoverDialog, setShowDiscoverDialog] = useState(false);
+  const [linkingCreatorId, setLinkingCreatorId] = useState<Record<string, string>>({});
 
   const handleSignOut = async () => {
     await signOut();
     navigate("/auth", { replace: true });
   };
 
-  const handleConnect = (creatorId?: string) => {
-    startOAuth.mutate(creatorId);
+  const handleDiscover = () => {
+    setShowDiscoverDialog(true);
+    discoverAccounts.mutate();
+  };
+
+  const handleConnectAccount = (account: { ig_account_id: string; username: string; followers_count: number; profile_picture_url: string | null }) => {
+    connectAccount.mutate(
+      { account, creatorId: linkingCreatorId[account.ig_account_id] || undefined },
+      { onSuccess: () => setShowDiscoverDialog(false) }
+    );
   };
 
   const handleFetchInsights = (connectionId: string) => {
@@ -65,12 +81,10 @@ const MetaAnalytics = () => {
     deleteConnection.mutate(connectionId);
   };
 
-  const isTokenExpired = (expiresAt: string | null) => {
-    if (!expiresAt) return false;
-    return new Date(expiresAt) < new Date();
-  };
-
   const latestInsight = insights?.[0];
+
+  // Filter out already-connected account IDs
+  const connectedIds = new Set(connections.map((c) => c.instagram_user_id));
 
   return (
     <PasswordGate>
@@ -112,51 +126,100 @@ const MetaAnalytics = () => {
           <div className="mb-8">
             <h2 className="font-display text-3xl text-primary mb-2">Instagram Analytics</h2>
             <p className="text-muted-foreground">
-              Connect Instagram Business accounts to fetch real-time insights and metrics.
+              Discover and connect Instagram accounts from your Business Manager to track insights.
             </p>
           </div>
 
-          {/* Connection Actions */}
+          {/* Discover Accounts */}
           <Card className="mb-8">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Instagram className="w-5 h-5" />
-                Connect Instagram Account
+                Connect Instagram Accounts
               </CardTitle>
               <CardDescription>
-                Link a creator's Instagram Business account to start tracking their analytics.
+                Discover Instagram accounts your Business Manager has access to, then link them to your roster.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-4">
-                {/* Primary: Connect roster talent */}
-                {creators.length > 0 && (
-                  <Select onValueChange={(value) => handleConnect(value)} disabled={startOAuth.isPending}>
-                    <SelectTrigger className="w-[280px]">
-                      <SelectValue placeholder="Connect Eight-Six Talent" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {creators.map((creator) => (
-                        <SelectItem key={creator.id} value={creator.id}>
-                          {creator.name} • {creator.instagramHandle}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-                
-                {/* Secondary: Connect non-roster accounts */}
-                <Button
-                  variant="outline"
-                  onClick={() => handleConnect()}
-                  disabled={startOAuth.isPending}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  {startOAuth.isPending ? "Connecting..." : "Connect a New Account"}
-                </Button>
-              </div>
+              <Button onClick={handleDiscover} disabled={discoverAccounts.isPending}>
+                <Search className="w-4 h-4 mr-2" />
+                {discoverAccounts.isPending ? "Discovering..." : "Discover Accounts"}
+              </Button>
             </CardContent>
           </Card>
+
+          {/* Discover Dialog */}
+          <Dialog open={showDiscoverDialog} onOpenChange={setShowDiscoverDialog}>
+            <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Discovered Accounts</DialogTitle>
+                <DialogDescription>
+                  Select an account to connect and optionally link it to a roster creator.
+                </DialogDescription>
+              </DialogHeader>
+              {discoverAccounts.isPending ? (
+                <div className="text-center py-8 text-muted-foreground">Fetching accounts...</div>
+              ) : discoverAccounts.data?.accounts?.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No Instagram accounts found. Make sure your Business Manager has partner access to creator accounts.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {(discoverAccounts.data?.accounts || []).map((account) => {
+                    const alreadyConnected = connectedIds.has(account.ig_account_id);
+                    return (
+                      <div key={account.ig_account_id} className="flex flex-col gap-2 p-4 rounded-lg border border-border">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center">
+                              <Instagram className="w-5 h-5 text-accent-foreground" />
+                            </div>
+                            <div>
+                              <div className="font-semibold">@{account.username}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {account.followers_count.toLocaleString()} followers
+                              </div>
+                            </div>
+                          </div>
+                          {alreadyConnected ? (
+                            <span className="text-sm text-muted-foreground">Already connected</span>
+                          ) : (
+                            <Button
+                              size="sm"
+                              onClick={() => handleConnectAccount(account)}
+                              disabled={connectAccount.isPending}
+                            >
+                              Connect
+                            </Button>
+                          )}
+                        </div>
+                        {!alreadyConnected && creators.length > 0 && (
+                          <Select
+                            value={linkingCreatorId[account.ig_account_id] || ""}
+                            onValueChange={(val) =>
+                              setLinkingCreatorId((prev) => ({ ...prev, [account.ig_account_id]: val }))
+                            }
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Link to roster creator (optional)" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {creators.map((creator) => (
+                                <SelectItem key={creator.id} value={creator.id}>
+                                  {creator.name} • {creator.instagramHandle}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
 
           {/* Connected Accounts */}
           <Card className="mb-8">
@@ -171,93 +234,82 @@ const MetaAnalytics = () => {
                 <div className="text-center py-8 text-muted-foreground">Loading...</div>
               ) : connections.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  No Instagram accounts connected yet. Click "Connect New Account" to get started.
+                  No Instagram accounts connected yet. Click "Discover Accounts" to get started.
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {connections.map((connection) => {
-                    const expired = isTokenExpired(connection.token_expires_at);
-                    return (
-                      <div
-                        key={connection.id}
-                        className={`flex items-center justify-between p-4 rounded-lg border ${
-                          selectedConnectionId === connection.id
-                            ? "border-accent bg-accent/5"
-                            : "border-border"
-                        } ${expired ? "opacity-60" : ""}`}
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center">
-                            <Instagram className="w-5 h-5 text-accent-foreground" />
-                          </div>
-                          <div>
-                            <div className="font-semibold flex items-center gap-2">
-                              @{connection.instagram_username}
-                              {expired && (
-                                <span className="text-xs text-destructive flex items-center gap-1">
-                                  <AlertCircle className="w-3 h-3" />
-                                  Token Expired
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              {connection.creator?.name ? (
-                                <span>Linked to {connection.creator.name}</span>
-                              ) : (
-                                <span>Page: {connection.page_name || "Unknown"}</span>
-                              )}
-                              {" · "}
-                              Connected {formatDistanceToNow(new Date(connection.created_at), { addSuffix: true })}
-                            </div>
-                          </div>
+                  {connections.map((connection) => (
+                    <div
+                      key={connection.id}
+                      className={`flex items-center justify-between p-4 rounded-lg border ${
+                        selectedConnectionId === connection.id
+                          ? "border-accent bg-accent/5"
+                          : "border-border"
+                      }`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center">
+                          <Instagram className="w-5 h-5 text-accent-foreground" />
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSelectedConnectionId(
-                              selectedConnectionId === connection.id ? undefined : connection.id
+                        <div>
+                          <div className="font-semibold">@{connection.instagram_username}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {connection.creator?.name ? (
+                              <span>Linked to {connection.creator.name}</span>
+                            ) : (
+                              <span>Not linked to roster</span>
                             )}
-                          >
-                            {selectedConnectionId === connection.id ? "Hide" : "View"}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleFetchInsights(connection.id)}
-                            disabled={fetchInsights.isPending || expired}
-                          >
-                            <RefreshCw className={`w-4 h-4 ${fetchInsights.isPending ? "animate-spin" : ""}`} />
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="outline" size="sm" className="text-destructive">
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Remove Connection?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This will remove the Instagram connection for @{connection.instagram_username}. 
-                                  All stored insights will also be deleted.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction 
-                                  onClick={() => handleDeleteConnection(connection.id)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  Remove
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                            {" · "}
+                            Connected {formatDistanceToNow(new Date(connection.created_at), { addSuffix: true })}
+                          </div>
                         </div>
                       </div>
-                    );
-                  })}
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedConnectionId(
+                            selectedConnectionId === connection.id ? undefined : connection.id
+                          )}
+                        >
+                          {selectedConnectionId === connection.id ? "Hide" : "View"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleFetchInsights(connection.id)}
+                          disabled={fetchInsights.isPending}
+                        >
+                          <RefreshCw className={`w-4 h-4 ${fetchInsights.isPending ? "animate-spin" : ""}`} />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="sm" className="text-destructive">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Remove Connection?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will remove the Instagram connection for @{connection.instagram_username}. 
+                                All stored insights will also be deleted.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => handleDeleteConnection(connection.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Remove
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>
@@ -283,7 +335,6 @@ const MetaAnalytics = () => {
                       {latestInsight.followers_count?.toLocaleString() || "—"}
                     </div>
                   </div>
-                  
                   <div className="p-4 rounded-lg bg-muted">
                     <div className="flex items-center gap-2 text-muted-foreground mb-2">
                       <Eye className="w-4 h-4" />
@@ -293,7 +344,6 @@ const MetaAnalytics = () => {
                       {latestInsight.reach?.toLocaleString() || "—"}
                     </div>
                   </div>
-                  
                   <div className="p-4 rounded-lg bg-muted">
                     <div className="flex items-center gap-2 text-muted-foreground mb-2">
                       <MousePointer className="w-4 h-4" />
@@ -303,7 +353,6 @@ const MetaAnalytics = () => {
                       {latestInsight.profile_views?.toLocaleString() || "—"}
                     </div>
                   </div>
-                  
                   <div className="p-4 rounded-lg bg-muted">
                     <div className="flex items-center gap-2 text-muted-foreground mb-2">
                       <TrendingUp className="w-4 h-4" />
@@ -332,21 +381,11 @@ const MetaAnalytics = () => {
                         <tbody>
                           {insights.slice(0, 7).map((insight) => (
                             <tr key={insight.id} className="border-b border-border/50">
-                              <td className="py-2">
-                                {format(new Date(insight.metric_date), "MMM d")}
-                              </td>
-                              <td className="text-right py-2">
-                                {insight.followers_count?.toLocaleString() || "—"}
-                              </td>
-                              <td className="text-right py-2">
-                                {insight.reach?.toLocaleString() || "—"}
-                              </td>
-                              <td className="text-right py-2">
-                                {insight.impressions?.toLocaleString() || "—"}
-                              </td>
-                              <td className="text-right py-2">
-                                {insight.profile_views?.toLocaleString() || "—"}
-                              </td>
+                              <td className="py-2">{format(new Date(insight.metric_date), "MMM d")}</td>
+                              <td className="text-right py-2">{insight.followers_count?.toLocaleString() || "—"}</td>
+                              <td className="text-right py-2">{insight.reach?.toLocaleString() || "—"}</td>
+                              <td className="text-right py-2">{insight.impressions?.toLocaleString() || "—"}</td>
+                              <td className="text-right py-2">{insight.profile_views?.toLocaleString() || "—"}</td>
                             </tr>
                           ))}
                         </tbody>

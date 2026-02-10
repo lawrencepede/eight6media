@@ -14,6 +14,11 @@ serve(async (req) => {
   try {
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const META_SYSTEM_USER_TOKEN = Deno.env.get('META_SYSTEM_USER_TOKEN');
+
+    if (!META_SYSTEM_USER_TOKEN) {
+      throw new Error('META_SYSTEM_USER_TOKEN not configured');
+    }
 
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
@@ -34,81 +39,52 @@ serve(async (req) => {
       throw new Error('Connection not found');
     }
 
-    // Check if token is expired
-    if (connection.token_expires_at && new Date(connection.token_expires_at) < new Date()) {
-      throw new Error('Access token has expired. Please reconnect the Instagram account.');
-    }
-
-    const accessToken = connection.access_token;
-    const pageId = connection.page_id;
-
-    // First, get the Instagram Business Account ID from the page
-    const igAccountResponse = await fetch(
-      `https://graph.facebook.com/v19.0/${pageId}?fields=instagram_business_account&access_token=${accessToken}`
-    );
-
-    if (!igAccountResponse.ok) {
-      const errorText = await igAccountResponse.text();
-      console.error('Failed to get IG account:', errorText);
-      throw new Error('Failed to fetch Instagram account');
-    }
-
-    const igAccountData = await igAccountResponse.json();
-    const igAccountId = igAccountData.instagram_business_account?.id;
+    const igAccountId = connection.ig_business_account_id;
 
     if (!igAccountId) {
-      throw new Error('No Instagram Business Account linked to this page');
+      throw new Error('No Instagram Business Account ID stored for this connection');
     }
 
     // Get basic account info
     const accountInfoResponse = await fetch(
-      `https://graph.facebook.com/v19.0/${igAccountId}?fields=followers_count,media_count,username&access_token=${accessToken}`
+      `https://graph.facebook.com/v19.0/${igAccountId}?fields=followers_count,media_count,username&access_token=${META_SYSTEM_USER_TOKEN}`
     );
 
     if (!accountInfoResponse.ok) {
+      const errText = await accountInfoResponse.text();
+      console.error('Failed to fetch account info:', errText);
       throw new Error('Failed to fetch account info');
     }
 
     const accountInfo = await accountInfoResponse.json();
 
-    // Get insights (only available for business/creator accounts)
-    // These metrics are available for the last 30 days
-    const insightsMetrics = [
-      'impressions',
-      'reach',
-      'profile_views',
-      'website_clicks',
-    ].join(',');
+    // Get insights
+    const insightsMetrics = ['impressions', 'reach', 'profile_views', 'website_clicks'].join(',');
 
     const insightsResponse = await fetch(
-      `https://graph.facebook.com/v19.0/${igAccountId}/insights?metric=${insightsMetrics}&period=day&access_token=${accessToken}`
+      `https://graph.facebook.com/v19.0/${igAccountId}/insights?metric=${insightsMetrics}&period=day&access_token=${META_SYSTEM_USER_TOKEN}`
     );
 
     let insights: Record<string, number> = {};
-    
+
     if (insightsResponse.ok) {
       const insightsData = await insightsResponse.json();
-      
-      // Extract the most recent values
       for (const metric of insightsData.data || []) {
         const values = metric.values || [];
         if (values.length > 0) {
-          // Get the most recent value
           insights[metric.name] = values[values.length - 1].value;
         }
       }
     } else {
-      console.warn('Could not fetch insights, this may be a Creator account with limited access');
+      console.warn('Could not fetch insights:', await insightsResponse.text());
     }
 
-    // Calculate engagement rate (simplified - would need media data for accurate calculation)
-    const engagementRate = accountInfo.followers_count > 0 
+    const engagementRate = accountInfo.followers_count > 0
       ? ((insights.reach || 0) / accountInfo.followers_count * 100).toFixed(2)
       : 0;
 
     const today = new Date().toISOString().split('T')[0];
 
-    // Store the insights
     const { error: insertError } = await supabase
       .from('instagram_insights')
       .upsert({
@@ -147,10 +123,7 @@ serve(async (req) => {
         engagement_rate: engagementRate,
         fetched_at: new Date().toISOString(),
       }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
 
   } catch (error: unknown) {
@@ -158,10 +131,7 @@ serve(async (req) => {
     const message = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
       JSON.stringify({ error: message }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
 });
