@@ -2,12 +2,19 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+interface DiscoveredAccount {
+  ig_account_id: string;
+  username: string;
+  followers_count: number;
+  profile_picture_url: string | null;
+}
+
 interface InstagramConnection {
   id: string;
   creator_id: string | null;
   instagram_user_id: string;
   instagram_username: string;
-  token_expires_at: string | null;
+  ig_business_account_id: string | null;
   page_id: string | null;
   page_name: string | null;
   created_at: string;
@@ -49,58 +56,47 @@ export function useInstagramConnections() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data as InstagramConnection[];
+      return data as unknown as InstagramConnection[];
     },
   });
 
-  const startOAuth = useMutation({
-    mutationFn: async (creatorId?: string) => {
-      const functionPath = creatorId 
-        ? `meta-oauth-start?creator_id=${encodeURIComponent(creatorId)}`
-        : "meta-oauth-start";
+  const discoverAccounts = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("meta-discover-accounts");
+      if (error) throw error;
+      return data as { accounts: DiscoveredAccount[] };
+    },
+    onError: (error) => {
+      toast({
+        title: "Discovery Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
-      const { data, error } = await supabase.functions.invoke(functionPath);
+  const connectAccount = useMutation({
+    mutationFn: async ({ account, creatorId }: { account: DiscoveredAccount; creatorId?: string }) => {
+      const { error } = await supabase
+        .from("instagram_connections")
+        .upsert({
+          instagram_user_id: account.ig_account_id,
+          instagram_username: account.username,
+          ig_business_account_id: account.ig_account_id,
+          creator_id: creatorId || null,
+          updated_at: new Date().toISOString(),
+        } as any, {
+          onConflict: "instagram_user_id",
+        });
 
       if (error) throw error;
-      return data as { auth_url: string };
     },
-    onSuccess: (data) => {
-      // Open OAuth in a popup
-      const width = 600;
-      const height = 700;
-      const left = window.screenX + (window.outerWidth - width) / 2;
-      const top = window.screenY + (window.outerHeight - height) / 2;
-      
-      const popup = window.open(
-        data.auth_url,
-        "meta-oauth",
-        `width=${width},height=${height},left=${left},top=${top}`
-      );
-
-      // Listen for completion
-      const handleMessage = (event: MessageEvent) => {
-        if (event.data?.type === "meta-oauth-complete") {
-          window.removeEventListener("message", handleMessage);
-          queryClient.invalidateQueries({ queryKey: ["instagram-connections"] });
-          
-          if (event.data.success) {
-            toast({
-              title: "Instagram Connected",
-              description: "Successfully connected Instagram account.",
-            });
-          }
-        }
-      };
-
-      window.addEventListener("message", handleMessage);
-
-      // Also poll for popup close
-      const pollTimer = setInterval(() => {
-        if (popup?.closed) {
-          clearInterval(pollTimer);
-          queryClient.invalidateQueries({ queryKey: ["instagram-connections"] });
-        }
-      }, 1000);
+    onSuccess: () => {
+      toast({
+        title: "Account Connected",
+        description: "Instagram account has been linked.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["instagram-connections"] });
     },
     onError: (error) => {
       toast({
@@ -116,7 +112,6 @@ export function useInstagramConnections() {
       const { data, error } = await supabase.functions.invoke("fetch-instagram-insights", {
         body: { connection_id: connectionId },
       });
-
       if (error) throw error;
       return data;
     },
@@ -142,7 +137,6 @@ export function useInstagramConnections() {
         .from("instagram_connections")
         .delete()
         .eq("id", connectionId);
-
       if (error) throw error;
     },
     onSuccess: () => {
@@ -165,7 +159,8 @@ export function useInstagramConnections() {
     connections: connectionsQuery.data || [],
     isLoading: connectionsQuery.isLoading,
     error: connectionsQuery.error,
-    startOAuth,
+    discoverAccounts,
+    connectAccount,
     fetchInsights,
     deleteConnection,
   };
