@@ -27,8 +27,31 @@ serve(async (req) => {
 
     const seen = new Set<string>();
 
-    // Fetch owned Instagram accounts
-    const ownedUrl = `https://graph.facebook.com/v19.0/${META_BUSINESS_ID}/owned_instagram_accounts?fields=id,username,followers_count,profile_picture_url&access_token=${META_SYSTEM_USER_TOKEN}`;
+    // Fetch all Instagram accounts accessible by this business (owned + partner)
+    const allUrl = `https://graph.facebook.com/v19.0/${META_BUSINESS_ID}/instagram_accounts?fields=id,username,followers_count,profile_picture_url&limit=100&access_token=${META_SYSTEM_USER_TOKEN}`;
+    console.log('Fetching from:', `/${META_BUSINESS_ID}/instagram_accounts`);
+    const allRes = await fetch(allUrl);
+    if (allRes.ok) {
+      const allData = await allRes.json();
+      console.log('instagram_accounts response:', JSON.stringify(allData));
+      for (const acct of allData.data || []) {
+        if (!seen.has(acct.id)) {
+          seen.add(acct.id);
+          accounts.push({
+            ig_account_id: acct.id,
+            username: acct.username || 'unknown',
+            followers_count: acct.followers_count || 0,
+            profile_picture_url: acct.profile_picture_url || null,
+          });
+        }
+      }
+    } else {
+      const errText = await allRes.text();
+      console.warn('Failed to fetch instagram_accounts:', errText);
+    }
+
+    // Also try owned_instagram_accounts as fallback
+    const ownedUrl = `https://graph.facebook.com/v19.0/${META_BUSINESS_ID}/owned_instagram_accounts?fields=id,username,followers_count,profile_picture_url&limit=100&access_token=${META_SYSTEM_USER_TOKEN}`;
     const ownedRes = await fetch(ownedUrl);
     if (ownedRes.ok) {
       const ownedData = await ownedRes.json();
@@ -44,11 +67,11 @@ serve(async (req) => {
         }
       }
     } else {
-      console.warn('Failed to fetch owned accounts:', await ownedRes.text());
+      console.warn('Failed to fetch owned_instagram_accounts:', await ownedRes.text());
     }
 
-    // Fetch client/partner Instagram accounts
-    const clientUrl = `https://graph.facebook.com/v19.0/${META_BUSINESS_ID}/client_instagram_accounts?fields=id,username,followers_count,profile_picture_url&access_token=${META_SYSTEM_USER_TOKEN}`;
+    // Also try client_instagram_assets for agency/partner accounts
+    const clientUrl = `https://graph.facebook.com/v19.0/${META_BUSINESS_ID}/client_instagram_assets?fields=id,username,followers_count,profile_picture_url&limit=100&access_token=${META_SYSTEM_USER_TOKEN}`;
     const clientRes = await fetch(clientUrl);
     if (clientRes.ok) {
       const clientData = await clientRes.json();
@@ -64,7 +87,7 @@ serve(async (req) => {
         }
       }
     } else {
-      console.warn('Failed to fetch client accounts:', await clientRes.text());
+      console.warn('Failed to fetch client_instagram_assets:', await clientRes.text());
     }
 
     return new Response(
