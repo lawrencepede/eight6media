@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 serve(async (req) => {
@@ -45,20 +45,36 @@ serve(async (req) => {
       throw new Error('No Instagram Business Account ID stored for this connection');
     }
 
-    // Get basic account info
-    const accountInfoResponse = await fetch(
+    // Try fetching account info - handle both IGUser and InstagramBusinessAsset node types
+    let followersCount: number | null = null;
+    let mediaCount: number | null = null;
+    let username: string | null = connection.instagram_username;
+
+    // First try with all fields (works for IGUser nodes)
+    const fullInfoRes = await fetch(
       `https://graph.facebook.com/v19.0/${igAccountId}?fields=followers_count,media_count,username&access_token=${META_SYSTEM_USER_TOKEN}`
     );
 
-    if (!accountInfoResponse.ok) {
-      const errText = await accountInfoResponse.text();
-      console.error('Failed to fetch account info:', errText);
-      throw new Error('Failed to fetch account info');
+    if (fullInfoRes.ok) {
+      const info = await fullInfoRes.json();
+      followersCount = info.followers_count ?? null;
+      mediaCount = info.media_count ?? null;
+      username = info.username || username;
+    } else {
+      // Likely an InstagramBusinessAsset - try with limited fields
+      console.warn('Full field fetch failed, trying limited fields for partner asset...');
+      const limitedRes = await fetch(
+        `https://graph.facebook.com/v19.0/${igAccountId}?fields=username&access_token=${META_SYSTEM_USER_TOKEN}`
+      );
+      if (limitedRes.ok) {
+        const info = await limitedRes.json();
+        username = info.username || username;
+      } else {
+        console.warn('Limited field fetch also failed:', await limitedRes.text());
+      }
     }
 
-    const accountInfo = await accountInfoResponse.json();
-
-    // Get insights
+    // Get insights - this should work for both node types
     const insightsMetrics = ['impressions', 'reach', 'profile_views', 'website_clicks'].join(',');
 
     const insightsResponse = await fetch(
@@ -79,9 +95,20 @@ serve(async (req) => {
       console.warn('Could not fetch insights:', await insightsResponse.text());
     }
 
-    const engagementRate = accountInfo.followers_count > 0
-      ? ((insights.reach || 0) / accountInfo.followers_count * 100).toFixed(2)
-      : 0;
+    // Try to get follower count from follower_count insight if not available from account info
+    if (followersCount === null) {
+      const followerRes = await fetch(
+        `https://graph.facebook.com/v19.0/${igAccountId}?fields=followers_count&access_token=${META_SYSTEM_USER_TOKEN}`
+      );
+      if (followerRes.ok) {
+        const fData = await followerRes.json();
+        followersCount = fData.followers_count ?? null;
+      }
+    }
+
+    const engagementRate = followersCount && followersCount > 0
+      ? ((insights.reach || 0) / followersCount * 100).toFixed(2)
+      : '0';
 
     const today = new Date().toISOString().split('T')[0];
 
@@ -90,15 +117,15 @@ serve(async (req) => {
       .upsert({
         connection_id,
         metric_date: today,
-        followers_count: accountInfo.followers_count,
-        media_count: accountInfo.media_count,
+        followers_count: followersCount,
+        media_count: mediaCount,
         impressions: insights.impressions || null,
         reach: insights.reach || null,
         profile_views: insights.profile_views || null,
         website_clicks: insights.website_clicks || null,
-        engagement_rate: parseFloat(engagementRate as string) || null,
+        engagement_rate: parseFloat(engagementRate) || null,
         raw_data: {
-          account_info: accountInfo,
+          account_info: { username, followers_count: followersCount, media_count: mediaCount },
           insights,
           fetched_at: new Date().toISOString(),
         },
@@ -113,9 +140,9 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        username: accountInfo.username,
-        followers_count: accountInfo.followers_count,
-        media_count: accountInfo.media_count,
+        username,
+        followers_count: followersCount,
+        media_count: mediaCount,
         impressions: insights.impressions || 0,
         reach: insights.reach || 0,
         profile_views: insights.profile_views || 0,
