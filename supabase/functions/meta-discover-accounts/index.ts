@@ -23,72 +23,61 @@ serve(async (req) => {
       username: string;
       followers_count: number;
       profile_picture_url: string | null;
+      page_id: string | null;
+      page_name: string | null;
     }> = [];
 
     const seen = new Set<string>();
 
-    // Fetch all Instagram accounts accessible by this business (owned + partner)
-    const allUrl = `https://graph.facebook.com/v19.0/${META_BUSINESS_ID}/instagram_accounts?fields=id,username,followers_count,profile_picture_url&limit=100&access_token=${META_SYSTEM_USER_TOKEN}`;
-    console.log('Fetching from:', `/${META_BUSINESS_ID}/instagram_accounts`);
-    const allRes = await fetch(allUrl);
-    if (allRes.ok) {
-      const allData = await allRes.json();
-      console.log('instagram_accounts response:', JSON.stringify(allData));
-      for (const acct of allData.data || []) {
-        if (!seen.has(acct.id)) {
-          seen.add(acct.id);
-          accounts.push({
-            ig_account_id: acct.id,
-            username: acct.username || 'unknown',
-            followers_count: acct.followers_count || 0,
-            profile_picture_url: acct.profile_picture_url || null,
-          });
-        }
+    // Helper: fetch IG business account from a Page
+    async function resolvePageToIG(pageId: string, pageName: string) {
+      const url = `https://graph.facebook.com/v19.0/${pageId}?fields=instagram_business_account{id,username,followers_count,profile_picture_url}&access_token=${META_SYSTEM_USER_TOKEN}`;
+      const res = await fetch(url);
+      if (!res.ok) return;
+      const data = await res.json();
+      const ig = data.instagram_business_account;
+      if (ig && !seen.has(ig.id)) {
+        seen.add(ig.id);
+        accounts.push({
+          ig_account_id: ig.id,
+          username: ig.username || 'unknown',
+          followers_count: ig.followers_count || 0,
+          profile_picture_url: ig.profile_picture_url || null,
+          page_id: pageId,
+          page_name: pageName,
+        });
       }
-    } else {
-      const errText = await allRes.text();
-      console.warn('Failed to fetch instagram_accounts:', errText);
     }
 
-    // Also try owned_instagram_accounts as fallback
-    const ownedUrl = `https://graph.facebook.com/v19.0/${META_BUSINESS_ID}/owned_instagram_accounts?fields=id,username,followers_count,profile_picture_url&limit=100&access_token=${META_SYSTEM_USER_TOKEN}`;
-    const ownedRes = await fetch(ownedUrl);
-    if (ownedRes.ok) {
-      const ownedData = await ownedRes.json();
-      for (const acct of ownedData.data || []) {
-        if (!seen.has(acct.id)) {
-          seen.add(acct.id);
-          accounts.push({
-            ig_account_id: acct.id,
-            username: acct.username || 'unknown',
-            followers_count: acct.followers_count || 0,
-            profile_picture_url: acct.profile_picture_url || null,
-          });
-        }
+    // 1. Owned Pages → IG accounts
+    const ownedPagesUrl = `https://graph.facebook.com/v19.0/${META_BUSINESS_ID}/owned_pages?fields=id,name&limit=100&access_token=${META_SYSTEM_USER_TOKEN}`;
+    console.log('Fetching owned_pages...');
+    const ownedPagesRes = await fetch(ownedPagesUrl);
+    if (ownedPagesRes.ok) {
+      const pagesData = await ownedPagesRes.json();
+      console.log(`Found ${(pagesData.data || []).length} owned pages`);
+      for (const page of pagesData.data || []) {
+        await resolvePageToIG(page.id, page.name);
       }
     } else {
-      console.warn('Failed to fetch owned_instagram_accounts:', await ownedRes.text());
+      console.warn('Failed to fetch owned_pages:', await ownedPagesRes.text());
     }
 
-    // Also try client_instagram_assets for agency/partner accounts
-    const clientUrl = `https://graph.facebook.com/v19.0/${META_BUSINESS_ID}/client_instagram_assets?fields=id,username,followers_count,profile_picture_url&limit=100&access_token=${META_SYSTEM_USER_TOKEN}`;
-    const clientRes = await fetch(clientUrl);
-    if (clientRes.ok) {
-      const clientData = await clientRes.json();
-      for (const acct of clientData.data || []) {
-        if (!seen.has(acct.id)) {
-          seen.add(acct.id);
-          accounts.push({
-            ig_account_id: acct.id,
-            username: acct.username || 'unknown',
-            followers_count: acct.followers_count || 0,
-            profile_picture_url: acct.profile_picture_url || null,
-          });
-        }
+    // 2. Client Pages (partner/agency) → IG accounts
+    const clientPagesUrl = `https://graph.facebook.com/v19.0/${META_BUSINESS_ID}/client_pages?fields=id,name&limit=100&access_token=${META_SYSTEM_USER_TOKEN}`;
+    console.log('Fetching client_pages...');
+    const clientPagesRes = await fetch(clientPagesUrl);
+    if (clientPagesRes.ok) {
+      const pagesData = await clientPagesRes.json();
+      console.log(`Found ${(pagesData.data || []).length} client pages`);
+      for (const page of pagesData.data || []) {
+        await resolvePageToIG(page.id, page.name);
       }
     } else {
-      console.warn('Failed to fetch client_instagram_assets:', await clientRes.text());
+      console.warn('Failed to fetch client_pages:', await clientPagesRes.text());
     }
+
+    console.log(`Total discovered IG accounts: ${accounts.length}`);
 
     return new Response(
       JSON.stringify({ accounts }),

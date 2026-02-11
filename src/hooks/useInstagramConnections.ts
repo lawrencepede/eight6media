@@ -7,6 +7,8 @@ interface DiscoveredAccount {
   username: string;
   followers_count: number;
   profile_picture_url: string | null;
+  page_id?: string | null;
+  page_name?: string | null;
 }
 
 interface InstagramConnection {
@@ -83,6 +85,8 @@ export function useInstagramConnections() {
           instagram_user_id: account.ig_account_id,
           instagram_username: account.username,
           ig_business_account_id: account.ig_account_id,
+          page_id: account.page_id || null,
+          page_name: account.page_name || null,
           creator_id: creatorId || null,
           updated_at: new Date().toISOString(),
         } as any, {

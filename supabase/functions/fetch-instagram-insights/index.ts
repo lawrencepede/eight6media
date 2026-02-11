@@ -28,7 +28,6 @@ serve(async (req) => {
       throw new Error('connection_id is required');
     }
 
-    // Get the connection details
     const { data: connection, error: connError } = await supabase
       .from('instagram_connections')
       .select('*')
@@ -39,52 +38,60 @@ serve(async (req) => {
       throw new Error('Connection not found');
     }
 
-    const igAccountId = connection.ig_business_account_id;
+    let igAccountId = connection.ig_business_account_id;
+    const pageId = connection.page_id;
 
-    if (!igAccountId) {
-      throw new Error('No Instagram Business Account ID stored for this connection');
+    // If we have a page_id but no valid ig_business_account_id, resolve it
+    if (pageId && !igAccountId) {
+      const pageRes = await fetch(
+        `https://graph.facebook.com/v19.0/${pageId}?fields=instagram_business_account&access_token=${META_SYSTEM_USER_TOKEN}`
+      );
+      if (pageRes.ok) {
+        const pageData = await pageRes.json();
+        igAccountId = pageData.instagram_business_account?.id || null;
+        if (igAccountId) {
+          // Update the stored ig_business_account_id
+          await supabase
+            .from('instagram_connections')
+            .update({ ig_business_account_id: igAccountId })
+            .eq('id', connection_id);
+        }
+      }
     }
 
-    // Try fetching account info - handle both IGUser and InstagramBusinessAsset node types
-    let followersCount: number | null = null;
-    let mediaCount: number | null = null;
-    let username: string | null = connection.instagram_username;
+    if (!igAccountId) {
+      throw new Error('No Instagram Business Account ID available. Try reconnecting this account.');
+    }
 
-    // First try with all fields (works for IGUser nodes)
-    const fullInfoRes = await fetch(
+    console.log(`Fetching insights for IG account: ${igAccountId}`);
+
+    // Get basic account info
+    const accountInfoRes = await fetch(
       `https://graph.facebook.com/v19.0/${igAccountId}?fields=followers_count,media_count,username&access_token=${META_SYSTEM_USER_TOKEN}`
     );
 
-    if (fullInfoRes.ok) {
-      const info = await fullInfoRes.json();
+    let followersCount: number | null = null;
+    let mediaCount: number | null = null;
+    let username: string = connection.instagram_username;
+
+    if (accountInfoRes.ok) {
+      const info = await accountInfoRes.json();
       followersCount = info.followers_count ?? null;
       mediaCount = info.media_count ?? null;
       username = info.username || username;
     } else {
-      // Likely an InstagramBusinessAsset - try with limited fields
-      console.warn('Full field fetch failed, trying limited fields for partner asset...');
-      const limitedRes = await fetch(
-        `https://graph.facebook.com/v19.0/${igAccountId}?fields=username&access_token=${META_SYSTEM_USER_TOKEN}`
-      );
-      if (limitedRes.ok) {
-        const info = await limitedRes.json();
-        username = info.username || username;
-      } else {
-        console.warn('Limited field fetch also failed:', await limitedRes.text());
-      }
+      console.warn('Failed to fetch account info:', await accountInfoRes.text());
     }
 
-    // Get insights - this should work for both node types
+    // Get insights
     const insightsMetrics = ['impressions', 'reach', 'profile_views', 'website_clicks'].join(',');
-
-    const insightsResponse = await fetch(
+    const insightsRes = await fetch(
       `https://graph.facebook.com/v19.0/${igAccountId}/insights?metric=${insightsMetrics}&period=day&access_token=${META_SYSTEM_USER_TOKEN}`
     );
 
     let insights: Record<string, number> = {};
-
-    if (insightsResponse.ok) {
-      const insightsData = await insightsResponse.json();
+    if (insightsRes.ok) {
+      const insightsData = await insightsRes.json();
       for (const metric of insightsData.data || []) {
         const values = metric.values || [];
         if (values.length > 0) {
@@ -92,18 +99,7 @@ serve(async (req) => {
         }
       }
     } else {
-      console.warn('Could not fetch insights:', await insightsResponse.text());
-    }
-
-    // Try to get follower count from follower_count insight if not available from account info
-    if (followersCount === null) {
-      const followerRes = await fetch(
-        `https://graph.facebook.com/v19.0/${igAccountId}?fields=followers_count&access_token=${META_SYSTEM_USER_TOKEN}`
-      );
-      if (followerRes.ok) {
-        const fData = await followerRes.json();
-        followersCount = fData.followers_count ?? null;
-      }
+      console.warn('Could not fetch insights:', await insightsRes.text());
     }
 
     const engagementRate = followersCount && followersCount > 0
