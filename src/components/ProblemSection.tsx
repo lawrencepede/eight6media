@@ -1,35 +1,35 @@
+import elizabethPhoto from "@/assets/elizabeth-photo.png";
+import { Button } from "@/components/ui/button";
+
 const ProblemSection = () => {
   return (
-    <section id="problem" className="section-padding bg-primary text-primary-foreground">
+    <section id="problem" className="py-20 md:py-28 bg-background">
       <div className="container mx-auto px-6">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="font-display text-4xl md:text-6xl lg:text-7xl mb-12">
-            WE FIXED WHAT'S BROKEN IN <span className="text-accent">CREATOR MARKETING</span>
-          </h2>
-          
-          <div className="grid md:grid-cols-2 gap-16 items-start">
-            {/* The Problem */}
-            <div className="space-y-6">
-              <h3 className="font-display text-2xl md:text-3xl text-accent">THE PROBLEM</h3>
-              <p className="font-sans text-lg md:text-xl text-primary-foreground/90 leading-relaxed">
-                Most creator marketing delivers awareness but little to no measurable impact. One-off partnerships feel inauthentic and produce inconsistent results.
-              </p>
-            </div>
-            
-            {/* The Solution */}
-            <div className="space-y-6">
-              <h3 className="font-display text-2xl md:text-3xl text-accent">OUR SOLUTION</h3>
-              <p className="font-sans text-lg md:text-xl text-primary-foreground/90 leading-relaxed">
-                Eight-Six Media delivers bottom-line impact through selective, long-term creator partnerships built on authenticity and proven performance.
-              </p>
-            </div>
+        <div className="grid md:grid-cols-2 gap-12 md:gap-16 items-start max-w-6xl mx-auto">
+          {/* Left — text content */}
+          <div className="space-y-8">
+            <h2 className="font-display text-4xl md:text-5xl lg:text-6xl text-primary leading-[0.95]">
+              WE'RE EIGHT-SIX MEDIA. LET'S BUILD SOMETHING <span className="text-accent">REAL.</span>
+            </h2>
+            <p className="font-sans text-base md:text-lg text-muted-foreground leading-relaxed uppercase tracking-wide">
+              Our mission is to leave an impression on as many human lives as possible through creator partnerships that deliver genuine value — not vanity metrics.
+            </p>
+            <Button
+              variant="outline"
+              className="rounded-full border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground px-8 py-6 font-display tracking-wider text-sm"
+              onClick={() => window.open("https://calendly.com", "_blank")}
+            >
+              VIEW OUR WORK
+            </Button>
           </div>
 
-          {/* Mission Statement */}
-          <div className="mt-20 border-l-4 border-accent pl-8">
-            <blockquote className="font-script text-3xl md:text-4xl text-primary-foreground/90">
-              "Our mission is to leave an impression on as many human lives as possible through creator partnerships that deliver genuine value."
-            </blockquote>
+          {/* Right — image */}
+          <div className="aspect-[3/4] overflow-hidden">
+            <img
+              src={elizabethPhoto}
+              alt="Elizabeth Martin, Founder"
+              className="w-full h-full object-cover"
+            />
           </div>
         </div>
       </div>

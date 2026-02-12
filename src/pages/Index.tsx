@@ -1,7 +1,7 @@
 import HeroSection from "@/components/HeroSection";
-import FeaturedCreatorSection from "@/components/FeaturedCreatorSection";
 import ProblemSection from "@/components/ProblemSection";
 import DifferentiatorsSection from "@/components/DifferentiatorsSection";
+import FeaturedCreatorSection from "@/components/FeaturedCreatorSection";
 import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
 

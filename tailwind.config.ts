@@ -64,6 +64,7 @@ export default {
         "soft-tan": "hsl(var(--soft-tan))",
         olive: "hsl(var(--olive))",
         "olive-dark": "hsl(var(--olive-dark))",
+        maroon: "hsl(var(--maroon))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
