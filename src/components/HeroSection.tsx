@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import mattPhoto from "@/assets/matt-photo.png";
+import heroPhoto from "@/assets/photo-blur-portrait.png";
 
 const HeroSection = () => {
   const scrollToSection = (id: string) => {
@@ -14,8 +14,8 @@ const HeroSection = () => {
       {/* Hero image — full-bleed */}
       <div className="w-full aspect-[16/9] md:aspect-[16/7] overflow-hidden">
         <img
-          src={mattPhoto}
-          alt="Featured creator"
+          src={heroPhoto}
+          alt="Creative motion portrait"
           className="w-full h-full object-cover object-top"
         />
       </div>

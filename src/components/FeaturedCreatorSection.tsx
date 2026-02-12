@@ -1,5 +1,5 @@
 import MarqueeBanner from "@/components/MarqueeBanner";
-import mattPhoto from "@/assets/matt-photo.png";
+import trainPhoto from "@/assets/photo-train.png";
 
 const FeaturedCreatorSection = () => {
   return (
@@ -21,8 +21,8 @@ const FeaturedCreatorSection = () => {
           {/* Large portrait */}
           <div className="aspect-[4/5] md:aspect-[16/10] overflow-hidden mb-0">
             <img
-              src={mattPhoto}
-              alt="Elizabeth Martin, Founder"
+            src={trainPhoto}
+            alt="Motion blur train"
               className="w-full h-full object-cover object-top"
             />
           </div>
