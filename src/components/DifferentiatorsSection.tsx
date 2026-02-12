@@ -1,65 +1,114 @@
-import { Target, Users, Sparkles } from "lucide-react";
+import amandaPhoto from "@/assets/amanda-photo.png";
+import jaimePhoto from "@/assets/jaime-photo.png";
 
 const differentiators = [
   {
-    icon: Target,
+    number: "01",
     title: "PERFORMANCE-FOCUSED RESULTS",
     description:
-      "We structure partnerships to deliver measurable impact aligned with your specific marketing objectives—from brand awareness to direct sales conversions.",
-    highlight: "From brand awareness to direct sales",
+      "We structure partnerships to deliver measurable impact — from brand awareness to direct sales conversions.",
   },
   {
-    icon: Users,
-    title: "SELECTIVE NETWORK OF CREATORS",
+    number: "02",
+    title: "SELECTIVE CREATOR NETWORK",
     description:
-      "We represent carefully vetted creators who align with our authenticity standards and have cultivated extremely loyal, engaged followings.",
-    highlight: "Carefully vetted for authenticity",
+      "We represent carefully vetted creators who align with our authenticity standards and cultivate extremely loyal followings.",
   },
   {
-    icon: Sparkles,
+    number: "03",
     title: "FULL-SERVICE PARTNERSHIPS",
     description:
-      "Beyond matchmaking, we provide content strategy, psychological selling techniques, scripting, audience building, and end-to-end partnership execution oversight.",
-    highlight: "End-to-end partnership support",
+      "Content strategy, psychological selling techniques, scripting, audience building, and end-to-end oversight.",
   },
 ];
 
 const DifferentiatorsSection = () => {
   return (
-    <section className="py-24 md:py-32 bg-secondary">
-      <div className="container mx-auto px-6">
-        <div className="max-w-2xl mb-16">
-          <h2 className="font-display text-4xl md:text-6xl text-primary mb-4">
-            BEYOND THE <span className="text-accent">VANITY METRICS</span>
-          </h2>
-          <p className="font-sans text-lg md:text-xl text-muted-foreground">
-            After managing creator marketing in-house and recognizing what was missing, we built an agency around three core differentiators.
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {differentiators.map((item, index) => (
-            <div
-              key={index}
-              className="bg-background border border-border p-8 hover:border-accent transition-colors group"
+    <>
+      {/* Image + big text overlay section */}
+      <section className="relative bg-primary overflow-hidden">
+        <div className="w-full aspect-[16/9] md:aspect-[16/7] overflow-hidden relative">
+          <img
+            src={amandaPhoto}
+            alt="Creator in action"
+            className="w-full h-full object-cover"
+          />
+          {/* Overlapping text at bottom of image */}
+          <div className="absolute bottom-0 left-0 right-0 px-4 md:px-8">
+            <h2 className="font-display text-primary-foreground text-[3rem] sm:text-[5rem] md:text-[8rem] lg:text-[10rem] leading-[0.85] tracking-tight italic">
+              EXPLORE CREATORS
+            </h2>
+          </div>
+          {/* Full-width citron CTA bar */}
+          <div className="absolute bottom-0 left-0 right-0">
+            <button 
+              className="w-full bg-primary py-4 font-display text-sm md:text-base tracking-widest text-primary-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+              onClick={() => window.open("https://calendly.com", "_blank")}
             >
-              <div className="w-14 h-14 border-2 border-accent flex items-center justify-center mb-6 group-hover:bg-accent transition-colors">
-                <item.icon className="w-7 h-7 text-accent group-hover:text-accent-foreground transition-colors" />
-              </div>
-              <h3 className="font-display text-xl text-primary mb-3">
-                {item.title}
-              </h3>
-              <p className="font-sans text-base text-muted-foreground mb-4 leading-relaxed">
-                {item.description}
-              </p>
-              <span className="font-script text-lg text-accent italic">
-                {item.highlight}
-              </span>
-            </div>
-          ))}
+              VIEW OUR TALENT
+            </button>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+
+      {/* Two-column image grid */}
+      <section className="bg-background py-4 px-4">
+        <div className="grid grid-cols-2 gap-4 max-w-6xl mx-auto">
+          <div className="aspect-[3/4] overflow-hidden">
+            <img
+              src={jaimePhoto}
+              alt="Creator content"
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <div>
+            <div className="aspect-[3/4] overflow-hidden mb-6">
+              <img
+                src={amandaPhoto}
+                alt="Creator collaboration"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <h3 className="font-display text-2xl md:text-3xl text-primary mb-3">
+              AUTHENTIC PARTNERSHIPS
+            </h3>
+            <p className="font-sans text-sm md:text-base text-muted-foreground uppercase tracking-wide leading-relaxed">
+              3-month contracts ranging from $5K to $40K/month with performance tracking and full creative support.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Differentiators list */}
+      <section className="py-20 md:py-28 bg-primary text-primary-foreground">
+        <div className="container mx-auto px-6 max-w-5xl">
+          <h2 className="font-display text-4xl md:text-6xl lg:text-7xl mb-16 text-accent">
+            BEYOND THE VANITY METRICS
+          </h2>
+          
+          <div className="space-y-12">
+            {differentiators.map((item) => (
+              <div
+                key={item.number}
+                className="flex gap-6 md:gap-10 border-t border-primary-foreground/20 pt-8"
+              >
+                <span className="font-display text-4xl md:text-5xl text-accent/60">
+                  {item.number}
+                </span>
+                <div>
+                  <h3 className="font-display text-xl md:text-2xl text-primary-foreground mb-3">
+                    {item.title}
+                  </h3>
+                  <p className="font-sans text-base md:text-lg text-primary-foreground/70 leading-relaxed max-w-xl">
+                    {item.description}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </>
   );
 };
 
