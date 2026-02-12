@@ -1,4 +1,4 @@
-import elizabethPhoto from "@/assets/elizabeth-photo.png";
+import womanPhoto from "@/assets/photo-woman.png";
 import { Button } from "@/components/ui/button";
 
 const ProblemSection = () => {
@@ -26,8 +26,8 @@ const ProblemSection = () => {
           {/* Right — image */}
           <div className="aspect-[3/4] overflow-hidden">
             <img
-              src={elizabethPhoto}
-              alt="Elizabeth Martin, Founder"
+              src={womanPhoto}
+              alt="Creative portrait"
               className="w-full h-full object-cover"
             />
           </div>

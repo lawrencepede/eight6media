@@ -1,5 +1,6 @@
-import amandaPhoto from "@/assets/amanda-photo.png";
-import jaimePhoto from "@/assets/jaime-photo.png";
+import streetPhoto from "@/assets/photo-street.png";
+import glassPhoto from "@/assets/photo-glass.png";
+import swirlPhoto from "@/assets/photo-swirl.png";
 
 const differentiators = [
   {
@@ -29,8 +30,8 @@ const DifferentiatorsSection = () => {
       <section className="relative bg-primary overflow-hidden">
         <div className="w-full aspect-[16/9] md:aspect-[16/7] overflow-hidden relative">
           <img
-            src={amandaPhoto}
-            alt="Creator in action"
+            src={streetPhoto}
+            alt="Urban street scene"
             className="w-full h-full object-cover"
           />
           {/* Overlapping text at bottom of image */}
@@ -56,16 +57,16 @@ const DifferentiatorsSection = () => {
         <div className="grid grid-cols-2 gap-4 max-w-6xl mx-auto">
           <div className="aspect-[3/4] overflow-hidden">
             <img
-              src={jaimePhoto}
-              alt="Creator content"
+              src={glassPhoto}
+              alt="Glass texture portrait"
               className="w-full h-full object-cover"
             />
           </div>
           <div>
             <div className="aspect-[3/4] overflow-hidden mb-6">
               <img
-                src={amandaPhoto}
-                alt="Creator collaboration"
+              src={swirlPhoto}
+              alt="Abstract light swirl"
                 className="w-full h-full object-cover"
               />
             </div>
