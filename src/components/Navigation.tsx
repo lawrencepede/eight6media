@@ -20,17 +20,12 @@ const Navigation = () => {
   };
 
   const navLinks = [
-    { to: "/work", label: "WORK" },
-    { to: "/roster", label: "TALENT" },
-    { to: "/for-brands", label: "FOR BRANDS" },
-    { to: "/for-creators", label: "FOR CREATORS" },
-    { to: "/about", label: "ABOUT" },
+    { to: "/work", label: "Work" },
+    { to: "/roster", label: "Talent" },
+    { to: "/for-brands", label: "For Brands" },
+    { to: "/for-creators", label: "For Creators" },
+    { to: "/about", label: "About" },
   ];
-
-  // Determine if we're on a dark-background page (homepage hero is dark)
-  const isHomepage = location.pathname === "/";
-  const textColor = isHomepage && !isScrolled ? "text-primary-foreground" : "text-primary";
-  const accentHover = "hover:text-accent";
 
   return (
     <nav
@@ -43,8 +38,8 @@ const Navigation = () => {
       <div className="container mx-auto px-6 py-5">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link to="/" className={`font-display text-xl tracking-tight ${textColor}`}>
-            EIGHT-SIX MEDIA
+          <Link to="/" className="font-display text-lg tracking-tight text-foreground">
+            Eight-Six Media
           </Link>
 
           {/* Desktop Navigation */}
@@ -53,10 +48,10 @@ const Navigation = () => {
               <Link
                 key={link.to}
                 to={link.to}
-                className={`font-display text-xs tracking-widest transition-colors ${
+                className={`font-sans text-xs tracking-[0.15em] uppercase transition-colors ${
                   location.pathname === link.to
                     ? "text-accent"
-                    : `${textColor} ${accentHover}`
+                    : "text-foreground/70 hover:text-foreground"
                 }`}
               >
                 {link.label}
@@ -66,7 +61,7 @@ const Navigation = () => {
 
           {/* Mobile Menu Button */}
           <button
-            className={`md:hidden ${textColor}`}
+            className="md:hidden text-foreground"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
             {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -82,10 +77,10 @@ const Navigation = () => {
                   key={link.to}
                   to={link.to}
                   onClick={closeMobileMenu}
-                  className={`font-display text-sm tracking-widest transition-colors ${
+                  className={`font-sans text-sm tracking-[0.1em] uppercase transition-colors ${
                     location.pathname === link.to
                       ? "text-accent"
-                      : "text-primary hover:text-accent"
+                      : "text-foreground/70 hover:text-foreground"
                   }`}
                 >
                   {link.label}

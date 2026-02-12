@@ -1,50 +1,30 @@
-import MarqueeBanner from "@/components/MarqueeBanner";
-import trainPhoto from "@/assets/photo-train.png";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 const FeaturedCreatorSection = () => {
   return (
-    <>
-      {/* Marquee banner */}
-      <MarqueeBanner 
-        text="AUTHENTICITY DRIVES SALES" 
-        bgClass="bg-accent" 
-        textClass="text-accent-foreground" 
-      />
-
-      <section className="py-20 md:py-28 bg-background">
-        <div className="container mx-auto px-6 max-w-6xl">
-          <h2 className="font-display text-3xl md:text-5xl text-primary mb-4">MEET THE FOUNDER</h2>
-          <p className="font-sans text-sm md:text-base text-muted-foreground uppercase tracking-wide leading-relaxed max-w-2xl mb-12">
+    <section className="py-24 md:py-32 bg-background">
+      <div className="container mx-auto px-6 max-w-5xl">
+        {/* Centered statement */}
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <p className="font-sans text-xs tracking-[0.25em] uppercase text-muted-foreground mb-6">
+            Meet the Founder
+          </p>
+          <h2 className="font-display text-3xl md:text-5xl lg:text-6xl text-foreground leading-[1.1] mb-6">
+            Inspiring <em className="italic text-accent">strength</em> and building community through creators.
+          </h2>
+          <p className="font-sans text-sm md:text-base text-muted-foreground leading-relaxed max-w-xl mx-auto mb-10">
             Elizabeth Martin built Eight-Six Media after managing creator marketing in-house and recognizing what was missing — authenticity, measurable results, and long-term vision.
           </p>
-
-          {/* Large portrait */}
-          <div className="aspect-[4/5] md:aspect-[16/10] overflow-hidden mb-0">
-            <img
-            src={trainPhoto}
-            alt="Motion blur train"
-              className="w-full h-full object-cover object-top"
-            />
-          </div>
+          <Button
+            className="rounded-none bg-transparent border border-foreground/40 text-foreground hover:bg-foreground hover:text-background px-10 py-6 font-sans text-xs tracking-[0.2em] uppercase"
+            asChild
+          >
+            <Link to="/about">Learn More</Link>
+          </Button>
         </div>
-      </section>
-
-      {/* Second marquee */}
-      <MarqueeBanner 
-        text="RAW CREATORS • REAL RESULTS" 
-        bgClass="bg-accent" 
-        textClass="text-accent-foreground" 
-      />
-
-      {/* Big statement section */}
-      <section className="py-20 md:py-28 bg-primary text-primary-foreground">
-        <div className="container mx-auto px-6 max-w-5xl">
-          <h2 className="font-display text-4xl md:text-6xl lg:text-8xl leading-[0.95]">
-            INSPIRING <span className="text-accent">STRENGTH</span> AND BUILDING COMMUNITY THROUGH <span className="text-accent">CREATORS</span>
-          </h2>
-        </div>
-      </section>
-    </>
+      </div>
+    </section>
   );
 };
 
