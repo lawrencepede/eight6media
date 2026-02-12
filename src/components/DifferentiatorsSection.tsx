@@ -1,112 +1,63 @@
-import streetPhoto from "@/assets/photo-street.png";
-import glassPhoto from "@/assets/photo-glass.png";
-import swirlPhoto from "@/assets/photo-swirl.png";
+import sunsetPhoto from "@/assets/photo-sunset.png";
+import forestPhoto from "@/assets/photo-forest.png";
 
 const differentiators = [
   {
-    number: "01",
-    title: "PERFORMANCE-FOCUSED RESULTS",
+    title: "Performance-Focused Results",
     description:
       "We structure partnerships to deliver measurable impact — from brand awareness to direct sales conversions.",
   },
   {
-    number: "02",
-    title: "SELECTIVE CREATOR NETWORK",
+    title: "Selective Creator Network",
     description:
-      "We represent carefully vetted creators who align with our authenticity standards and cultivate extremely loyal followings.",
+      "We represent carefully vetted creators who align with our authenticity standards and cultivate loyal followings.",
   },
   {
-    number: "03",
-    title: "FULL-SERVICE PARTNERSHIPS",
+    title: "Full-Service Partnerships",
     description:
-      "Content strategy, psychological selling techniques, scripting, audience building, and end-to-end oversight.",
+      "Content strategy, scripting, audience building, and end-to-end oversight — all handled for you.",
   },
 ];
 
 const DifferentiatorsSection = () => {
   return (
     <>
-      {/* Image + big text overlay section */}
-      <section className="relative bg-primary overflow-hidden">
-        <div className="w-full aspect-[16/9] md:aspect-[16/7] overflow-hidden relative">
-          <img
-            src={streetPhoto}
-            alt="Urban street scene"
-            className="w-full h-full object-cover"
-          />
-          {/* Overlapping text at bottom of image */}
-          <div className="absolute bottom-0 left-0 right-0 px-4 md:px-8">
-            <h2 className="font-display text-primary-foreground text-[3rem] sm:text-[5rem] md:text-[8rem] lg:text-[10rem] leading-[0.85] tracking-tight italic">
-              EXPLORE CREATORS
-            </h2>
-          </div>
-          {/* Full-width citron CTA bar */}
-          <div className="absolute bottom-0 left-0 right-0">
-            <button 
-              className="w-full bg-primary py-4 font-display text-sm md:text-base tracking-widest text-primary-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-              onClick={() => window.open("https://calendly.com", "_blank")}
-            >
-              VIEW OUR TALENT
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Two-column image grid */}
-      <section className="bg-background py-4 px-4">
-        <div className="grid grid-cols-2 gap-4 max-w-6xl mx-auto">
-          <div className="aspect-[3/4] overflow-hidden">
-            <img
-              src={glassPhoto}
-              alt="Glass texture portrait"
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <div>
-            <div className="aspect-[3/4] overflow-hidden mb-6">
-              <img
-              src={swirlPhoto}
-              alt="Abstract light swirl"
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <h3 className="font-display text-2xl md:text-3xl text-primary mb-3">
-              AUTHENTIC PARTNERSHIPS
-            </h3>
-            <p className="font-sans text-sm md:text-base text-muted-foreground uppercase tracking-wide leading-relaxed">
-              3-month contracts ranging from $5K to $40K/month with performance tracking and full creative support.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Differentiators list */}
-      <section className="py-20 md:py-28 bg-primary text-primary-foreground">
-        <div className="container mx-auto px-6 max-w-5xl">
-          <h2 className="font-display text-4xl md:text-6xl lg:text-7xl mb-16 text-accent">
-            BEYOND THE VANITY METRICS
+      {/* Full-width accent band */}
+      <section className="bg-accent py-16 md:py-24">
+        <div className="container mx-auto px-6 max-w-5xl text-center">
+          <h2 className="font-display text-3xl md:text-5xl lg:text-6xl text-accent-foreground leading-[1.1]">
+            Beyond the vanity metrics.
           </h2>
-          
-          <div className="space-y-12">
-            {differentiators.map((item) => (
+        </div>
+      </section>
+
+      {/* Differentiators */}
+      <section className="py-24 md:py-32 bg-background">
+        <div className="container mx-auto px-6 max-w-5xl">
+          <div className="space-y-0">
+            {differentiators.map((item, i) => (
               <div
-                key={item.number}
-                className="flex gap-6 md:gap-10 border-t border-primary-foreground/20 pt-8"
+                key={i}
+                className="flex flex-col md:flex-row md:items-baseline gap-4 md:gap-12 border-t border-border py-10"
               >
-                <span className="font-display text-4xl md:text-5xl text-accent/60">
-                  {item.number}
-                </span>
-                <div>
-                  <h3 className="font-display text-xl md:text-2xl text-primary-foreground mb-3">
-                    {item.title}
-                  </h3>
-                  <p className="font-sans text-base md:text-lg text-primary-foreground/70 leading-relaxed max-w-xl">
-                    {item.description}
-                  </p>
-                </div>
+                <h3 className="font-display text-2xl md:text-3xl text-foreground md:w-1/2">
+                  {item.title}
+                </h3>
+                <p className="font-sans text-sm md:text-base text-muted-foreground leading-relaxed md:w-1/2">
+                  {item.description}
+                </p>
               </div>
             ))}
+            <div className="border-t border-border" />
           </div>
+        </div>
+      </section>
+
+      {/* Full-bleed image */}
+      <section className="relative">
+        <div className="aspect-[16/7] overflow-hidden">
+          <img src={sunsetPhoto} alt="Sunset" className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-background/30" />
         </div>
       </section>
     </>

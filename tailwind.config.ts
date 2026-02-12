@@ -19,8 +19,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ['Anton', 'sans-serif'],
-        script: ['Caveat', 'cursive'],
+        display: ['Playfair Display', 'serif'],
+        serif: ['Playfair Display', 'serif'],
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
       colors: {
