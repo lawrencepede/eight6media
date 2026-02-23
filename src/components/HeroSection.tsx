@@ -37,7 +37,7 @@ const HeroSection = () => {
       {/* Centered text overlay */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-center px-6">
         <h1 className="font-display text-4xl sm:text-5xl md:text-7xl lg:text-8xl text-foreground leading-[1.1] max-w-4xl mb-6">
-          Created by <em className="italic text-accent">passionate</em> humans,
+          Created by <em className="italic text-accent">passionate</em> <em className="italic text-accent">humans,</em>
           <br />
           not the algorithm.
         </h1>
