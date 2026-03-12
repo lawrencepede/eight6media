@@ -78,19 +78,22 @@ Deno.serve(async (req) => {
       const iconRes = await fetch(iconUrl, { redirect: "follow" });
       if (isValidImage(iconRes)) {
         const iconBlob = await iconRes.blob();
-        const contentType = iconRes.headers.get("content-type") || "image/png";
-        const ext = contentType.includes("svg") ? "svg" : contentType.includes("webp") ? "webp" : "png";
-        const iconPath = `${cleanDomain}/icon.${ext}`;
+        if (isValidBlob(iconBlob)) {
+          const contentType = iconRes.headers.get("content-type") || "image/png";
+          const ext = contentType.includes("svg") ? "svg" : contentType.includes("webp") ? "webp" : "png";
+          const iconPath = `${cleanDomain}/icon.${ext}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from("brand-logos")
-          .upload(iconPath, iconBlob, { contentType, upsert: true });
+          const { error: uploadError } = await supabase.storage
+            .from("brand-logos")
+            .upload(iconPath, iconBlob, { contentType, upsert: true });
 
-        if (!uploadError) {
-          storedIconUrl = supabase.storage.from("brand-logos").getPublicUrl(iconPath).data.publicUrl;
+          if (!uploadError) {
+            storedIconUrl = supabase.storage.from("brand-logos").getPublicUrl(iconPath).data.publicUrl;
+          } else {
+            console.error("Icon upload error:", uploadError);
+          }
         } else {
-          console.error("Icon upload error:", uploadError);
-          // Do NOT fall back to CDN URL — leave null
+          console.log(`Icon too small for ${cleanDomain} (${iconBlob.size} bytes) — likely a placeholder, skipping`);
         }
       } else {
         console.log(`Icon not found for ${cleanDomain} (status: ${iconRes.status}, content-type: ${iconRes.headers.get("content-type")})`);

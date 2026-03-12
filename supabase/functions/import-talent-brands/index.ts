@@ -143,7 +143,8 @@ Deno.serve(async (req) => {
           let storedLogo: string | null = null;
           let storedIcon: string | null = null;
 
-          // Helper: validate response is an actual image
+          // Helper: validate response is an actual image (not a placeholder)
+          const MIN_LOGO_SIZE = 3000; // 3KB minimum to reject Brandfetch placeholders
           const isValidImage = (res: Response) => {
             const ct = res.headers.get("content-type") || "";
             return res.ok && ct.startsWith("image/");
@@ -153,13 +154,17 @@ Deno.serve(async (req) => {
           const logoRes = await fetch(logoApiUrl, { redirect: "follow" });
           if (isValidImage(logoRes)) {
             const blob = await logoRes.blob();
-            const contentType = logoRes.headers.get("content-type") || "image/png";
-            const ext = contentType.includes("svg") ? "svg" : contentType.includes("webp") ? "webp" : "png";
-            const path = `${fetchDomain}/logo.${ext}`;
-            const { error: upErr } = await supabase.storage.from("brand-logos")
-              .upload(path, blob, { contentType, upsert: true });
-            if (!upErr) {
-              storedLogo = supabase.storage.from("brand-logos").getPublicUrl(path).data.publicUrl;
+            if (blob.size >= MIN_LOGO_SIZE) {
+              const contentType = logoRes.headers.get("content-type") || "image/png";
+              const ext = contentType.includes("svg") ? "svg" : contentType.includes("webp") ? "webp" : "png";
+              const path = `${fetchDomain}/logo.${ext}`;
+              const { error: upErr } = await supabase.storage.from("brand-logos")
+                .upload(path, blob, { contentType, upsert: true });
+              if (!upErr) {
+                storedLogo = supabase.storage.from("brand-logos").getPublicUrl(path).data.publicUrl;
+              }
+            } else {
+              console.log(`Logo too small for ${brandName} (${blob.size}B) — skipping placeholder`);
             }
           }
 
@@ -167,13 +172,17 @@ Deno.serve(async (req) => {
           const iconRes = await fetch(iconApiUrl, { redirect: "follow" });
           if (isValidImage(iconRes)) {
             const blob = await iconRes.blob();
-            const contentType = iconRes.headers.get("content-type") || "image/png";
-            const ext = contentType.includes("svg") ? "svg" : contentType.includes("webp") ? "webp" : "png";
-            const path = `${fetchDomain}/icon.${ext}`;
-            const { error: upErr } = await supabase.storage.from("brand-logos")
-              .upload(path, blob, { contentType, upsert: true });
-            if (!upErr) {
-              storedIcon = supabase.storage.from("brand-logos").getPublicUrl(path).data.publicUrl;
+            if (blob.size >= MIN_LOGO_SIZE) {
+              const contentType = iconRes.headers.get("content-type") || "image/png";
+              const ext = contentType.includes("svg") ? "svg" : contentType.includes("webp") ? "webp" : "png";
+              const path = `${fetchDomain}/icon.${ext}`;
+              const { error: upErr } = await supabase.storage.from("brand-logos")
+                .upload(path, blob, { contentType, upsert: true });
+              if (!upErr) {
+                storedIcon = supabase.storage.from("brand-logos").getPublicUrl(path).data.publicUrl;
+              }
+            } else {
+              console.log(`Icon too small for ${brandName} (${blob.size}B) — skipping placeholder`);
             }
           }
 
