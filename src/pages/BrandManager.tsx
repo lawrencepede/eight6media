@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  ArrowLeft, Search, Plus, Loader2, ExternalLink, Trash2, Link as LinkIcon, Upload, CheckCircle2, Download, Pencil,
+  ArrowLeft, Search, Plus, Loader2, ExternalLink, Trash2, Upload, CheckCircle2, Download, Pencil,
 } from "lucide-react";
 import PasswordGate from "@/components/PasswordGate";
 import {
@@ -89,6 +89,7 @@ const BrandManager = () => {
   const [logoProgress, setLogoProgress] = useState<{ done: number; total: number; errors: string[] } | null>(null);
   const [editBrand, setEditBrand] = useState<{ id: string; name: string; domain: string } | null>(null);
   const [editDomain, setEditDomain] = useState("");
+  const [uploadingLogoFor, setUploadingLogoFor] = useState<string | null>(null);
 
   const { data: brands, isLoading: brandsLoading } = useBrandAssets();
   const { data: relationships, isLoading: relsLoading } = useTalentBrandRelationships();
@@ -213,9 +214,36 @@ const BrandManager = () => {
     );
   };
 
-  const openLinkDialog = (brandId: string) => {
-    setSelectedBrandId(brandId);
-    setLinkDialogOpen(true);
+  const handleUploadLogo = async (brandId: string, brandDomain: string, file: File) => {
+    setUploadingLogoFor(brandId);
+    try {
+      const contentType = file.type || "image/png";
+      const ext = file.name.split(".").pop() || "png";
+      const path = `${brandDomain}/logo.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("brand-logos")
+        .upload(path, file, { contentType, upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const publicUrl = supabase.storage.from("brand-logos").getPublicUrl(path).data.publicUrl;
+
+      const { error: updateError } = await supabase
+        .from("brand_assets")
+        .update({ logo_url: publicUrl })
+        .eq("id", brandId);
+
+      if (updateError) throw updateError;
+
+      queryClient.invalidateQueries({ queryKey: ["brand-assets"] });
+      queryClient.invalidateQueries({ queryKey: ["brand-logo"] });
+      toast.success("Logo uploaded!");
+    } catch (e: any) {
+      toast.error(`Upload failed: ${e.message}`);
+    } finally {
+      setUploadingLogoFor(null);
+    }
   };
 
   const handleDeleteBrand = async (brandId: string, brandName: string) => {
@@ -472,10 +500,24 @@ const BrandManager = () => {
                         size="sm"
                         variant="outline"
                         className="flex-1 text-xs"
-                        onClick={() => openLinkDialog(brand.id)}
+                        onClick={() => {
+                          const input = document.createElement("input");
+                          input.type = "file";
+                          input.accept = "image/*";
+                          input.onchange = (e) => {
+                            const file = (e.target as HTMLInputElement).files?.[0];
+                            if (file) handleUploadLogo(brand.id, brand.domain, file);
+                          };
+                          input.click();
+                        }}
+                        disabled={uploadingLogoFor === brand.id}
                       >
-                        <LinkIcon className="w-3 h-3 mr-1" />
-                        Link
+                        {uploadingLogoFor === brand.id ? (
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                        ) : (
+                          <Upload className="w-3 h-3 mr-1" />
+                        )}
+                        Upload Logo
                       </Button>
                       <Button
                         size="sm"
