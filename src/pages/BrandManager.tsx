@@ -40,7 +40,7 @@ const BrandManager = () => {
 
   const { data: brands, isLoading: brandsLoading } = useBrandAssets();
   const { data: relationships, isLoading: relsLoading } = useTalentBrandRelationships();
-  const { data: creators } = useCreators();
+  const { creators } = useCreators();
   const fetchBrand = useFetchBrand();
   const linkTalentBrand = useLinkTalentBrand();
   const deleteLink = useDeleteTalentBrandLink();
