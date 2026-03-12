@@ -22,11 +22,22 @@ const useBrandLogo = (brandName: string) => {
   return useQuery({
     queryKey: ["brand-logo", brandName],
     queryFn: async () => {
+      // Try exact match first, then fuzzy match without spaces
       const { data } = await supabase
         .from("brand_assets")
         .select("icon_url, logo_url, name")
         .ilike("name", brandName)
         .maybeSingle();
+      
+      if (data) return data;
+      
+      // Fallback: match without spaces/special chars
+      const normalized = brandName.replace(/\s+/g, "").toUpperCase();
+      const { data: allBrands } = await supabase
+        .from("brand_assets")
+        .select("icon_url, logo_url, name");
+      
+      return allBrands?.find(b => b.name.replace(/\s+/g, "").toUpperCase() === normalized) || null;
       return data;
     },
     staleTime: 1000 * 60 * 30, // Cache for 30 min
