@@ -330,6 +330,20 @@ const BrandManager = () => {
                         <LinkIcon className="w-3 h-3 mr-1" />
                         Link
                       </Button>
+                      {(brand.logo_url || brand.icon_url) && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-xs"
+                          onClick={() => {
+                            const url = brand.logo_url || brand.icon_url!;
+                            const ext = url.includes(".svg") ? "svg" : "png";
+                            downloadFile(url, `${brand.name.toLowerCase().replace(/[^a-z0-9]/g, "-")}-logo.${ext}`);
+                          }}
+                        >
+                          <Download className="w-3 h-3" />
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         variant="ghost"
