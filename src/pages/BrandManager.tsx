@@ -259,9 +259,31 @@ const BrandManager = () => {
 
           {/* Brand Assets Grid */}
           <div>
-            <h2 className="font-sans text-lg font-semibold text-primary mb-4">
-              Brand Library ({brands?.length || 0})
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-sans text-lg font-semibold text-primary">
+                Brand Library ({brands?.length || 0})
+              </h2>
+              {brands && brands.filter(b => b.logo_url || b.icon_url).length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const brandsWithLogos = brands.filter(b => b.logo_url || b.icon_url);
+                    brandsWithLogos.forEach((brand, i) => {
+                      setTimeout(() => {
+                        const url = brand.logo_url || brand.icon_url!;
+                        const ext = url.includes(".svg") ? "svg" : "png";
+                        downloadFile(url, `${brand.name.toLowerCase().replace(/[^a-z0-9]/g, "-")}-logo.${ext}`);
+                      }, i * 300); // stagger to avoid browser blocking
+                    });
+                    sonnerToast.success(`Downloading ${brandsWithLogos.length} logos...`);
+                  }}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download All Logos ({brands.filter(b => b.logo_url || b.icon_url).length})
+                </Button>
+              )}
+            </div>
             {brandsLoading ? (
               <div className="flex justify-center py-12">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
