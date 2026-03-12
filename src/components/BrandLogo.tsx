@@ -38,7 +38,6 @@ const useBrandLogo = (brandName: string) => {
         .select("icon_url, logo_url, name");
       
       return allBrands?.find(b => b.name.replace(/\s+/g, "").toUpperCase() === normalized) || null;
-      return data;
     },
     staleTime: 1000 * 60 * 30, // Cache for 30 min
   });
@@ -52,11 +51,11 @@ const BrandLogo = ({ brand, className, showName = false }: BrandLogoProps) => {
   if (logoSrc) {
     return (
       <div className={`flex items-center gap-1.5 ${className || ""}`}>
-        <div className="flex items-center justify-center bg-secondary/50 px-2 py-1.5 rounded-lg h-7">
+        <div className="flex items-center justify-center bg-[hsl(0_0%_85%)] dark:bg-[hsl(0_0%_30%)] px-2 py-1.5 rounded-lg h-7">
           <img 
             src={logoSrc} 
             alt={brand} 
-            className="h-4 w-auto opacity-80 max-w-[48px] object-contain"
+            className="h-4 w-auto max-w-[48px] object-contain dark:brightness-[1.8] dark:contrast-[1.1]"
           />
         </div>
         {showName && (
