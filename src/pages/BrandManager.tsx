@@ -85,6 +85,8 @@ const BrandManager = () => {
   const [notes, setNotes] = useState("");
   const [importing, setImporting] = useState(false);
   const [importResults, setImportResults] = useState<any>(null);
+  const [fetchingLogos, setFetchingLogos] = useState(false);
+  const [logoProgress, setLogoProgress] = useState<{ done: number; total: number; errors: string[] } | null>(null);
 
   const { data: brands, isLoading: brandsLoading } = useBrandAssets();
   const { data: relationships, isLoading: relsLoading } = useTalentBrandRelationships();
