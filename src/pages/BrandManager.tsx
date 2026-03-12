@@ -214,9 +214,36 @@ const BrandManager = () => {
     );
   };
 
-  const openLinkDialog = (brandId: string) => {
-    setSelectedBrandId(brandId);
-    setLinkDialogOpen(true);
+  const handleUploadLogo = async (brandId: string, brandDomain: string, file: File) => {
+    setUploadingLogoFor(brandId);
+    try {
+      const contentType = file.type || "image/png";
+      const ext = file.name.split(".").pop() || "png";
+      const path = `${brandDomain}/logo.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("brand-logos")
+        .upload(path, file, { contentType, upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const publicUrl = supabase.storage.from("brand-logos").getPublicUrl(path).data.publicUrl;
+
+      const { error: updateError } = await supabase
+        .from("brand_assets")
+        .update({ logo_url: publicUrl })
+        .eq("id", brandId);
+
+      if (updateError) throw updateError;
+
+      queryClient.invalidateQueries({ queryKey: ["brand-assets"] });
+      queryClient.invalidateQueries({ queryKey: ["brand-logo"] });
+      toast.success("Logo uploaded!");
+    } catch (e: any) {
+      toast.error(`Upload failed: ${e.message}`);
+    } finally {
+      setUploadingLogoFor(null);
+    }
   };
 
   const handleDeleteBrand = async (brandId: string, brandName: string) => {
