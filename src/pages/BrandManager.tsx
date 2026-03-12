@@ -452,7 +452,7 @@ const BrandManager = () => {
                     key={brand.id}
                     className="bg-card border border-border rounded-lg p-4 hover:border-accent transition-colors group"
                   >
-                    <div className="flex items-center justify-center h-16 mb-3 bg-muted rounded-lg">
+                    <div className="flex items-center justify-center h-16 mb-3 rounded-lg" style={{ backgroundColor: "white" }}>
                       {brand.logo_url?.includes("/storage/v1/object/public/brand-logos/") ? (
                         <img
                           src={brand.logo_url}

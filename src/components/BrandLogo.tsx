@@ -48,7 +48,7 @@ const BrandLogo = ({ brand, className, showName = false }: BrandLogoProps) => {
   if (logoSrc) {
     return (
       <div className={`flex items-center gap-1.5 ${className || ""}`}>
-        <div className="flex items-center justify-center bg-muted px-2 py-1.5 rounded-lg h-7">
+        <div className="flex items-center justify-center px-2 py-1.5 rounded-lg h-7" style={{ backgroundColor: "white" }}>
           <img 
             src={logoSrc} 
             alt={brand} 

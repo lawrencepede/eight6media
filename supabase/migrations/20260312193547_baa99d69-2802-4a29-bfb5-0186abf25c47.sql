@@ -1,0 +1,1 @@
+UPDATE brand_assets SET logo_url = NULL, icon_url = NULL;
