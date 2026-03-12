@@ -685,6 +685,32 @@ const BrandManager = () => {
             </div>
           </DialogContent>
         </Dialog>
+        {/* Update Brand Dialog */}
+        <Dialog open={!!editBrand} onOpenChange={(open) => !open && setEditBrand(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Update Brand: {editBrand?.name}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Domain / URL</label>
+                <Input
+                  value={editDomain}
+                  onChange={(e) => setEditDomain(e.target.value)}
+                  placeholder="e.g. cozyearth.com"
+                  onKeyDown={(e) => e.key === "Enter" && handleUpdateBrand()}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Enter the correct domain to re-fetch logos from Brandfetch
+                </p>
+              </div>
+              <Button onClick={handleUpdateBrand} className="w-full">
+                <Pencil className="w-4 h-4 mr-2" />
+                Update Domain & Re-fetch Logo
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </PasswordGate>
   );
