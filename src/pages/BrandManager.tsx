@@ -477,6 +477,18 @@ const BrandManager = () => {
                         <LinkIcon className="w-3 h-3 mr-1" />
                         Link
                       </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs"
+                        onClick={() => {
+                          setEditBrand({ id: brand.id, name: brand.name, domain: brand.domain });
+                          setEditDomain(brand.domain);
+                        }}
+                        title="Update domain & re-fetch logo"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </Button>
                       {(brand.logo_url || brand.icon_url) && (
                         <Button
                           size="sm"
@@ -494,12 +506,11 @@ const BrandManager = () => {
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="text-xs"
-                        asChild
+                        className="text-xs text-destructive hover:text-destructive"
+                        onClick={() => handleDeleteBrand(brand.id, brand.name)}
+                        title="Delete brand"
                       >
-                        <a href={`https://${brand.domain}`} target="_blank" rel="noopener noreferrer">
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
+                        <Trash2 className="w-3 h-3" />
                       </Button>
                     </div>
                   </div>
