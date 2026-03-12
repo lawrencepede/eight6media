@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { toast as sonnerToast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -15,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  ArrowLeft, Search, Plus, Loader2, ExternalLink, Trash2, Link as LinkIcon, Upload, CheckCircle2,
+  ArrowLeft, Search, Plus, Loader2, ExternalLink, Trash2, Link as LinkIcon, Upload, CheckCircle2, Download,
 } from "lucide-react";
 import PasswordGate from "@/components/PasswordGate";
 import {
@@ -92,6 +93,20 @@ const BrandManager = () => {
   const linkTalentBrand = useLinkTalentBrand();
   const deleteLink = useDeleteTalentBrandLink();
   const queryClient = useQueryClient();
+
+  const downloadFile = async (url: string, filename: string) => {
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch {
+      sonnerToast.error("Download failed");
+    }
+  };
 
   const handleFetchBrand = () => {
     if (!searchDomain.trim()) return;
@@ -244,9 +259,31 @@ const BrandManager = () => {
 
           {/* Brand Assets Grid */}
           <div>
-            <h2 className="font-sans text-lg font-semibold text-primary mb-4">
-              Brand Library ({brands?.length || 0})
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-sans text-lg font-semibold text-primary">
+                Brand Library ({brands?.length || 0})
+              </h2>
+              {brands && brands.filter(b => b.logo_url || b.icon_url).length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const brandsWithLogos = brands.filter(b => b.logo_url || b.icon_url);
+                    brandsWithLogos.forEach((brand, i) => {
+                      setTimeout(() => {
+                        const url = brand.logo_url || brand.icon_url!;
+                        const ext = url.includes(".svg") ? "svg" : "png";
+                        downloadFile(url, `${brand.name.toLowerCase().replace(/[^a-z0-9]/g, "-")}-logo.${ext}`);
+                      }, i * 300); // stagger to avoid browser blocking
+                    });
+                    sonnerToast.success(`Downloading ${brandsWithLogos.length} logos...`);
+                  }}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download All Logos ({brands.filter(b => b.logo_url || b.icon_url).length})
+                </Button>
+              )}
+            </div>
             {brandsLoading ? (
               <div className="flex justify-center py-12">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -315,6 +352,20 @@ const BrandManager = () => {
                         <LinkIcon className="w-3 h-3 mr-1" />
                         Link
                       </Button>
+                      {(brand.logo_url || brand.icon_url) && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-xs"
+                          onClick={() => {
+                            const url = brand.logo_url || brand.icon_url!;
+                            const ext = url.includes(".svg") ? "svg" : "png";
+                            downloadFile(url, `${brand.name.toLowerCase().replace(/[^a-z0-9]/g, "-")}-logo.${ext}`);
+                          }}
+                        >
+                          <Download className="w-3 h-3" />
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         variant="ghost"
