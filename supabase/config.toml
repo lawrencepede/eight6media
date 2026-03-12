@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.fetch-brand-assets]
 verify_jwt = false
+
+[functions.import-talent-brands]
+verify_jwt = false
