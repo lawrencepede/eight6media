@@ -218,6 +218,52 @@ const BrandManager = () => {
     setLinkDialogOpen(true);
   };
 
+  const handleDeleteBrand = async (brandId: string, brandName: string) => {
+    if (!confirm(`Delete "${brandName}" and all its relationships?`)) return;
+    // Delete relationships first, then the brand
+    await supabase.from("talent_brand_relationships").delete().eq("brand_id", brandId);
+    const { error } = await supabase.from("brand_assets").delete().eq("id", brandId);
+    if (error) {
+      toast.error(`Failed to delete: ${error.message}`);
+    } else {
+      toast.success(`Deleted ${brandName}`);
+      queryClient.invalidateQueries({ queryKey: ["brand-assets"] });
+      queryClient.invalidateQueries({ queryKey: ["talent-brand-relationships"] });
+    }
+  };
+
+  const handleUpdateBrand = async () => {
+    if (!editBrand || !editDomain.trim()) return;
+    // Update domain and clear logos
+    const { error } = await supabase.from("brand_assets").update({
+      domain: editDomain.trim(),
+      logo_url: null,
+      icon_url: null,
+    }).eq("id", editBrand.id);
+    if (error) {
+      toast.error(`Update failed: ${error.message}`);
+      return;
+    }
+    // Re-fetch logo
+    toast.info(`Fetching logo for ${editDomain.trim()}...`);
+    try {
+      const { data, error: fetchErr } = await supabase.functions.invoke("import-talent-brands", {
+        body: { talent_brands: [], fetch_logos_for: [editBrand.name] },
+      });
+      if (fetchErr) throw fetchErr;
+      if (data?.results?.logos_fetched > 0) {
+        toast.success("Logo updated!");
+      } else {
+        toast.warning("Domain updated but no logo found");
+      }
+    } catch (e: any) {
+      toast.warning(`Domain updated but logo fetch failed: ${e.message}`);
+    }
+    queryClient.invalidateQueries({ queryKey: ["brand-assets"] });
+    queryClient.invalidateQueries({ queryKey: ["brand-logo"] });
+    setEditBrand(null);
+  };
+
   return (
     <PasswordGate>
       <div className="min-h-screen bg-background">
