@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  ArrowLeft, Search, Plus, Loader2, ExternalLink, Trash2, Link as LinkIcon,
+  ArrowLeft, Search, Plus, Loader2, ExternalLink, Trash2, Link as LinkIcon, Upload, CheckCircle2,
 } from "lucide-react";
 import PasswordGate from "@/components/PasswordGate";
 import {
@@ -26,6 +26,51 @@ import {
   useDeleteTalentBrandLink,
 } from "@/hooks/useBrandAssets";
 import { useCreators } from "@/hooks/useCreators";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+
+// Parsed PDF data
+const TALENT_BRANDS_DATA = [
+  { talent_name: "Alden Lopez", brands: ["CAMP SNAP CAMERAS", "RANGER STATION", "HONEY SWIM", "KATE MCLEOD", "DAGNE DOVER", "SALTY FACE", "OAK ESSENTIALS", "CAPITAL ONE", "BOSE", "RHOBACK", "BARTACO", "AVA RESORTS", "CANCUN", "TROPICAL HOTEL ST BARTS", "HALF SHELL VODKA", "KRISTEN ESS HAIR", "YOLO BOARD", "TERVIS TUMBLERS", "OLLY WELLNESS"] },
+  { talent_name: "Anthony Rice", brands: ["ALO", "EVERLAST", "DOVE"] },
+  { talent_name: "Ben Smith", brands: ["ARMRA", "ORGANIFI", "CURED NUTRITION", "SLATE MILK", "BLOKES", "FACTOR MEALS", "OI TAPE", "AVI RESORTS", "STASIS", "GT'S LIVING FOODS"] },
+  { talent_name: "Caitlin Lindsey", brands: ["EQUIP FOODS", "PURITY COFFEE", "PARIS LAUNDRY", "OLIVE AND VE", "REDMOND RELYTE", "CANYON BAKEHOUSE", "PERFORMASLEEP", "IKIGAI"] },
+  { talent_name: "Carly Durst", brands: ["CURED NUTRITION", "REVOLVE", "SEPHORA", "HAUSLAB", "SHOPBOP", "REGENMD", "ARMRA", "CURATIVA BAY"] },
+  { talent_name: "Chris Griffin", brands: ["WHOOP", "MANNA VITALITY", "MAGIC MIND", "NOBULL", "GT'S LIVING FOODS", "REEBOK", "SWITCH NUTRITION", "EHP LABS", "OXYSHRED ENERGY", "HYDREAU", "GYMSHARK", "CANCER COUNSIL AUSTRALIA", "PAPA MACROS", "KOALA", "BALCONY GARDEN", "FRONT RUNNER", "PURESPORT"] },
+  { talent_name: "Daniel Brigham", brands: ["ETHOS FINANCIAL"] },
+  { talent_name: "Dominic Fusco", brands: ["ARMRA", "NIKE", "BROOKS", "DARN TOUGH", "CYMBIOTIKA", "ORGANIFI", "DREAM RECOVERY", "PWR LFT", "ADIDAS", "NOBULL", "NORDIC TRACK", "AG1"] },
+  { talent_name: "Dr. Clay Moss", brands: ["ICE BARREL", "SUPP CO.", "JOI & BLOKES", "CROWD HEALTH", "EVERYDAY DOSE", "INITO"] },
+  { talent_name: "Dr. Jaime Seeman", brands: ["LASHIFY", "ONESKIN", "BRANCH BASICS", "OI TAPE", "HIGHERDOSE", "TIMELINE", "BUBBS NATURALS", "NODPOD", "FILTERBABY", "SUNLIGHTEN", "ICE BARREL"] },
+  { talent_name: "Dr. Natazia Stolberg", brands: ["ARMRA", "OI TAPE", "STASIS", "UMZU", "JASPR", "CREATE WELLNESS", "CURED NUTRITION", "MAGNA", "FENDI", "NODPOD", "FILTERBABY", "ONESKIN", "OPEN"] },
+  { talent_name: "Dr. Nick Nwabueze", brands: ["GORUCK", "INSTANT HYDRATION", "BIOPTIMIZERS", "PRECISION NUTRITION", "BLONYX", "WYOMING COWBOY CUTS", "NUTRITION SOLUTIONS", "KINETIC FOOT AND ANKLE", "CARBONSHADE"] },
+  { talent_name: "Eric Hinman", brands: ["ICE BARREL", "CREATE WELLNESS", "OURA RING", "TEN THOUSAND", "BEAM", "VITAL PROTEINS", "ATHLETIC GREENS", "HIGHERDOSE", "COROS"] },
+  { talent_name: "Jason Grubb", brands: ["BARBELL APPAREL", "KINEON", "HEART & SOIL", "THIRDZY", "BEYOND COLD", "ALYNMD", "FUNCTION HEALTH", "MYCHONDRIA", "REYLLEN", "ICE BARREL", "MANUKORA HONEY", "TERRITORY FOODS", "LMNT"] },
+  { talent_name: "Jenn Miller", brands: ["ARMRA", "CURED NUTRITION", "OURA", "COTERIE", "COZY EARTH", "REVOLVE", "LIQUID IV", "REDKEN", "NOBULL", "BRANCH BASICS", "ORA", "WARBY PARKER", "VIVRELLE"] },
+  { talent_name: "Jerred Beniquez", brands: ["ICE BARREL", "GHOST", "SUUNTO"] },
+  { talent_name: "Jessica Perez", brands: ["SEINT", "OLIVE TREE PEOPLE"] },
+  { talent_name: "Joey Miuccio", brands: ["ASRV", "BPN", "SPIRITED HIVE", "CALDERA LABS", "KOZE", "NOBULL", "NORDIC TRACK"] },
+  { talent_name: "John Lindsey", brands: ["ICE BARREL", "SISU SAUNA", "TEN THOUSAND", "FLUX FOOTWEAR", "NOBOSO", "SUPPCO", "THORN SUPPLEMENTS", "RALLY", "CREATE", "DEFINITE ARTICLES", "SISU SAUNA", "MITO RED LIGHT", "COLLATHERAPY", "FLUX FOOTWEAR", "NUNORM SHOES", "EQUIP", "ITHERAU"] },
+  { talent_name: "Kat Fairchild", brands: ["OLIVE TREE PEOPLE", "SEINT", "MIDI HEALTH", "FILTER BABY"] },
+  { talent_name: "Katey Yurko", brands: ["CURED NUTRITION", "BEAM", "PRIMALLY PURE", "BRANCH BASICS", "TIMELINE NUTRITION", "ORA ORGANIC", "NODPOD", "BODYBIO", "YOUNG GOOSE SKINCARE", "INSTANT HYDRATION", "COWBOY COLOSTRUM", "FUNCTION HEALTH"] },
+  { talent_name: "Katia Pryce", brands: ["MIDI HEALTH", "NELLA", "EMSCULPT", "YOUNG GOOSE SKINCARE", "BOMBAS", "437"] },
+  { talent_name: "Katy Rexing", brands: ["OSEA"] },
+  { talent_name: "Macy Pruett", brands: ["COZY EARTH", "BEAM", "INSTANT HYDRATION"] },
+  { talent_name: "Margaret Baker", brands: ["ARMRA", "CURED NUTRITION", "REVOLVE", "SEPHORA", "HAUSLAB", "SHOPBOP", "NODPOD", "VIVRELLE", "ONESKIN", "SUPERPOWER"] },
+  { talent_name: "Matt Choi", brands: ["NIKE", "LULULEMON", "ADIDAS", "UNDER ARMOUR", "APPLE", "GARMIN", "MICROSOFT", "CHIPOTLE", "DOVE MEN+CARE", "COSTCO", "TOYOTA"] },
+  { talent_name: "Meg Crockett", brands: ["CREATE WELLNESS"] },
+  { talent_name: "Meghan Matejka", brands: ["PALEOVALLEY", "CURED NUTRITION", "ARMRA", "SHOCKZ"] },
+  { talent_name: "Michael James", brands: [] },
+  { talent_name: "Mitch Gourley", brands: ["TRANSPARENT LABS", "ICE BARREL", "5.11 TACTICAL", "NADS", "FLAKES", "SHOCKZ", "NINJA"] },
+  { talent_name: "MJ Fusco", brands: ["BROOKS", "ADIDAS", "NOBULL"] },
+  { talent_name: "Paige Sevier", brands: ["L'OREAL", "OLIVE TREE PEOPLE", "SEINT", "ACTIVE SKIN REPAIR", "ARMRA", "BOMBAS", "DIBS BEAUTY", "INSTANT HYDRATION"] },
+  { talent_name: "Sam Valentine", brands: ["ARMRA", "MOVO", "OLIVE & JUNE", "POPFLEX", "WEEM VITAMINS", "GRUNS"] },
+];
+
+// Top brands to fetch logos for (well-known brands with good Brandfetch data)
+const TEST_LOGO_BRANDS = [
+  "NIKE", "ADIDAS", "APPLE", "GARMIN", "SEPHORA", "LULULEMON", "REEBOK", "GYMSHARK", "UNDER ARMOUR", "TOYOTA"
+];
 
 const BrandManager = () => {
   const { user } = useAuth();
@@ -37,6 +82,8 @@ const BrandManager = () => {
   const [dealValue, setDealValue] = useState("");
   const [dealStatus, setDealStatus] = useState("completed");
   const [notes, setNotes] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [importResults, setImportResults] = useState<any>(null);
 
   const { data: brands, isLoading: brandsLoading } = useBrandAssets();
   const { data: relationships, isLoading: relsLoading } = useTalentBrandRelationships();
@@ -44,11 +91,35 @@ const BrandManager = () => {
   const fetchBrand = useFetchBrand();
   const linkTalentBrand = useLinkTalentBrand();
   const deleteLink = useDeleteTalentBrandLink();
+  const queryClient = useQueryClient();
 
   const handleFetchBrand = () => {
     if (!searchDomain.trim()) return;
     fetchBrand.mutate(searchDomain.trim());
     setSearchDomain("");
+  };
+
+  const handleBulkImport = async () => {
+    setImporting(true);
+    setImportResults(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("import-talent-brands", {
+        body: {
+          talent_brands: TALENT_BRANDS_DATA,
+          fetch_logos_for: TEST_LOGO_BRANDS,
+        },
+      });
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error);
+      setImportResults(data.results);
+      queryClient.invalidateQueries({ queryKey: ["brand-assets"] });
+      queryClient.invalidateQueries({ queryKey: ["talent-brand-relationships"] });
+      toast.success(`Imported! ${data.results.relationships_created} relationships, ${data.results.logos_fetched} logos fetched`);
+    } catch (e: any) {
+      toast.error(`Import failed: ${e.message}`);
+    } finally {
+      setImporting(false);
+    }
   };
 
   const handleLinkTalent = () => {
@@ -132,6 +203,43 @@ const BrandManager = () => {
                 Fetch
               </Button>
             </div>
+          </div>
+
+          {/* Bulk Import */}
+          <div className="bg-card border border-border rounded-lg p-6">
+            <h2 className="font-sans text-lg font-semibold text-primary mb-2">
+              Bulk Import from PDF
+            </h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Import {TALENT_BRANDS_DATA.length} talent records with brand partnerships. Fetches logos for top 10 brands (Nike, Apple, Adidas, etc.).
+            </p>
+            <Button onClick={handleBulkImport} disabled={importing}>
+              {importing ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Upload className="w-4 h-4 mr-2" />
+              )}
+              {importing ? "Importing..." : "Import Talent × Brand Data"}
+            </Button>
+            {importResults && (
+              <div className="mt-4 p-4 bg-muted rounded-lg text-sm space-y-1">
+                <p className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-600" /> <strong>{importResults.matched_talent}</strong> talent matched</p>
+                <p><strong>{importResults.brands_created}</strong> brands created</p>
+                <p><strong>{importResults.relationships_created}</strong> relationships linked</p>
+                <p><strong>{importResults.logos_fetched}</strong> logos fetched via Brandfetch</p>
+                {importResults.unmatched_talent?.length > 0 && (
+                  <p className="text-amber-600">Unmatched: {importResults.unmatched_talent.join(", ")}</p>
+                )}
+                {importResults.errors?.length > 0 && (
+                  <details className="mt-2">
+                    <summary className="text-destructive cursor-pointer">{importResults.errors.length} errors</summary>
+                    <ul className="mt-1 text-xs space-y-0.5">
+                      {importResults.errors.map((e: string, i: number) => <li key={i}>{e}</li>)}
+                    </ul>
+                  </details>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Brand Assets Grid */}
