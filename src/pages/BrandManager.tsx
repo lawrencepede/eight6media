@@ -328,7 +328,7 @@ const BrandManager = () => {
                   <SelectContent>
                     {creators?.map((c) => (
                       <SelectItem key={c.id} value={c.id}>
-                        {c.name} (@{c.instagram_handle})
+                        {c.name} (@{c.instagramHandle})
                       </SelectItem>
                     ))}
                   </SelectContent>
