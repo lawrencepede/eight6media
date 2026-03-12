@@ -495,7 +495,7 @@ const BrandManager = () => {
                         ))}
                       </div>
                     )}
-                    <div className="flex gap-1 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex flex-wrap gap-1 mt-3 opacity-0 group-hover:opacity-100 transition-opacity justify-center">
                       <Button
                         size="sm"
                         variant="outline"
