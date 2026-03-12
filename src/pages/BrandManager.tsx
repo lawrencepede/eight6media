@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  ArrowLeft, Search, Plus, Loader2, ExternalLink, Trash2, Link as LinkIcon, Upload, CheckCircle2, Download,
+  ArrowLeft, Search, Plus, Loader2, ExternalLink, Trash2, Link as LinkIcon, Upload, CheckCircle2, Download, Pencil,
 } from "lucide-react";
 import PasswordGate from "@/components/PasswordGate";
 import {
@@ -87,6 +87,8 @@ const BrandManager = () => {
   const [importResults, setImportResults] = useState<any>(null);
   const [fetchingLogos, setFetchingLogos] = useState(false);
   const [logoProgress, setLogoProgress] = useState<{ done: number; total: number; errors: string[] } | null>(null);
+  const [editBrand, setEditBrand] = useState<{ id: string; name: string; domain: string } | null>(null);
+  const [editDomain, setEditDomain] = useState("");
 
   const { data: brands, isLoading: brandsLoading } = useBrandAssets();
   const { data: relationships, isLoading: relsLoading } = useTalentBrandRelationships();
@@ -214,6 +216,52 @@ const BrandManager = () => {
   const openLinkDialog = (brandId: string) => {
     setSelectedBrandId(brandId);
     setLinkDialogOpen(true);
+  };
+
+  const handleDeleteBrand = async (brandId: string, brandName: string) => {
+    if (!confirm(`Delete "${brandName}" and all its relationships?`)) return;
+    // Delete relationships first, then the brand
+    await supabase.from("talent_brand_relationships").delete().eq("brand_id", brandId);
+    const { error } = await supabase.from("brand_assets").delete().eq("id", brandId);
+    if (error) {
+      toast.error(`Failed to delete: ${error.message}`);
+    } else {
+      toast.success(`Deleted ${brandName}`);
+      queryClient.invalidateQueries({ queryKey: ["brand-assets"] });
+      queryClient.invalidateQueries({ queryKey: ["talent-brand-relationships"] });
+    }
+  };
+
+  const handleUpdateBrand = async () => {
+    if (!editBrand || !editDomain.trim()) return;
+    // Update domain and clear logos
+    const { error } = await supabase.from("brand_assets").update({
+      domain: editDomain.trim(),
+      logo_url: null,
+      icon_url: null,
+    }).eq("id", editBrand.id);
+    if (error) {
+      toast.error(`Update failed: ${error.message}`);
+      return;
+    }
+    // Re-fetch logo
+    toast.info(`Fetching logo for ${editDomain.trim()}...`);
+    try {
+      const { data, error: fetchErr } = await supabase.functions.invoke("import-talent-brands", {
+        body: { talent_brands: [], fetch_logos_for: [editBrand.name] },
+      });
+      if (fetchErr) throw fetchErr;
+      if (data?.results?.logos_fetched > 0) {
+        toast.success("Logo updated!");
+      } else {
+        toast.warning("Domain updated but no logo found");
+      }
+    } catch (e: any) {
+      toast.warning(`Domain updated but logo fetch failed: ${e.message}`);
+    }
+    queryClient.invalidateQueries({ queryKey: ["brand-assets"] });
+    queryClient.invalidateQueries({ queryKey: ["brand-logo"] });
+    setEditBrand(null);
   };
 
   return (
@@ -429,6 +477,18 @@ const BrandManager = () => {
                         <LinkIcon className="w-3 h-3 mr-1" />
                         Link
                       </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs"
+                        onClick={() => {
+                          setEditBrand({ id: brand.id, name: brand.name, domain: brand.domain });
+                          setEditDomain(brand.domain);
+                        }}
+                        title="Update domain & re-fetch logo"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </Button>
                       {(brand.logo_url || brand.icon_url) && (
                         <Button
                           size="sm"
@@ -446,12 +506,11 @@ const BrandManager = () => {
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="text-xs"
-                        asChild
+                        className="text-xs text-destructive hover:text-destructive"
+                        onClick={() => handleDeleteBrand(brand.id, brand.name)}
+                        title="Delete brand"
                       >
-                        <a href={`https://${brand.domain}`} target="_blank" rel="noopener noreferrer">
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
+                        <Trash2 className="w-3 h-3" />
                       </Button>
                     </div>
                   </div>
@@ -622,6 +681,32 @@ const BrandManager = () => {
                   <Plus className="w-4 h-4 mr-2" />
                 )}
                 Link Brand to Talent
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+        {/* Update Brand Dialog */}
+        <Dialog open={!!editBrand} onOpenChange={(open) => !open && setEditBrand(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Update Brand: {editBrand?.name}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Domain / URL</label>
+                <Input
+                  value={editDomain}
+                  onChange={(e) => setEditDomain(e.target.value)}
+                  placeholder="e.g. cozyearth.com"
+                  onKeyDown={(e) => e.key === "Enter" && handleUpdateBrand()}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Enter the correct domain to re-fetch logos from Brandfetch
+                </p>
+              </div>
+              <Button onClick={handleUpdateBrand} className="w-full">
+                <Pencil className="w-4 h-4 mr-2" />
+                Update Domain & Re-fetch Logo
               </Button>
             </div>
           </DialogContent>
