@@ -9,7 +9,8 @@ import {
   Sparkles,
   Settings,
   ArrowRight,
-  BarChart3
+  BarChart3,
+  Palette
 } from "lucide-react";
 import PasswordGate from "@/components/PasswordGate";
 
