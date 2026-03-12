@@ -205,6 +205,43 @@ const BrandManager = () => {
             </div>
           </div>
 
+          {/* Bulk Import */}
+          <div className="bg-card border border-border rounded-lg p-6">
+            <h2 className="font-sans text-lg font-semibold text-primary mb-2">
+              Bulk Import from PDF
+            </h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Import {TALENT_BRANDS_DATA.length} talent records with brand partnerships. Fetches logos for top 10 brands (Nike, Apple, Adidas, etc.).
+            </p>
+            <Button onClick={handleBulkImport} disabled={importing}>
+              {importing ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Upload className="w-4 h-4 mr-2" />
+              )}
+              {importing ? "Importing..." : "Import Talent × Brand Data"}
+            </Button>
+            {importResults && (
+              <div className="mt-4 p-4 bg-muted rounded-lg text-sm space-y-1">
+                <p className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-600" /> <strong>{importResults.matched_talent}</strong> talent matched</p>
+                <p><strong>{importResults.brands_created}</strong> brands created</p>
+                <p><strong>{importResults.relationships_created}</strong> relationships linked</p>
+                <p><strong>{importResults.logos_fetched}</strong> logos fetched via Brandfetch</p>
+                {importResults.unmatched_talent?.length > 0 && (
+                  <p className="text-amber-600">Unmatched: {importResults.unmatched_talent.join(", ")}</p>
+                )}
+                {importResults.errors?.length > 0 && (
+                  <details className="mt-2">
+                    <summary className="text-destructive cursor-pointer">{importResults.errors.length} errors</summary>
+                    <ul className="mt-1 text-xs space-y-0.5">
+                      {importResults.errors.map((e: string, i: number) => <li key={i}>{e}</li>)}
+                    </ul>
+                  </details>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Brand Assets Grid */}
           <div>
             <h2 className="font-sans text-lg font-semibold text-primary mb-4">
