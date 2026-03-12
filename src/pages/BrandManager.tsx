@@ -452,23 +452,21 @@ const BrandManager = () => {
                     key={brand.id}
                     className="bg-card border border-border rounded-lg p-4 hover:border-accent transition-colors group"
                   >
-                    <div className="flex items-center justify-center h-16 mb-3 bg-[hsl(0_0%_92%)] dark:bg-[hsl(0_0%_40%)] rounded-lg">
-                      {brand.logo_url ? (
+                    <div className="flex items-center justify-center h-16 mb-3 bg-muted rounded-lg">
+                      {brand.logo_url?.includes("/storage/v1/object/public/brand-logos/") ? (
                         <img
                           src={brand.logo_url}
                           alt={brand.name}
-                          className="max-h-12 max-w-full object-contain dark:brightness-[1.6] dark:contrast-[1.1]"
+                          className="max-h-12 max-w-full object-contain"
                         />
-                      ) : brand.icon_url ? (
+                      ) : brand.icon_url?.includes("/storage/v1/object/public/brand-logos/") ? (
                         <img
                           src={brand.icon_url}
                           alt={brand.name}
-                          className="max-h-12 max-w-full object-contain dark:brightness-[1.6] dark:contrast-[1.1]"
+                          className="max-h-12 max-w-full object-contain"
                         />
                       ) : (
-                        <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center text-lg font-bold text-muted-foreground">
-                          {brand.name.charAt(0)}
-                        </div>
+                        <span className="text-xs text-muted-foreground font-medium">No logo</span>
                       )}
                     </div>
                     <h3 className="font-sans text-sm font-semibold text-primary text-center truncate">
@@ -495,11 +493,11 @@ const BrandManager = () => {
                         ))}
                       </div>
                     )}
-                    <div className="flex flex-wrap gap-1 mt-3 opacity-0 group-hover:opacity-100 transition-opacity justify-center">
+                    <div className="mt-3 space-y-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Button
                         size="sm"
                         variant="outline"
-                        className="flex-1 text-xs"
+                        className="w-full text-xs"
                         onClick={() => {
                           const input = document.createElement("input");
                           input.type = "file";
@@ -519,41 +517,43 @@ const BrandManager = () => {
                         )}
                         Upload Logo
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-xs"
-                        onClick={() => {
-                          setEditBrand({ id: brand.id, name: brand.name, domain: brand.domain });
-                          setEditDomain(brand.domain);
-                        }}
-                        title="Update domain & re-fetch logo"
-                      >
-                        <Pencil className="w-3 h-3" />
-                      </Button>
-                      {(brand.logo_url || brand.icon_url) && (
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 text-xs"
+                          onClick={() => {
+                            setEditBrand({ id: brand.id, name: brand.name, domain: brand.domain });
+                            setEditDomain(brand.domain);
+                          }}
+                          title="Update domain & re-fetch logo"
+                        >
+                          <Pencil className="w-3 h-3" />
+                        </Button>
+                        {(brand.logo_url?.includes("/storage/v1/object/public/brand-logos/") || brand.icon_url?.includes("/storage/v1/object/public/brand-logos/")) && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="flex-1 text-xs"
+                            onClick={() => {
+                              const url = brand.logo_url?.includes("/storage/v1/object/public/brand-logos/") ? brand.logo_url : brand.icon_url!;
+                              const ext = url.includes(".svg") ? "svg" : "png";
+                              downloadFile(url, `${brand.name.toLowerCase().replace(/[^a-z0-9]/g, "-")}-logo.${ext}`);
+                            }}
+                          >
+                            <Download className="w-3 h-3" />
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="text-xs"
-                          onClick={() => {
-                            const url = brand.logo_url || brand.icon_url!;
-                            const ext = url.includes(".svg") ? "svg" : "png";
-                            downloadFile(url, `${brand.name.toLowerCase().replace(/[^a-z0-9]/g, "-")}-logo.${ext}`);
-                          }}
+                          className="flex-1 text-xs text-destructive hover:text-destructive"
+                          onClick={() => handleDeleteBrand(brand.id, brand.name)}
+                          title="Delete brand"
                         >
-                          <Download className="w-3 h-3" />
+                          <Trash2 className="w-3 h-3" />
                         </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-xs text-destructive hover:text-destructive"
-                        onClick={() => handleDeleteBrand(brand.id, brand.name)}
-                        title="Delete brand"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
