@@ -1,17 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-import nikeLogo from "@/assets/logos/nike.svg";
-import appleLogo from "@/assets/logos/apple.svg";
-import garminLogo from "@/assets/logos/garmin.svg";
-
-// Local fallback logos
-const localLogos: Record<string, string> = {
-  "Nike": nikeLogo,
-  "Apple": appleLogo,
-  "Garmin": garminLogo,
-};
-
 interface BrandLogoProps {
   brand: string;
   className?: string;
@@ -43,19 +32,27 @@ const useBrandLogo = (brandName: string) => {
   });
 };
 
+const isStoredBrandLogo = (url?: string | null) => {
+  return Boolean(url?.includes("/storage/v1/object/public/brand-logos/"));
+};
+
 const BrandLogo = ({ brand, className, showName = false }: BrandLogoProps) => {
   const { data: brandAsset } = useBrandLogo(brand);
   
-  const logoSrc = brandAsset?.logo_url || brandAsset?.icon_url || localLogos[brand];
+  const logoSrc = isStoredBrandLogo(brandAsset?.logo_url)
+    ? brandAsset?.logo_url
+    : isStoredBrandLogo(brandAsset?.icon_url)
+      ? brandAsset?.icon_url
+      : null;
   
   if (logoSrc) {
     return (
       <div className={`flex items-center gap-1.5 ${className || ""}`}>
-        <div className="flex items-center justify-center bg-[hsl(0_0%_92%)] dark:bg-[hsl(0_0%_40%)] px-2 py-1.5 rounded-lg h-7">
+        <div className="flex items-center justify-center bg-muted px-2 py-1.5 rounded-lg h-7">
           <img 
             src={logoSrc} 
             alt={brand} 
-            className="h-4 w-auto max-w-[48px] object-contain dark:brightness-[1.6] dark:contrast-[1.1]"
+            className="h-4 w-auto max-w-[48px] object-contain"
           />
         </div>
         {showName && (
