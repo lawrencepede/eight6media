@@ -94,6 +94,20 @@ const BrandManager = () => {
   const deleteLink = useDeleteTalentBrandLink();
   const queryClient = useQueryClient();
 
+  const downloadFile = async (url: string, filename: string) => {
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch {
+      sonnerToast.error("Download failed");
+    }
+  };
+
   const handleFetchBrand = () => {
     if (!searchDomain.trim()) return;
     fetchBrand.mutate(searchDomain.trim());
