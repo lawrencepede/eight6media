@@ -38,7 +38,6 @@ const useBrandLogo = (brandName: string) => {
         .select("icon_url, logo_url, name");
       
       return allBrands?.find(b => b.name.replace(/\s+/g, "").toUpperCase() === normalized) || null;
-      return data;
     },
     staleTime: 1000 * 60 * 30, // Cache for 30 min
   });
