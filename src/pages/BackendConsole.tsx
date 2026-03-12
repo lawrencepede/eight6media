@@ -90,6 +90,13 @@ const BackendConsole = () => {
       available: true,
     },
     {
+      title: "Brand Assets",
+      description: "Fetch brand logos via Brandfetch, link brands to talent with deal details",
+      icon: <Palette className="w-6 h-6" />,
+      to: "/console/brand-manager",
+      available: true,
+    },
+    {
       title: "Settings",
       description: "Configure integrations, API keys, and account settings",
       icon: <Settings className="w-6 h-6" />,

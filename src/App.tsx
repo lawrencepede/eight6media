@@ -84,6 +84,14 @@ const App = () => (
                 </ProtectedRoute>
               } 
             />
+            <Route 
+              path="/console/brand-manager" 
+              element={
+                <ProtectedRoute>
+                  <BrandManager />
+                </ProtectedRoute>
+              } 
+            />
             <Route path="/admin" element={<Admin />} />
             <Route path="/pitch/:slug" element={<Pitch />} />
             
