@@ -85,6 +85,8 @@ const BrandManager = () => {
   const [notes, setNotes] = useState("");
   const [importing, setImporting] = useState(false);
   const [importResults, setImportResults] = useState<any>(null);
+  const [fetchingLogos, setFetchingLogos] = useState(false);
+  const [logoProgress, setLogoProgress] = useState<{ done: number; total: number; errors: string[] } | null>(null);
 
   const { data: brands, isLoading: brandsLoading } = useBrandAssets();
   const { data: relationships, isLoading: relsLoading } = useTalentBrandRelationships();
@@ -135,6 +137,54 @@ const BrandManager = () => {
     } finally {
       setImporting(false);
     }
+  };
+
+  const handleFetchAllLogos = async () => {
+    if (!brands) return;
+    const missingLogos = brands.filter(b => !b.logo_url && !b.icon_url);
+    if (missingLogos.length === 0) {
+      toast.info("All brands already have logos!");
+      return;
+    }
+
+    setFetchingLogos(true);
+    const BATCH_SIZE = 10;
+    const progress = { done: 0, total: missingLogos.length, errors: [] as string[] };
+    setLogoProgress({ ...progress });
+
+    for (let i = 0; i < missingLogos.length; i += BATCH_SIZE) {
+      const batch = missingLogos.slice(i, i + BATCH_SIZE);
+      const batchNames = batch.map(b => b.name);
+
+      try {
+        const { data, error } = await supabase.functions.invoke("import-talent-brands", {
+          body: {
+            talent_brands: [],
+            fetch_logos_for: batchNames,
+          },
+        });
+        if (error) throw error;
+        progress.done += data?.results?.logos_fetched || 0;
+        if (data?.results?.errors?.length) {
+          progress.errors.push(...data.results.errors);
+        }
+      } catch (e: any) {
+        progress.errors.push(`Batch ${Math.floor(i / BATCH_SIZE) + 1} failed: ${e.message}`);
+      }
+
+      progress.done = Math.min(i + BATCH_SIZE, missingLogos.length);
+      setLogoProgress({ ...progress });
+
+      // Small delay between batches
+      if (i + BATCH_SIZE < missingLogos.length) {
+        await new Promise(r => setTimeout(r, 1000));
+      }
+    }
+
+    queryClient.invalidateQueries({ queryKey: ["brand-assets"] });
+    queryClient.invalidateQueries({ queryKey: ["brand-logo"] });
+    toast.success(`Done! Processed ${progress.total} brands.`);
+    setFetchingLogos(false);
   };
 
   const handleLinkTalent = () => {
@@ -228,14 +278,41 @@ const BrandManager = () => {
             <p className="text-sm text-muted-foreground mb-4">
               Import {TALENT_BRANDS_DATA.length} talent records with brand partnerships. Fetches logos for top 10 brands (Nike, Apple, Adidas, etc.).
             </p>
-            <Button onClick={handleBulkImport} disabled={importing}>
-              {importing ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Upload className="w-4 h-4 mr-2" />
+            <div className="flex gap-3">
+              <Button onClick={handleBulkImport} disabled={importing || fetchingLogos}>
+                {importing ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Upload className="w-4 h-4 mr-2" />
+                )}
+                {importing ? "Importing..." : "Import Talent × Brand Data"}
+              </Button>
+              {brands && brands.filter(b => !b.logo_url && !b.icon_url).length > 0 && (
+                <Button onClick={handleFetchAllLogos} disabled={fetchingLogos || importing} variant="secondary">
+                  {fetchingLogos ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4 mr-2" />
+                  )}
+                  {fetchingLogos
+                    ? `Fetching logos (${logoProgress?.done || 0}/${logoProgress?.total || 0})...`
+                    : `Fetch All Missing Logos (${brands.filter(b => !b.logo_url && !b.icon_url).length})`}
+                </Button>
               )}
-              {importing ? "Importing..." : "Import Talent × Brand Data"}
-            </Button>
+            </div>
+            {logoProgress && (
+              <div className="mt-4 p-4 bg-muted rounded-lg text-sm space-y-1">
+                <p><strong>{logoProgress.done}</strong> / {logoProgress.total} brands processed</p>
+                {logoProgress.errors.length > 0 && (
+                  <details>
+                    <summary className="text-destructive cursor-pointer">{logoProgress.errors.length} errors</summary>
+                    <ul className="mt-1 text-xs space-y-0.5">
+                      {logoProgress.errors.map((e, i) => <li key={i}>{e}</li>)}
+                    </ul>
+                  </details>
+                )}
+              </div>
+            )}
             {importResults && (
               <div className="mt-4 p-4 bg-muted rounded-lg text-sm space-y-1">
                 <p className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-600" /> <strong>{importResults.matched_talent}</strong> talent matched</p>
