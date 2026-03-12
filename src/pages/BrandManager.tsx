@@ -89,6 +89,7 @@ const BrandManager = () => {
   const [logoProgress, setLogoProgress] = useState<{ done: number; total: number; errors: string[] } | null>(null);
   const [editBrand, setEditBrand] = useState<{ id: string; name: string; domain: string } | null>(null);
   const [editDomain, setEditDomain] = useState("");
+  const [uploadingLogoFor, setUploadingLogoFor] = useState<string | null>(null);
 
   const { data: brands, isLoading: brandsLoading } = useBrandAssets();
   const { data: relationships, isLoading: relsLoading } = useTalentBrandRelationships();
