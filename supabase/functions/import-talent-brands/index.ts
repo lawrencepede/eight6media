@@ -143,9 +143,15 @@ Deno.serve(async (req) => {
           let storedLogo: string | null = null;
           let storedIcon: string | null = null;
 
+          // Helper: validate response is an actual image
+          const isValidImage = (res: Response) => {
+            const ct = res.headers.get("content-type") || "";
+            return res.ok && ct.startsWith("image/");
+          };
+
           // Download logo
-          const logoRes = await fetch(logoApiUrl);
-          if (logoRes.ok) {
+          const logoRes = await fetch(logoApiUrl, { redirect: "follow" });
+          if (isValidImage(logoRes)) {
             const blob = await logoRes.blob();
             const contentType = logoRes.headers.get("content-type") || "image/png";
             const ext = contentType.includes("svg") ? "svg" : contentType.includes("webp") ? "webp" : "png";
@@ -154,14 +160,12 @@ Deno.serve(async (req) => {
               .upload(path, blob, { contentType, upsert: true });
             if (!upErr) {
               storedLogo = supabase.storage.from("brand-logos").getPublicUrl(path).data.publicUrl;
-            } else {
-              storedLogo = logoApiUrl;
             }
           }
 
           // Download icon
-          const iconRes = await fetch(iconApiUrl);
-          if (iconRes.ok) {
+          const iconRes = await fetch(iconApiUrl, { redirect: "follow" });
+          if (isValidImage(iconRes)) {
             const blob = await iconRes.blob();
             const contentType = iconRes.headers.get("content-type") || "image/png";
             const ext = contentType.includes("svg") ? "svg" : contentType.includes("webp") ? "webp" : "png";
@@ -170,8 +174,6 @@ Deno.serve(async (req) => {
               .upload(path, blob, { contentType, upsert: true });
             if (!upErr) {
               storedIcon = supabase.storage.from("brand-logos").getPublicUrl(path).data.publicUrl;
-            } else {
-              storedIcon = iconApiUrl;
             }
           }
 
