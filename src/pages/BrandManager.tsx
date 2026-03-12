@@ -26,6 +26,51 @@ import {
   useDeleteTalentBrandLink,
 } from "@/hooks/useBrandAssets";
 import { useCreators } from "@/hooks/useCreators";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+
+// Parsed PDF data
+const TALENT_BRANDS_DATA = [
+  { talent_name: "Alden Lopez", brands: ["CAMP SNAP CAMERAS", "RANGER STATION", "HONEY SWIM", "KATE MCLEOD", "DAGNE DOVER", "SALTY FACE", "OAK ESSENTIALS", "CAPITAL ONE", "BOSE", "RHOBACK", "BARTACO", "AVA RESORTS", "CANCUN", "TROPICAL HOTEL ST BARTS", "HALF SHELL VODKA", "KRISTEN ESS HAIR", "YOLO BOARD", "TERVIS TUMBLERS", "OLLY WELLNESS"] },
+  { talent_name: "Anthony Rice", brands: ["ALO", "EVERLAST", "DOVE"] },
+  { talent_name: "Ben Smith", brands: ["ARMRA", "ORGANIFI", "CURED NUTRITION", "SLATE MILK", "BLOKES", "FACTOR MEALS", "OI TAPE", "AVI RESORTS", "STASIS", "GT'S LIVING FOODS"] },
+  { talent_name: "Caitlin Lindsey", brands: ["EQUIP FOODS", "PURITY COFFEE", "PARIS LAUNDRY", "OLIVE AND VE", "REDMOND RELYTE", "CANYON BAKEHOUSE", "PERFORMASLEEP", "IKIGAI"] },
+  { talent_name: "Carly Durst", brands: ["CURED NUTRITION", "REVOLVE", "SEPHORA", "HAUSLAB", "SHOPBOP", "REGENMD", "ARMRA", "CURATIVA BAY"] },
+  { talent_name: "Chris Griffin", brands: ["WHOOP", "MANNA VITALITY", "MAGIC MIND", "NOBULL", "GT'S LIVING FOODS", "REEBOK", "SWITCH NUTRITION", "EHP LABS", "OXYSHRED ENERGY", "HYDREAU", "GYMSHARK", "CANCER COUNSIL AUSTRALIA", "PAPA MACROS", "KOALA", "BALCONY GARDEN", "FRONT RUNNER", "PURESPORT"] },
+  { talent_name: "Daniel Brigham", brands: ["ETHOS FINANCIAL"] },
+  { talent_name: "Dominic Fusco", brands: ["ARMRA", "NIKE", "BROOKS", "DARN TOUGH", "CYMBIOTIKA", "ORGANIFI", "DREAM RECOVERY", "PWR LFT", "ADIDAS", "NOBULL", "NORDIC TRACK", "AG1"] },
+  { talent_name: "Dr. Clay Moss", brands: ["ICE BARREL", "SUPP CO.", "JOI & BLOKES", "CROWD HEALTH", "EVERYDAY DOSE", "INITO"] },
+  { talent_name: "Dr. Jaime Seeman", brands: ["LASHIFY", "ONESKIN", "BRANCH BASICS", "OI TAPE", "HIGHERDOSE", "TIMELINE", "BUBBS NATURALS", "NODPOD", "FILTERBABY", "SUNLIGHTEN", "ICE BARREL"] },
+  { talent_name: "Dr. Natazia Stolberg", brands: ["ARMRA", "OI TAPE", "STASIS", "UMZU", "JASPR", "CREATE WELLNESS", "CURED NUTRITION", "MAGNA", "FENDI", "NODPOD", "FILTERBABY", "ONESKIN", "OPEN"] },
+  { talent_name: "Dr. Nick Nwabueze", brands: ["GORUCK", "INSTANT HYDRATION", "BIOPTIMIZERS", "PRECISION NUTRITION", "BLONYX", "WYOMING COWBOY CUTS", "NUTRITION SOLUTIONS", "KINETIC FOOT AND ANKLE", "CARBONSHADE"] },
+  { talent_name: "Eric Hinman", brands: ["ICE BARREL", "CREATE WELLNESS", "OURA RING", "TEN THOUSAND", "BEAM", "VITAL PROTEINS", "ATHLETIC GREENS", "HIGHERDOSE", "COROS"] },
+  { talent_name: "Jason Grubb", brands: ["BARBELL APPAREL", "KINEON", "HEART & SOIL", "THIRDZY", "BEYOND COLD", "ALYNMD", "FUNCTION HEALTH", "MYCHONDRIA", "REYLLEN", "ICE BARREL", "MANUKORA HONEY", "TERRITORY FOODS", "LMNT"] },
+  { talent_name: "Jenn Miller", brands: ["ARMRA", "CURED NUTRITION", "OURA", "COTERIE", "COZY EARTH", "REVOLVE", "LIQUID IV", "REDKEN", "NOBULL", "BRANCH BASICS", "ORA", "WARBY PARKER", "VIVRELLE"] },
+  { talent_name: "Jerred Beniquez", brands: ["ICE BARREL", "GHOST", "SUUNTO"] },
+  { talent_name: "Jessica Perez", brands: ["SEINT", "OLIVE TREE PEOPLE"] },
+  { talent_name: "Joey Miuccio", brands: ["ASRV", "BPN", "SPIRITED HIVE", "CALDERA LABS", "KOZE", "NOBULL", "NORDIC TRACK"] },
+  { talent_name: "John Lindsey", brands: ["ICE BARREL", "SISU SAUNA", "TEN THOUSAND", "FLUX FOOTWEAR", "NOBOSO", "SUPPCO", "THORN SUPPLEMENTS", "RALLY", "CREATE", "DEFINITE ARTICLES", "SISU SAUNA", "MITO RED LIGHT", "COLLATHERAPY", "FLUX FOOTWEAR", "NUNORM SHOES", "EQUIP", "ITHERAU"] },
+  { talent_name: "Kat Fairchild", brands: ["OLIVE TREE PEOPLE", "SEINT", "MIDI HEALTH", "FILTER BABY"] },
+  { talent_name: "Katey Yurko", brands: ["CURED NUTRITION", "BEAM", "PRIMALLY PURE", "BRANCH BASICS", "TIMELINE NUTRITION", "ORA ORGANIC", "NODPOD", "BODYBIO", "YOUNG GOOSE SKINCARE", "INSTANT HYDRATION", "COWBOY COLOSTRUM", "FUNCTION HEALTH"] },
+  { talent_name: "Katia Pryce", brands: ["MIDI HEALTH", "NELLA", "EMSCULPT", "YOUNG GOOSE SKINCARE", "BOMBAS", "437"] },
+  { talent_name: "Katy Rexing", brands: ["OSEA"] },
+  { talent_name: "Macy Pruett", brands: ["COZY EARTH", "BEAM", "INSTANT HYDRATION"] },
+  { talent_name: "Margaret Baker", brands: ["ARMRA", "CURED NUTRITION", "REVOLVE", "SEPHORA", "HAUSLAB", "SHOPBOP", "NODPOD", "VIVRELLE", "ONESKIN", "SUPERPOWER"] },
+  { talent_name: "Matt Choi", brands: ["NIKE", "LULULEMON", "ADIDAS", "UNDER ARMOUR", "APPLE", "GARMIN", "MICROSOFT", "CHIPOTLE", "DOVE MEN+CARE", "COSTCO", "TOYOTA"] },
+  { talent_name: "Meg Crockett", brands: ["CREATE WELLNESS"] },
+  { talent_name: "Meghan Matejka", brands: ["PALEOVALLEY", "CURED NUTRITION", "ARMRA", "SHOCKZ"] },
+  { talent_name: "Michael James", brands: [] },
+  { talent_name: "Mitch Gourley", brands: ["TRANSPARENT LABS", "ICE BARREL", "5.11 TACTICAL", "NADS", "FLAKES", "SHOCKZ", "NINJA"] },
+  { talent_name: "MJ Fusco", brands: ["BROOKS", "ADIDAS", "NOBULL"] },
+  { talent_name: "Paige Sevier", brands: ["L'OREAL", "OLIVE TREE PEOPLE", "SEINT", "ACTIVE SKIN REPAIR", "ARMRA", "BOMBAS", "DIBS BEAUTY", "INSTANT HYDRATION"] },
+  { talent_name: "Sam Valentine", brands: ["ARMRA", "MOVO", "OLIVE & JUNE", "POPFLEX", "WEEM VITAMINS", "GRUNS"] },
+];
+
+// Top brands to fetch logos for (well-known brands with good Brandfetch data)
+const TEST_LOGO_BRANDS = [
+  "NIKE", "ADIDAS", "APPLE", "GARMIN", "SEPHORA", "LULULEMON", "REEBOK", "GYMSHARK", "UNDER ARMOUR", "TOYOTA"
+];
 
 const BrandManager = () => {
   const { user } = useAuth();
@@ -37,6 +82,8 @@ const BrandManager = () => {
   const [dealValue, setDealValue] = useState("");
   const [dealStatus, setDealStatus] = useState("completed");
   const [notes, setNotes] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [importResults, setImportResults] = useState<any>(null);
 
   const { data: brands, isLoading: brandsLoading } = useBrandAssets();
   const { data: relationships, isLoading: relsLoading } = useTalentBrandRelationships();
@@ -44,6 +91,7 @@ const BrandManager = () => {
   const fetchBrand = useFetchBrand();
   const linkTalentBrand = useLinkTalentBrand();
   const deleteLink = useDeleteTalentBrandLink();
+  const queryClient = useQueryClient();
 
   const handleFetchBrand = () => {
     if (!searchDomain.trim()) return;
