@@ -117,16 +117,28 @@ Deno.serve(async (req) => {
 
     // 6. Fetch logos using the Logo API CDN
     if (BRANDFETCH_CLIENT_ID && fetch_logos_for?.length > 0) {
+      // Build a map of brand name -> stored domain from DB
+      const brandIds = [...new Set(fetch_logos_for.map((n: string) => brandMap.get(n.toUpperCase().trim())).filter(Boolean))];
+      const { data: brandRows } = await supabase
+        .from("brand_assets")
+        .select("id, name, domain")
+        .in("id", brandIds);
+      const domainLookup = new Map<string, string>();
+      for (const b of (brandRows || [])) {
+        domainLookup.set(b.id, b.domain);
+      }
+
       for (const brandName of fetch_logos_for) {
         const brandId = brandMap.get(brandName.toUpperCase().trim());
         if (!brandId) continue;
 
-        const guessDomain = brandName.toLowerCase().replace(/[^a-z0-9]/g, "") + ".com";
+        // Use stored domain from DB, fallback to guess
+        const storedDomain = domainLookup.get(brandId);
+        const fetchDomain = storedDomain || (brandName.toLowerCase().replace(/[^a-z0-9]/g, "") + ".com");
 
         try {
-          // Fetch logo via Logo API CDN
-          const logoApiUrl = `https://cdn.brandfetch.io/${guessDomain}/logo?c=${BRANDFETCH_CLIENT_ID}`;
-          const iconApiUrl = `https://cdn.brandfetch.io/${guessDomain}/icon?c=${BRANDFETCH_CLIENT_ID}`;
+          const logoApiUrl = `https://cdn.brandfetch.io/${fetchDomain}/logo?c=${BRANDFETCH_CLIENT_ID}`;
+          const iconApiUrl = `https://cdn.brandfetch.io/${fetchDomain}/icon?c=${BRANDFETCH_CLIENT_ID}`;
 
           let storedLogo: string | null = null;
           let storedIcon: string | null = null;
@@ -137,7 +149,7 @@ Deno.serve(async (req) => {
             const blob = await logoRes.blob();
             const contentType = logoRes.headers.get("content-type") || "image/png";
             const ext = contentType.includes("svg") ? "svg" : contentType.includes("webp") ? "webp" : "png";
-            const path = `${guessDomain}/logo.${ext}`;
+            const path = `${fetchDomain}/logo.${ext}`;
             const { error: upErr } = await supabase.storage.from("brand-logos")
               .upload(path, blob, { contentType, upsert: true });
             if (!upErr) {
@@ -153,7 +165,7 @@ Deno.serve(async (req) => {
             const blob = await iconRes.blob();
             const contentType = iconRes.headers.get("content-type") || "image/png";
             const ext = contentType.includes("svg") ? "svg" : contentType.includes("webp") ? "webp" : "png";
-            const path = `${guessDomain}/icon.${ext}`;
+            const path = `${fetchDomain}/icon.${ext}`;
             const { error: upErr } = await supabase.storage.from("brand-logos")
               .upload(path, blob, { contentType, upsert: true });
             if (!upErr) {
@@ -167,7 +179,6 @@ Deno.serve(async (req) => {
             await supabase.from("brand_assets").update({
               logo_url: storedLogo,
               icon_url: storedIcon,
-              domain: guessDomain,
             }).eq("id", brandId);
 
             results.logos_fetched++;
