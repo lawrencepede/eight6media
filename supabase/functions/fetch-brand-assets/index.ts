@@ -12,9 +12,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const BRANDFETCH_API_KEY = Deno.env.get("BRANDFETCH_API_KEY");
-    if (!BRANDFETCH_API_KEY) {
-      throw new Error("BRANDFETCH_API_KEY is not configured");
+    const BRANDFETCH_CLIENT_ID = Deno.env.get("BRANDFETCH_CLIENT_ID");
+    if (!BRANDFETCH_CLIENT_ID) {
+      throw new Error("BRANDFETCH_CLIENT_ID is not configured");
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -26,136 +26,73 @@ Deno.serve(async (req) => {
       throw new Error("Domain is required");
     }
 
-    // Clean domain
     const cleanDomain = domain.replace(/^https?:\/\//, "").replace(/\/.*$/, "").toLowerCase();
+    console.log(`Fetching logo for: ${cleanDomain}`);
 
-    console.log(`Fetching brand data for: ${cleanDomain}`);
+    // Use Logo API CDN to fetch logo and icon
+    const logoUrl = `https://cdn.brandfetch.io/${cleanDomain}/logo?c=${BRANDFETCH_CLIENT_ID}`;
+    const iconUrl = `https://cdn.brandfetch.io/${cleanDomain}/icon?c=${BRANDFETCH_CLIENT_ID}`;
 
-    // Call Brandfetch API
-    const brandRes = await fetch(
-      `https://api.brandfetch.io/v2/brands/${cleanDomain}`,
-      {
-        headers: {
-          Authorization: `Bearer ${BRANDFETCH_API_KEY}`,
-        },
-      }
-    );
-
-    if (!brandRes.ok) {
-      const errorText = await brandRes.text();
-      throw new Error(`Brandfetch API error [${brandRes.status}]: ${errorText}`);
-    }
-
-    const brandData = await brandRes.json();
-
-    // Extract best logo and icon URLs
-    let logoUrl: string | null = null;
-    let iconUrl: string | null = null;
-
-    if (brandData.logos) {
-      // Find primary logo (prefer SVG, then PNG)
-      const logoEntry = brandData.logos.find((l: any) => l.type === "logo") || brandData.logos[0];
-      if (logoEntry?.formats) {
-        const svgFormat = logoEntry.formats.find((f: any) => f.format === "svg");
-        const pngFormat = logoEntry.formats.find((f: any) => f.format === "png");
-        logoUrl = svgFormat?.src || pngFormat?.src || logoEntry.formats[0]?.src || null;
-      }
-
-      const iconEntry = brandData.logos.find((l: any) => l.type === "icon");
-      if (iconEntry?.formats) {
-        const svgFormat = iconEntry.formats.find((f: any) => f.format === "svg");
-        const pngFormat = iconEntry.formats.find((f: any) => f.format === "png");
-        iconUrl = svgFormat?.src || pngFormat?.src || iconEntry.formats[0]?.src || null;
-      }
-    }
-
-    // Download and store the logo in storage if available
     let storedLogoUrl: string | null = null;
     let storedIconUrl: string | null = null;
 
-    if (logoUrl) {
-      try {
-        const logoRes = await fetch(logoUrl);
+    // Download and store logo
+    try {
+      const logoRes = await fetch(logoUrl);
+      if (logoRes.ok) {
         const logoBlob = await logoRes.blob();
-        const ext = logoUrl.includes(".svg") ? "svg" : "png";
+        const contentType = logoRes.headers.get("content-type") || "image/png";
+        const ext = contentType.includes("svg") ? "svg" : contentType.includes("webp") ? "webp" : "png";
         const logoPath = `${cleanDomain}/logo.${ext}`;
-        
+
         const { error: uploadError } = await supabase.storage
           .from("brand-logos")
-          .upload(logoPath, logoBlob, {
-            contentType: ext === "svg" ? "image/svg+xml" : "image/png",
-            upsert: true,
-          });
+          .upload(logoPath, logoBlob, { contentType, upsert: true });
 
         if (!uploadError) {
-          const { data: urlData } = supabase.storage
-            .from("brand-logos")
-            .getPublicUrl(logoPath);
-          storedLogoUrl = urlData.publicUrl;
+          storedLogoUrl = supabase.storage.from("brand-logos").getPublicUrl(logoPath).data.publicUrl;
         } else {
           console.error("Logo upload error:", uploadError);
-          storedLogoUrl = logoUrl; // Fallback to Brandfetch CDN
+          storedLogoUrl = logoUrl;
         }
-      } catch (e) {
-        console.error("Logo download error:", e);
-        storedLogoUrl = logoUrl;
       }
+    } catch (e) {
+      console.error("Logo download error:", e);
     }
 
-    if (iconUrl) {
-      try {
-        const iconRes = await fetch(iconUrl);
+    // Download and store icon
+    try {
+      const iconRes = await fetch(iconUrl);
+      if (iconRes.ok) {
         const iconBlob = await iconRes.blob();
-        const ext = iconUrl.includes(".svg") ? "svg" : "png";
+        const contentType = iconRes.headers.get("content-type") || "image/png";
+        const ext = contentType.includes("svg") ? "svg" : contentType.includes("webp") ? "webp" : "png";
         const iconPath = `${cleanDomain}/icon.${ext}`;
-        
+
         const { error: uploadError } = await supabase.storage
           .from("brand-logos")
-          .upload(iconPath, iconBlob, {
-            contentType: ext === "svg" ? "image/svg+xml" : "image/png",
-            upsert: true,
-          });
+          .upload(iconPath, iconBlob, { contentType, upsert: true });
 
         if (!uploadError) {
-          const { data: urlData } = supabase.storage
-            .from("brand-logos")
-            .getPublicUrl(iconPath);
-          storedIconUrl = urlData.publicUrl;
+          storedIconUrl = supabase.storage.from("brand-logos").getPublicUrl(iconPath).data.publicUrl;
         } else {
           console.error("Icon upload error:", uploadError);
           storedIconUrl = iconUrl;
         }
-      } catch (e) {
-        console.error("Icon download error:", e);
-        storedIconUrl = iconUrl;
       }
+    } catch (e) {
+      console.error("Icon download error:", e);
     }
-
-    // Extract colors
-    const brandColors = brandData.colors?.map((c: any) => ({
-      hex: c.hex,
-      type: c.type,
-      brightness: c.brightness,
-    })) || [];
-
-    // Extract industry
-    const industry = brandData.company?.industries?.map((i: any) => 
-      typeof i === "string" ? i : i.name || i.slug
-    )?.join(", ") || null;
 
     // Upsert brand_assets
     const { data: brandAsset, error: upsertError } = await supabase
       .from("brand_assets")
       .upsert(
         {
-          name: brandData.name || cleanDomain,
+          name: cleanDomain.replace(/\.com$/, "").replace(/\./g, " ").toUpperCase(),
           domain: cleanDomain,
           logo_url: storedLogoUrl,
           icon_url: storedIconUrl,
-          brand_colors: brandColors,
-          industry,
-          description: brandData.description || null,
-          raw_data: brandData,
         },
         { onConflict: "domain" }
       )
@@ -168,20 +105,14 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({ success: true, brand: brandAsset }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: unknown) {
     console.error("Error fetching brand assets:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return new Response(
       JSON.stringify({ success: false, error: errorMessage }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

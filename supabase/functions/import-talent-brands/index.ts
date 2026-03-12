@@ -15,11 +15,9 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const BRANDFETCH_API_KEY = Deno.env.get("BRANDFETCH_API_KEY");
+    const BRANDFETCH_CLIENT_ID = Deno.env.get("BRANDFETCH_CLIENT_ID");
 
     const { talent_brands, fetch_logos_for } = await req.json();
-    // talent_brands: Array<{ talent_name: string, brands: string[] }>
-    // fetch_logos_for: string[] — optional list of brand names to fetch logos for
 
     // 1. Get all creators
     const { data: creators } = await supabase.from("creators").select("id, name");
@@ -44,7 +42,7 @@ Deno.serve(async (req) => {
     for (const entry of talent_brands) {
       for (const brand of entry.brands) {
         const cleaned = brand.trim().toUpperCase();
-        if (cleaned && cleaned !== "COMING SOON." && cleaned !== "INFO COMING SOON" && 
+        if (cleaned && cleaned !== "COMING SOON." && cleaned !== "INFO COMING SOON" &&
             !["WELLNESS", "LIFESTYLE"].includes(cleaned)) {
           allBrands.add(cleaned);
         }
@@ -58,7 +56,7 @@ Deno.serve(async (req) => {
       brandMap.set(b.name.toUpperCase().trim(), b.id);
     }
 
-    // 4. Create brand_assets for brands that don't exist yet (without logos)
+    // 4. Create brand_assets for brands that don't exist yet
     const brandsToCreate = [...allBrands].filter(b => !brandMap.has(b));
     for (const brandName of brandsToCreate) {
       const domain = brandName.toLowerCase().replace(/[^a-z0-9]/g, "") + ".com";
@@ -69,7 +67,6 @@ Deno.serve(async (req) => {
         .single();
 
       if (error) {
-        // Might be duplicate domain — try with suffix
         const { data: retry, error: retryErr } = await supabase
           .from("brand_assets")
           .insert({ name: brandName, domain: `${domain.replace('.com', '')}-brand.com` })
@@ -118,98 +115,65 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 6. Optionally fetch logos for specified brands
-    if (BRANDFETCH_API_KEY && fetch_logos_for?.length > 0) {
+    // 6. Fetch logos using the Logo API CDN
+    if (BRANDFETCH_CLIENT_ID && fetch_logos_for?.length > 0) {
       for (const brandName of fetch_logos_for) {
         const brandId = brandMap.get(brandName.toUpperCase().trim());
         if (!brandId) continue;
 
-        // Guess domain
         const guessDomain = brandName.toLowerCase().replace(/[^a-z0-9]/g, "") + ".com";
-        
+
         try {
-          const brandRes = await fetch(
-            `https://api.brandfetch.io/v2/brands/${guessDomain}`,
-            { headers: { Authorization: `Bearer ${BRANDFETCH_API_KEY}` } }
-          );
+          // Fetch logo via Logo API CDN
+          const logoApiUrl = `https://cdn.brandfetch.io/${guessDomain}/logo?c=${BRANDFETCH_CLIENT_ID}`;
+          const iconApiUrl = `https://cdn.brandfetch.io/${guessDomain}/icon?c=${BRANDFETCH_CLIENT_ID}`;
 
-          if (!brandRes.ok) {
-            const errorText = await brandRes.text();
-            results.errors.push(`Brandfetch ${brandName}: ${brandRes.status} - ${errorText}`);
-            continue;
-          }
+          let storedLogo: string | null = null;
+          let storedIcon: string | null = null;
 
-          const brandData = await brandRes.json();
-
-          let logoUrl: string | null = null;
-          let iconUrl: string | null = null;
-
-          if (brandData.logos) {
-            const logoEntry = brandData.logos.find((l: any) => l.type === "logo") || brandData.logos[0];
-            if (logoEntry?.formats) {
-              const svgF = logoEntry.formats.find((f: any) => f.format === "svg");
-              const pngF = logoEntry.formats.find((f: any) => f.format === "png");
-              logoUrl = svgF?.src || pngF?.src || logoEntry.formats[0]?.src || null;
-            }
-            const iconEntry = brandData.logos.find((l: any) => l.type === "icon");
-            if (iconEntry?.formats) {
-              const svgF = iconEntry.formats.find((f: any) => f.format === "svg");
-              const pngF = iconEntry.formats.find((f: any) => f.format === "png");
-              iconUrl = svgF?.src || pngF?.src || iconEntry.formats[0]?.src || null;
+          // Download logo
+          const logoRes = await fetch(logoApiUrl);
+          if (logoRes.ok) {
+            const blob = await logoRes.blob();
+            const contentType = logoRes.headers.get("content-type") || "image/png";
+            const ext = contentType.includes("svg") ? "svg" : contentType.includes("webp") ? "webp" : "png";
+            const path = `${guessDomain}/logo.${ext}`;
+            const { error: upErr } = await supabase.storage.from("brand-logos")
+              .upload(path, blob, { contentType, upsert: true });
+            if (!upErr) {
+              storedLogo = supabase.storage.from("brand-logos").getPublicUrl(path).data.publicUrl;
+            } else {
+              storedLogo = logoApiUrl;
             }
           }
 
-          // Download and store logos
-          let storedLogo = logoUrl;
-          let storedIcon = iconUrl;
-          const actualDomain = brandData.domain || guessDomain;
-
-          if (logoUrl) {
-            try {
-              const res = await fetch(logoUrl);
-              const blob = await res.blob();
-              const ext = logoUrl.includes(".svg") ? "svg" : "png";
-              const path = `${actualDomain}/logo.${ext}`;
-              const { error: upErr } = await supabase.storage.from("brand-logos")
-                .upload(path, blob, { contentType: ext === "svg" ? "image/svg+xml" : "image/png", upsert: true });
-              if (!upErr) {
-                storedLogo = supabase.storage.from("brand-logos").getPublicUrl(path).data.publicUrl;
-              }
-            } catch (_) { /* fallback to CDN URL */ }
+          // Download icon
+          const iconRes = await fetch(iconApiUrl);
+          if (iconRes.ok) {
+            const blob = await iconRes.blob();
+            const contentType = iconRes.headers.get("content-type") || "image/png";
+            const ext = contentType.includes("svg") ? "svg" : contentType.includes("webp") ? "webp" : "png";
+            const path = `${guessDomain}/icon.${ext}`;
+            const { error: upErr } = await supabase.storage.from("brand-logos")
+              .upload(path, blob, { contentType, upsert: true });
+            if (!upErr) {
+              storedIcon = supabase.storage.from("brand-logos").getPublicUrl(path).data.publicUrl;
+            } else {
+              storedIcon = iconApiUrl;
+            }
           }
 
-          if (iconUrl) {
-            try {
-              const res = await fetch(iconUrl);
-              const blob = await res.blob();
-              const ext = iconUrl.includes(".svg") ? "svg" : "png";
-              const path = `${actualDomain}/icon.${ext}`;
-              const { error: upErr } = await supabase.storage.from("brand-logos")
-                .upload(path, blob, { contentType: ext === "svg" ? "image/svg+xml" : "image/png", upsert: true });
-              if (!upErr) {
-                storedIcon = supabase.storage.from("brand-logos").getPublicUrl(path).data.publicUrl;
-              }
-            } catch (_) { /* fallback */ }
+          if (storedLogo || storedIcon) {
+            await supabase.from("brand_assets").update({
+              logo_url: storedLogo,
+              icon_url: storedIcon,
+              domain: guessDomain,
+            }).eq("id", brandId);
+
+            results.logos_fetched++;
           }
-
-          const colors = brandData.colors?.map((c: any) => ({ hex: c.hex, type: c.type })) || [];
-          const industry = brandData.company?.industries?.map((i: any) => 
-            typeof i === "string" ? i : i.name || i.slug
-          )?.join(", ") || null;
-
-          await supabase.from("brand_assets").update({
-            logo_url: storedLogo,
-            icon_url: storedIcon,
-            brand_colors: colors,
-            industry,
-            description: brandData.description || null,
-            domain: actualDomain,
-            raw_data: brandData,
-          }).eq("id", brandId);
-
-          results.logos_fetched++;
         } catch (e: any) {
-          results.errors.push(`Brandfetch error for ${brandName}: ${e.message}`);
+          results.errors.push(`Logo fetch error for ${brandName}: ${e.message}`);
         }
       }
     }
