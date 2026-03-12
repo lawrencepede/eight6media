@@ -99,6 +99,29 @@ const BrandManager = () => {
     setSearchDomain("");
   };
 
+  const handleBulkImport = async () => {
+    setImporting(true);
+    setImportResults(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("import-talent-brands", {
+        body: {
+          talent_brands: TALENT_BRANDS_DATA,
+          fetch_logos_for: TEST_LOGO_BRANDS,
+        },
+      });
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error);
+      setImportResults(data.results);
+      queryClient.invalidateQueries({ queryKey: ["brand-assets"] });
+      queryClient.invalidateQueries({ queryKey: ["talent-brand-relationships"] });
+      toast.success(`Imported! ${data.results.relationships_created} relationships, ${data.results.logos_fetched} logos fetched`);
+    } catch (e: any) {
+      toast.error(`Import failed: ${e.message}`);
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const handleLinkTalent = () => {
     if (!selectedBrandId || !selectedCreatorId) return;
     linkTalentBrand.mutate(
