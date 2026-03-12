@@ -424,18 +424,18 @@ const BrandManager = () => {
                     key={brand.id}
                     className="bg-card border border-border rounded-lg p-4 hover:border-accent transition-colors group"
                   >
-                    <div className="flex items-center justify-center h-16 mb-3">
+                    <div className="flex items-center justify-center h-16 mb-3 bg-[hsl(0_0%_92%)] dark:bg-[hsl(0_0%_40%)] rounded-lg">
                       {brand.logo_url ? (
                         <img
                           src={brand.logo_url}
                           alt={brand.name}
-                          className="max-h-12 max-w-full object-contain"
+                          className="max-h-12 max-w-full object-contain dark:brightness-[1.6] dark:contrast-[1.1]"
                         />
                       ) : brand.icon_url ? (
                         <img
                           src={brand.icon_url}
                           alt={brand.name}
-                          className="max-h-12 max-w-full object-contain"
+                          className="max-h-12 max-w-full object-contain dark:brightness-[1.6] dark:contrast-[1.1]"
                         />
                       ) : (
                         <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center text-lg font-bold text-muted-foreground">
