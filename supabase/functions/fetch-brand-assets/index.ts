@@ -36,11 +36,13 @@ Deno.serve(async (req) => {
     let storedLogoUrl: string | null = null;
     let storedIconUrl: string | null = null;
 
-    // Helper: validate response is an actual image
+    // Helper: validate response is an actual image (not a placeholder)
+    const MIN_LOGO_SIZE = 3000; // 3KB minimum to reject Brandfetch placeholders
     const isValidImage = (res: Response) => {
       const ct = res.headers.get("content-type") || "";
       return res.ok && ct.startsWith("image/");
     };
+    const isValidBlob = (blob: Blob) => blob.size >= MIN_LOGO_SIZE;
 
     // Download and store logo
     try {
