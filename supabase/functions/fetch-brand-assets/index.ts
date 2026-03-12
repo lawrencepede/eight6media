@@ -49,19 +49,22 @@ Deno.serve(async (req) => {
       const logoRes = await fetch(logoUrl, { redirect: "follow" });
       if (isValidImage(logoRes)) {
         const logoBlob = await logoRes.blob();
-        const contentType = logoRes.headers.get("content-type") || "image/png";
-        const ext = contentType.includes("svg") ? "svg" : contentType.includes("webp") ? "webp" : "png";
-        const logoPath = `${cleanDomain}/logo.${ext}`;
+        if (isValidBlob(logoBlob)) {
+          const contentType = logoRes.headers.get("content-type") || "image/png";
+          const ext = contentType.includes("svg") ? "svg" : contentType.includes("webp") ? "webp" : "png";
+          const logoPath = `${cleanDomain}/logo.${ext}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from("brand-logos")
-          .upload(logoPath, logoBlob, { contentType, upsert: true });
+          const { error: uploadError } = await supabase.storage
+            .from("brand-logos")
+            .upload(logoPath, logoBlob, { contentType, upsert: true });
 
-        if (!uploadError) {
-          storedLogoUrl = supabase.storage.from("brand-logos").getPublicUrl(logoPath).data.publicUrl;
+          if (!uploadError) {
+            storedLogoUrl = supabase.storage.from("brand-logos").getPublicUrl(logoPath).data.publicUrl;
+          } else {
+            console.error("Logo upload error:", uploadError);
+          }
         } else {
-          console.error("Logo upload error:", uploadError);
-          // Do NOT fall back to CDN URL — leave null
+          console.log(`Logo too small for ${cleanDomain} (${logoBlob.size} bytes) — likely a placeholder, skipping`);
         }
       } else {
         console.log(`Logo not found for ${cleanDomain} (status: ${logoRes.status}, content-type: ${logoRes.headers.get("content-type")})`);
