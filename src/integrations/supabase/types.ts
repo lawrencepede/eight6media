@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      brand_assets: {
+        Row: {
+          brand_colors: Json | null
+          created_at: string
+          description: string | null
+          domain: string
+          icon_url: string | null
+          id: string
+          industry: string | null
+          logo_url: string | null
+          name: string
+          raw_data: Json | null
+          updated_at: string
+        }
+        Insert: {
+          brand_colors?: Json | null
+          created_at?: string
+          description?: string | null
+          domain: string
+          icon_url?: string | null
+          id?: string
+          industry?: string | null
+          logo_url?: string | null
+          name: string
+          raw_data?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          brand_colors?: Json | null
+          created_at?: string
+          description?: string | null
+          domain?: string
+          icon_url?: string | null
+          id?: string
+          industry?: string | null
+          logo_url?: string | null
+          name?: string
+          raw_data?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       creators: {
         Row: {
           bio: string | null
@@ -224,6 +266,63 @@ export type Database = {
             columns: ["connection_id"]
             isOneToOne: false
             referencedRelation: "instagram_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      talent_brand_relationships: {
+        Row: {
+          brand_id: string
+          campaign_name: string | null
+          created_at: string
+          creator_id: string
+          deal_value: string | null
+          end_date: string | null
+          id: string
+          notes: string | null
+          start_date: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          brand_id: string
+          campaign_name?: string | null
+          created_at?: string
+          creator_id: string
+          deal_value?: string | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          brand_id?: string
+          campaign_name?: string | null
+          created_at?: string
+          creator_id?: string
+          deal_value?: string | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "talent_brand_relationships_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brand_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "talent_brand_relationships_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
             referencedColumns: ["id"]
           },
         ]
