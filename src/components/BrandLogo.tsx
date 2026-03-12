@@ -1,8 +1,12 @@
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+
 import nikeLogo from "@/assets/logos/nike.svg";
 import appleLogo from "@/assets/logos/apple.svg";
 import garminLogo from "@/assets/logos/garmin.svg";
 
-const brandLogos: Record<string, string> = {
+// Local fallback logos
+const localLogos: Record<string, string> = {
   "Nike": nikeLogo,
   "Apple": appleLogo,
   "Garmin": garminLogo,
@@ -10,26 +14,49 @@ const brandLogos: Record<string, string> = {
 
 interface BrandLogoProps {
   brand: string;
+  className?: string;
+  showName?: boolean;
 }
 
-const BrandLogo = ({ brand }: BrandLogoProps) => {
-  const logo = brandLogos[brand];
+const useBrandLogo = (brandName: string) => {
+  return useQuery({
+    queryKey: ["brand-logo", brandName],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("brand_assets")
+        .select("icon_url, logo_url, name")
+        .ilike("name", brandName)
+        .maybeSingle();
+      return data;
+    },
+    staleTime: 1000 * 60 * 30, // Cache for 30 min
+  });
+};
+
+const BrandLogo = ({ brand, className, showName = false }: BrandLogoProps) => {
+  const { data: brandAsset } = useBrandLogo(brand);
   
-  if (logo) {
+  const logoSrc = brandAsset?.icon_url || brandAsset?.logo_url || localLogos[brand];
+  
+  if (logoSrc) {
     return (
-      <div className="flex items-center justify-center bg-secondary/50 px-3 py-2 rounded-lg h-8">
-        <img 
-          src={logo} 
-          alt={brand} 
-          className="h-4 w-auto opacity-70"
-        />
+      <div className={`flex items-center gap-1.5 ${className || ""}`}>
+        <div className="flex items-center justify-center bg-secondary/50 px-2 py-1.5 rounded-lg h-7">
+          <img 
+            src={logoSrc} 
+            alt={brand} 
+            className="h-4 w-auto opacity-80 max-w-[48px] object-contain"
+          />
+        </div>
+        {showName && (
+          <span className="text-xs text-muted-foreground">{brand}</span>
+        )}
       </div>
     );
   }
   
-  // Fallback to styled text for brands without logos
   return (
-    <span className="text-xs bg-secondary px-3 py-1.5 rounded-full text-secondary-foreground font-medium">
+    <span className="text-xs bg-secondary px-2.5 py-1 rounded-full text-secondary-foreground font-medium">
       {brand}
     </span>
   );
