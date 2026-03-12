@@ -500,10 +500,24 @@ const BrandManager = () => {
                         size="sm"
                         variant="outline"
                         className="flex-1 text-xs"
-                        onClick={() => openLinkDialog(brand.id)}
+                        onClick={() => {
+                          const input = document.createElement("input");
+                          input.type = "file";
+                          input.accept = "image/*";
+                          input.onchange = (e) => {
+                            const file = (e.target as HTMLInputElement).files?.[0];
+                            if (file) handleUploadLogo(brand.id, brand.domain, file);
+                          };
+                          input.click();
+                        }}
+                        disabled={uploadingLogoFor === brand.id}
                       >
-                        <LinkIcon className="w-3 h-3 mr-1" />
-                        Link
+                        {uploadingLogoFor === brand.id ? (
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                        ) : (
+                          <Upload className="w-3 h-3 mr-1" />
+                        )}
+                        Upload Logo
                       </Button>
                       <Button
                         size="sm"
