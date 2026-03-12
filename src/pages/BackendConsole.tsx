@@ -9,7 +9,8 @@ import {
   Sparkles,
   Settings,
   ArrowRight,
-  BarChart3
+  BarChart3,
+  Palette
 } from "lucide-react";
 import PasswordGate from "@/components/PasswordGate";
 
@@ -86,6 +87,13 @@ const BackendConsole = () => {
       description: "Connect Instagram accounts and track real-time insights",
       icon: <BarChart3 className="w-6 h-6" />,
       to: "/console/meta-analytics",
+      available: true,
+    },
+    {
+      title: "Brand Assets",
+      description: "Fetch brand logos via Brandfetch, link brands to talent with deal details",
+      icon: <Palette className="w-6 h-6" />,
+      to: "/console/brand-manager",
       available: true,
     },
     {

@@ -21,6 +21,7 @@ import PartnershipUpdates from "./pages/PartnershipUpdates";
 import RosterManagement from "./pages/RosterManagement";
 import PitchGenerator from "./pages/PitchGenerator";
 import MetaAnalytics from "./pages/MetaAnalytics";
+import BrandManager from "./pages/BrandManager";
 
 import NotFound from "./pages/NotFound";
 
@@ -80,6 +81,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <MetaAnalytics />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/console/brand-manager" 
+              element={
+                <ProtectedRoute>
+                  <BrandManager />
                 </ProtectedRoute>
               } 
             />
