@@ -66,9 +66,12 @@ const BrandLogo = ({ brand, className, showName = false }: BrandLogoProps) => {
   }
   
   return (
-    <span className="text-xs bg-secondary px-2.5 py-1 rounded-full text-secondary-foreground font-medium">
-      {brand}
-    </span>
+    <div className="flex items-center gap-1.5">
+      <span className="text-xs bg-secondary px-2.5 py-1 rounded-full text-secondary-foreground font-medium">
+        {brand}
+      </span>
+      <span className="text-[10px] text-muted-foreground italic">No logo</span>
+    </div>
   );
 };
 

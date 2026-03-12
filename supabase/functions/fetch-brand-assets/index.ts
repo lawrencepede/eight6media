@@ -36,10 +36,16 @@ Deno.serve(async (req) => {
     let storedLogoUrl: string | null = null;
     let storedIconUrl: string | null = null;
 
+    // Helper: validate response is an actual image
+    const isValidImage = (res: Response) => {
+      const ct = res.headers.get("content-type") || "";
+      return res.ok && ct.startsWith("image/");
+    };
+
     // Download and store logo
     try {
-      const logoRes = await fetch(logoUrl);
-      if (logoRes.ok) {
+      const logoRes = await fetch(logoUrl, { redirect: "follow" });
+      if (isValidImage(logoRes)) {
         const logoBlob = await logoRes.blob();
         const contentType = logoRes.headers.get("content-type") || "image/png";
         const ext = contentType.includes("svg") ? "svg" : contentType.includes("webp") ? "webp" : "png";
@@ -53,8 +59,10 @@ Deno.serve(async (req) => {
           storedLogoUrl = supabase.storage.from("brand-logos").getPublicUrl(logoPath).data.publicUrl;
         } else {
           console.error("Logo upload error:", uploadError);
-          storedLogoUrl = logoUrl;
+          // Do NOT fall back to CDN URL — leave null
         }
+      } else {
+        console.log(`Logo not found for ${cleanDomain} (status: ${logoRes.status}, content-type: ${logoRes.headers.get("content-type")})`);
       }
     } catch (e) {
       console.error("Logo download error:", e);
@@ -62,8 +70,8 @@ Deno.serve(async (req) => {
 
     // Download and store icon
     try {
-      const iconRes = await fetch(iconUrl);
-      if (iconRes.ok) {
+      const iconRes = await fetch(iconUrl, { redirect: "follow" });
+      if (isValidImage(iconRes)) {
         const iconBlob = await iconRes.blob();
         const contentType = iconRes.headers.get("content-type") || "image/png";
         const ext = contentType.includes("svg") ? "svg" : contentType.includes("webp") ? "webp" : "png";
@@ -77,8 +85,10 @@ Deno.serve(async (req) => {
           storedIconUrl = supabase.storage.from("brand-logos").getPublicUrl(iconPath).data.publicUrl;
         } else {
           console.error("Icon upload error:", uploadError);
-          storedIconUrl = iconUrl;
+          // Do NOT fall back to CDN URL — leave null
         }
+      } else {
+        console.log(`Icon not found for ${cleanDomain} (status: ${iconRes.status}, content-type: ${iconRes.headers.get("content-type")})`);
       }
     } catch (e) {
       console.error("Icon download error:", e);
