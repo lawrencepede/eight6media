@@ -139,6 +139,54 @@ const BrandManager = () => {
     }
   };
 
+  const handleFetchAllLogos = async () => {
+    if (!brands) return;
+    const missingLogos = brands.filter(b => !b.logo_url && !b.icon_url);
+    if (missingLogos.length === 0) {
+      toast.info("All brands already have logos!");
+      return;
+    }
+
+    setFetchingLogos(true);
+    const BATCH_SIZE = 10;
+    const progress = { done: 0, total: missingLogos.length, errors: [] as string[] };
+    setLogoProgress({ ...progress });
+
+    for (let i = 0; i < missingLogos.length; i += BATCH_SIZE) {
+      const batch = missingLogos.slice(i, i + BATCH_SIZE);
+      const batchNames = batch.map(b => b.name);
+
+      try {
+        const { data, error } = await supabase.functions.invoke("import-talent-brands", {
+          body: {
+            talent_brands: [],
+            fetch_logos_for: batchNames,
+          },
+        });
+        if (error) throw error;
+        progress.done += data?.results?.logos_fetched || 0;
+        if (data?.results?.errors?.length) {
+          progress.errors.push(...data.results.errors);
+        }
+      } catch (e: any) {
+        progress.errors.push(`Batch ${Math.floor(i / BATCH_SIZE) + 1} failed: ${e.message}`);
+      }
+
+      progress.done = Math.min(i + BATCH_SIZE, missingLogos.length);
+      setLogoProgress({ ...progress });
+
+      // Small delay between batches
+      if (i + BATCH_SIZE < missingLogos.length) {
+        await new Promise(r => setTimeout(r, 1000));
+      }
+    }
+
+    queryClient.invalidateQueries({ queryKey: ["brand-assets"] });
+    queryClient.invalidateQueries({ queryKey: ["brand-logo"] });
+    toast.success(`Done! Processed ${progress.total} brands.`);
+    setFetchingLogos(false);
+  };
+
   const handleLinkTalent = () => {
     if (!selectedBrandId || !selectedCreatorId) return;
     linkTalentBrand.mutate(
