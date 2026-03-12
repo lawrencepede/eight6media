@@ -51,11 +51,11 @@ const BrandLogo = ({ brand, className, showName = false }: BrandLogoProps) => {
   if (logoSrc) {
     return (
       <div className={`flex items-center gap-1.5 ${className || ""}`}>
-        <div className="flex items-center justify-center bg-[hsl(0_0%_85%)] dark:bg-[hsl(0_0%_30%)] px-2 py-1.5 rounded-lg h-7">
+        <div className="flex items-center justify-center bg-[hsl(0_0%_92%)] dark:bg-[hsl(0_0%_40%)] px-2 py-1.5 rounded-lg h-7">
           <img 
             src={logoSrc} 
             alt={brand} 
-            className="h-4 w-auto max-w-[48px] object-contain dark:brightness-[1.8] dark:contrast-[1.1]"
+            className="h-4 w-auto max-w-[48px] object-contain dark:brightness-[1.6] dark:contrast-[1.1]"
           />
         </div>
         {showName && (
