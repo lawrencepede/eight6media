@@ -46,7 +46,7 @@ const useBrandLogo = (brandName: string) => {
 const BrandLogo = ({ brand, className, showName = false }: BrandLogoProps) => {
   const { data: brandAsset } = useBrandLogo(brand);
   
-  const logoSrc = brandAsset?.icon_url || brandAsset?.logo_url || localLogos[brand];
+  const logoSrc = brandAsset?.logo_url || brandAsset?.icon_url || localLogos[brand];
   
   if (logoSrc) {
     return (
