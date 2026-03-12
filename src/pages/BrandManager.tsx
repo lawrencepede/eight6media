@@ -278,14 +278,41 @@ const BrandManager = () => {
             <p className="text-sm text-muted-foreground mb-4">
               Import {TALENT_BRANDS_DATA.length} talent records with brand partnerships. Fetches logos for top 10 brands (Nike, Apple, Adidas, etc.).
             </p>
-            <Button onClick={handleBulkImport} disabled={importing}>
-              {importing ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Upload className="w-4 h-4 mr-2" />
+            <div className="flex gap-3">
+              <Button onClick={handleBulkImport} disabled={importing || fetchingLogos}>
+                {importing ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Upload className="w-4 h-4 mr-2" />
+                )}
+                {importing ? "Importing..." : "Import Talent × Brand Data"}
+              </Button>
+              {brands && brands.filter(b => !b.logo_url && !b.icon_url).length > 0 && (
+                <Button onClick={handleFetchAllLogos} disabled={fetchingLogos || importing} variant="secondary">
+                  {fetchingLogos ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4 mr-2" />
+                  )}
+                  {fetchingLogos
+                    ? `Fetching logos (${logoProgress?.done || 0}/${logoProgress?.total || 0})...`
+                    : `Fetch All Missing Logos (${brands.filter(b => !b.logo_url && !b.icon_url).length})`}
+                </Button>
               )}
-              {importing ? "Importing..." : "Import Talent × Brand Data"}
-            </Button>
+            </div>
+            {logoProgress && (
+              <div className="mt-4 p-4 bg-muted rounded-lg text-sm space-y-1">
+                <p><strong>{logoProgress.done}</strong> / {logoProgress.total} brands processed</p>
+                {logoProgress.errors.length > 0 && (
+                  <details>
+                    <summary className="text-destructive cursor-pointer">{logoProgress.errors.length} errors</summary>
+                    <ul className="mt-1 text-xs space-y-0.5">
+                      {logoProgress.errors.map((e, i) => <li key={i}>{e}</li>)}
+                    </ul>
+                  </details>
+                )}
+              </div>
+            )}
             {importResults && (
               <div className="mt-4 p-4 bg-muted rounded-lg text-sm space-y-1">
                 <p className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-600" /> <strong>{importResults.matched_talent}</strong> talent matched</p>
