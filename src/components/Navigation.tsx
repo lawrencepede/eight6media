@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
+import headerLogo from "@/assets/header-logo.png";
 
 const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -38,8 +39,8 @@ const Navigation = () => {
       <div className="container mx-auto px-6 py-5">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="font-display text-lg tracking-tight text-foreground">
-            Eight-Six Media
+          <Link to="/" className="flex items-center">
+            <img src={headerLogo} alt="Not Another Media Agency" className="h-8 md:h-10 w-auto" />
           </Link>
 
           {/* Desktop Navigation */}
