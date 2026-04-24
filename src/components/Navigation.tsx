@@ -39,8 +39,8 @@ const Navigation = () => {
       <div className="container mx-auto px-6 py-5">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="font-display text-lg tracking-tight text-foreground">
-            Eight-Six Media
+          <Link to="/" className="flex items-center">
+            <img src={headerLogo} alt="Not Another Media Agency" className="h-8 md:h-10 w-auto" />
           </Link>
 
           {/* Desktop Navigation */}
