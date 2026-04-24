@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
+import headerLogo from "@/assets/header-logo.png";
 
 const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
