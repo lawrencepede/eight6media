@@ -170,6 +170,51 @@ export type Database = {
         }
         Relationships: []
       }
+      imported_contacts: {
+        Row: {
+          company: string | null
+          email: string | null
+          full_name: string | null
+          hubspot_contact_id: string | null
+          id: string
+          imported_at: string
+          imported_by: string | null
+          raw_hubspot_response: Json | null
+          raw_seamless_payload: Json | null
+          seamless_contact_id: string | null
+          status: string
+          title: string | null
+        }
+        Insert: {
+          company?: string | null
+          email?: string | null
+          full_name?: string | null
+          hubspot_contact_id?: string | null
+          id?: string
+          imported_at?: string
+          imported_by?: string | null
+          raw_hubspot_response?: Json | null
+          raw_seamless_payload?: Json | null
+          seamless_contact_id?: string | null
+          status?: string
+          title?: string | null
+        }
+        Update: {
+          company?: string | null
+          email?: string | null
+          full_name?: string | null
+          hubspot_contact_id?: string | null
+          id?: string
+          imported_at?: string
+          imported_by?: string | null
+          raw_hubspot_response?: Json | null
+          raw_seamless_payload?: Json | null
+          seamless_contact_id?: string | null
+          status?: string
+          title?: string | null
+        }
+        Relationships: []
+      }
       instagram_connections: {
         Row: {
           connected_by: string | null
