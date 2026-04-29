@@ -128,11 +128,11 @@ const ContactSourcing = () => {
   // Search filters
   const [companyName, setCompanyName] = useState("");
   const [companyDomain, setCompanyDomain] = useState("");
-  const [jobTitle, setJobTitle] = useState("");
+  const [jobTitle, setJobTitle] = useState("marketing, influencer, creator, social media");
   const [seniority, setSeniority] = useState("");
   const [country, setCountry] = useState("");
   const [industry, setIndustry] = useState("");
-  const [limit, setLimit] = useState(25);
+  const [limit, setLimit] = useState(200);
 
   // Enrich-by-identity
   const [enrichEmail, setEnrichEmail] = useState("");
