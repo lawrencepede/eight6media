@@ -513,65 +513,33 @@ const ContactSourcing = () => {
                     />
                   </div>
                   <div>
-                    <Label>Company domain(s) — paste URLs, markdown links, or HTML anchors</Label>
+                    <Label>Company domain(s) — paste URLs, linked Sheets cells, markdown, or HTML anchors</Label>
                     <Textarea
                       value={companyDomain}
-                      onChange={(e) => {
-                        const raw = e.target.value;
-
-                        // Helper: pull bare domain out of any string fragment
-                        const extractDomain = (s: string): string => {
-                          if (!s) return s;
-                          let v = s.trim();
-                          if (!v) return v;
-
-                          // 1) HTML anchor: <a href="...">label</a>
-                          const hrefMatch = v.match(/href\s*=\s*["']([^"']+)["']/i);
-                          if (hrefMatch) v = hrefMatch[1];
-
-                          // 2) Markdown link: [label](url)
-                          const mdMatch = v.match(/\]\(([^)]+)\)/);
-                          if (mdMatch) v = mdMatch[1];
-
-                          // 3) Find first http(s) URL inside the fragment (handles
-                          //    angle brackets, surrounding text, etc.)
-                          const urlMatch = v.match(/https?:\/\/[^\s<>"')]+/i);
-                          if (urlMatch) v = urlMatch[0];
-
-                          // 4) Unwrap common redirect/tracking wrappers
-                          //    e.g. google.com/url?q=https://target.com&...
-                          try {
-                            const u = new URL(v.startsWith("http") ? v : `https://${v}`);
-                            const wrapped =
-                              u.searchParams.get("q") ||
-                              u.searchParams.get("url") ||
-                              u.searchParams.get("u");
-                            if (wrapped && /^https?:\/\//i.test(wrapped)) {
-                              v = wrapped;
-                            }
-                            const finalUrl = new URL(v.startsWith("http") ? v : `https://${v}`);
-                            return finalUrl.hostname.replace(/^www\./i, "").toLowerCase();
-                          } catch {
-                            // Fallback: strip protocol/www/path manually
-                            return v
-                              .replace(/^<+|>+$/g, "")
-                              .replace(/^https?:\/\//i, "")
-                              .replace(/^www\./i, "")
-                              .replace(/\/.*$/, "")
-                              .toLowerCase();
-                          }
-                        };
-
-                        // Split on line/comma/semicolon/tab boundaries, normalize each
-                        // token, and rejoin with newlines for readability.
-                        const tokens = raw
-                          .split(/[\n\r,;\t]+/)
-                          .map((t) => extractDomain(t))
-                          .filter((t, i, arr) => t === "" ? i === arr.length - 1 : true);
-
-                        setCompanyDomain(tokens.join("\n"));
+                      onPaste={(e) => {
+                        // When pasting a hyperlinked cell from Google Sheets, the
+                        // visible text is just the label ("Epetome") but the
+                        // clipboard also carries text/html with the underlying
+                        // <a href>. Prefer the HTML payload when present so we
+                        // capture the actual URL instead of the label.
+                        const html = e.clipboardData?.getData("text/html");
+                        if (html && /<a\s[^>]*href=/i.test(html)) {
+                          e.preventDefault();
+                          const target = e.currentTarget;
+                          const start = target.selectionStart ?? companyDomain.length;
+                          const end = target.selectionEnd ?? companyDomain.length;
+                          const extracted = domainsFromHtmlClipboard(html);
+                          const next =
+                            companyDomain.slice(0, start) +
+                            extracted +
+                            companyDomain.slice(end);
+                          setCompanyDomain(normalizeDomainBlob(next));
+                        }
+                        // Otherwise fall through to the default paste, which
+                        // triggers onChange and gets normalized below.
                       }}
-                      placeholder={"acme.com\nhttps://initech.com\n[Epetome](https://epetome.com)\n<a href=\"https://globex.com\">Globex</a>"}
+                      onChange={(e) => setCompanyDomain(normalizeDomainBlob(e.target.value))}
+                      placeholder={"acme.com\nhttps://initech.com\n[Epetome](https://epetome.com)\nor paste a linked cell from Google Sheets"}
                       rows={4}
                       className="font-mono text-sm"
                     />
