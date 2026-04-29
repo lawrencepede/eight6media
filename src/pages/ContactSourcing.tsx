@@ -129,12 +129,13 @@ const ContactSourcing = () => {
         action: "search",
         limit,
       };
-      if (companyName.trim()) payload.companyName = companyName.split(",").map(s => s.trim()).filter(Boolean);
-      if (companyDomain.trim()) payload.companyDomain = companyDomain.split(",").map(s => s.trim()).filter(Boolean);
-      if (jobTitle.trim()) payload.jobTitle = jobTitle.split(",").map(s => s.trim()).filter(Boolean);
-      if (seniority.trim()) payload.seniority = seniority.split(",").map(s => s.trim()).filter(Boolean);
-      if (country.trim()) payload.contactCountry = country.split(",").map(s => s.trim()).filter(Boolean);
-      if (industry.trim()) payload.industry = industry.split(",").map(s => s.trim()).filter(Boolean);
+      const splitMulti = (s: string) => s.split(/[,\n\r\t;]+/).map(x => x.trim()).filter(Boolean);
+      if (companyName.trim()) payload.companyName = splitMulti(companyName);
+      if (companyDomain.trim()) payload.companyDomain = splitMulti(companyDomain);
+      if (jobTitle.trim()) payload.jobTitle = splitMulti(jobTitle);
+      if (seniority.trim()) payload.seniority = splitMulti(seniority);
+      if (country.trim()) payload.contactCountry = splitMulti(country);
+      if (industry.trim()) payload.industry = splitMulti(industry);
 
       const { data, error } = await supabase.functions.invoke("seamless-search", { body: payload });
       if (error) throw error;
