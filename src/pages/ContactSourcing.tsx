@@ -786,47 +786,128 @@ const ContactSourcing = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {results.map((r) => {
-                      const id = idOf(r);
-                      const li = r.lIProfileUrl ?? r.linkedinUrl;
-                      return (
-                        <TableRow key={id}>
-                          <TableCell>
-                            <Checkbox checked={selected.has(id)} onCheckedChange={() => toggle(id)} />
-                          </TableCell>
-                          <TableCell className="font-sans font-medium">
-                            {r.fullName ?? `${r.firstName ?? ""} ${r.lastName ?? ""}`.trim() ?? "—"}
-                          </TableCell>
-                          <TableCell className="text-sm">{r.title ?? "—"}</TableCell>
-                          <TableCell className="text-sm">{r.company ?? "—"}</TableCell>
-                          <TableCell className="text-sm">{r.email ?? <span className="text-muted-foreground italic">(enrich to reveal)</span>}</TableCell>
-                          <TableCell>
-                            {li ? (
-                              <a href={li} target="_blank" rel="noreferrer" className="inline-flex items-center text-accent hover:underline">
-                                <ExternalLink className="w-3 h-3" />
-                              </a>
-                            ) : "—"}
-                          </TableCell>
-                          <TableCell>
-                            {r._enrichmentStatus === "researching" && (
-                              <Badge variant="outline" title={r._enrichmentMessage ?? ""}>Researching…</Badge>
-                            )}
-                            {r._enrichmentStatus === "no_email" && (
-                              <Badge variant="destructive" title={r._enrichmentMessage ?? ""}>No email</Badge>
-                            )}
-                            {r._enrichmentStatus === "imported" && (
-                              <Badge variant="secondary">Imported</Badge>
-                            )}
-                            {!r._enrichmentStatus && (
-                              r._alreadyImported
-                                ? <Badge variant="secondary">Imported</Badge>
-                                : <Badge>New</Badge>
-                            )}
-                            {r._enrichmentStatus === "done" && !r._alreadyImported && <Badge>Ready</Badge>}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
+                    {(() => {
+                      // Build the brand-grouped render order from the visible
+                      // (capped) results. We also need the per-brand totals from
+                      // the full result set to show "5 of 23" etc.
+                      const groupOrder: string[] = [];
+                      const groupRows = new Map<string, SearchResult[]>();
+                      for (const r of results) {
+                        const k = brandKeyOf(r);
+                        if (!groupRows.has(k)) {
+                          groupRows.set(k, []);
+                          groupOrder.push(k);
+                        }
+                        groupRows.get(k)!.push(r);
+                      }
+                      const allTotals = new Map<string, number>();
+                      for (const r of allResults) {
+                        const k = brandKeyOf(r);
+                        allTotals.set(k, (allTotals.get(k) ?? 0) + 1);
+                      }
+
+                      return groupOrder.flatMap((brandKey) => {
+                        const rows = groupRows.get(brandKey) ?? [];
+                        const label = brandLabelOf(rows[0]);
+                        const totalForBrand = allTotals.get(brandKey) ?? rows.length;
+                        const isExpanded = expandedBrands.has(brandKey);
+                        const hasHidden = totalForBrand > rows.length;
+                        const isLoadingMore = loadingMoreBrand === brandKey;
+
+                        const headerRow = (
+                          <TableRow key={`brand-${brandKey}`} className="bg-muted/40 hover:bg-muted/40">
+                            <TableCell colSpan={7} className="py-2">
+                              <div className="flex items-center justify-between gap-3 flex-wrap">
+                                <div className="font-sans text-sm font-semibold text-primary">
+                                  {label}{" "}
+                                  <span className="text-muted-foreground font-normal">
+                                    — showing {rows.length} of {totalForBrand}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {hasHidden && !isExpanded && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="font-sans h-7"
+                                      onClick={() => toggleBrandExpanded(brandKey)}
+                                    >
+                                      Show all {totalForBrand}
+                                    </Button>
+                                  )}
+                                  {isExpanded && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="font-sans h-7"
+                                      onClick={() => toggleBrandExpanded(brandKey)}
+                                    >
+                                      Collapse to top {perBrandCap}
+                                    </Button>
+                                  )}
+                                  <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    className="font-sans h-7"
+                                    disabled={isLoadingMore}
+                                    onClick={() => loadMoreForBrand(brandKey, label)}
+                                  >
+                                    {isLoadingMore
+                                      ? <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                      : <Search className="w-3 h-3 mr-1" />}
+                                    Find more for this brand
+                                  </Button>
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+
+                        const dataRows = rows.map((r) => {
+                          const id = idOf(r);
+                          const li = r.lIProfileUrl ?? r.linkedinUrl;
+                          return (
+                            <TableRow key={id}>
+                              <TableCell>
+                                <Checkbox checked={selected.has(id)} onCheckedChange={() => toggle(id)} />
+                              </TableCell>
+                              <TableCell className="font-sans font-medium">
+                                {r.fullName ?? `${r.firstName ?? ""} ${r.lastName ?? ""}`.trim() ?? "—"}
+                              </TableCell>
+                              <TableCell className="text-sm">{r.title ?? "—"}</TableCell>
+                              <TableCell className="text-sm">{r.company ?? "—"}</TableCell>
+                              <TableCell className="text-sm">{r.email ?? <span className="text-muted-foreground italic">(enrich to reveal)</span>}</TableCell>
+                              <TableCell>
+                                {li ? (
+                                  <a href={li} target="_blank" rel="noreferrer" className="inline-flex items-center text-accent hover:underline">
+                                    <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                ) : "—"}
+                              </TableCell>
+                              <TableCell>
+                                {r._enrichmentStatus === "researching" && (
+                                  <Badge variant="outline" title={r._enrichmentMessage ?? ""}>Researching…</Badge>
+                                )}
+                                {r._enrichmentStatus === "no_email" && (
+                                  <Badge variant="destructive" title={r._enrichmentMessage ?? ""}>No email</Badge>
+                                )}
+                                {r._enrichmentStatus === "imported" && (
+                                  <Badge variant="secondary">Imported</Badge>
+                                )}
+                                {!r._enrichmentStatus && (
+                                  r._alreadyImported
+                                    ? <Badge variant="secondary">Imported</Badge>
+                                    : <Badge>New</Badge>
+                                )}
+                                {r._enrichmentStatus === "done" && !r._alreadyImported && <Badge>Ready</Badge>}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        });
+
+                        return [headerRow, ...dataRows];
+                      });
+                    })()}
                   </TableBody>
                 </Table>
               </div>
