@@ -145,9 +145,13 @@ const ContactSourcing = () => {
   // Results state
   const [loading, setLoading] = useState(false);
   const [pushing, setPushing] = useState(false);
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [allResults, setAllResults] = useState<SearchResult[]>([]); // every row Seamless returned
+  const [results, setResults] = useState<SearchResult[]>([]);       // capped/visible rows
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [credits, setCredits] = useState<string | null>(null);
+  const [perBrandCap, setPerBrandCap] = useState(5);
+  const [expandedBrands, setExpandedBrands] = useState<Set<string>>(new Set()); // brands user clicked "show all" for
+  const [loadingMoreBrand, setLoadingMoreBrand] = useState<string | null>(null);
 
   const handleSignOut = async () => {
     await signOut();
@@ -155,6 +159,65 @@ const ContactSourcing = () => {
   };
 
   const idOf = (r: SearchResult) => r.searchResultId ?? r.id ?? r.email ?? Math.random().toString();
+
+  // Group results by brand. Use normalized domain when present, else company name.
+  const brandKeyOf = (r: SearchResult): string => {
+    const dom = (r.companyDomain ?? "").toString().trim().toLowerCase().replace(/^www\./, "");
+    if (dom) return dom;
+    return (r.company ?? "").toString().trim().toLowerCase() || "(unknown)";
+  };
+  const brandLabelOf = (r: SearchResult): string =>
+    (r.company?.toString().trim() || r.companyDomain?.toString().trim() || "(unknown brand)");
+
+  // Score a row's relevance to the user's search filters. Higher = more relevant.
+  // Currently weighted toward title + seniority overlap, then presence of an email.
+  const scoreRow = (r: SearchResult, titleTerms: string[], seniorityTerms: string[]): number => {
+    let score = 0;
+    const t = (r.title ?? "").toString().toLowerCase();
+    for (const term of titleTerms) {
+      if (term && t.includes(term)) score += 10;
+    }
+    for (const term of seniorityTerms) {
+      if (term && t.includes(term)) score += 5;
+    }
+    if (r.email) score += 2;
+    if (r.lIProfileUrl ?? r.linkedinUrl) score += 1;
+    return score;
+  };
+
+  // Take the full result set and keep only the top N per brand (unless that
+  // brand has been expanded by the user). Preserves Seamless's original order
+  // among rows with equal score.
+  const applyPerBrandCap = (
+    rows: SearchResult[],
+    cap: number,
+    expanded: Set<string>,
+    titleTerms: string[],
+    seniorityTerms: string[],
+  ): SearchResult[] => {
+    const groups = new Map<string, { row: SearchResult; idx: number; score: number }[]>();
+    rows.forEach((row, idx) => {
+      const k = brandKeyOf(row);
+      const arr = groups.get(k) ?? [];
+      arr.push({ row, idx, score: scoreRow(row, titleTerms, seniorityTerms) });
+      groups.set(k, arr);
+    });
+    const out: SearchResult[] = [];
+    const seenBrandOrder: string[] = [];
+    for (const row of rows) {
+      const k = brandKeyOf(row);
+      if (!seenBrandOrder.includes(k)) seenBrandOrder.push(k);
+    }
+    for (const k of seenBrandOrder) {
+      const arr = groups.get(k) ?? [];
+      arr.sort((a, b) => b.score - a.score || a.idx - b.idx);
+      const slice = expanded.has(k) ? arr : arr.slice(0, cap);
+      // Keep original Seamless order within the kept slice
+      slice.sort((a, b) => a.idx - b.idx);
+      for (const item of slice) out.push(item.row);
+    }
+    return out;
+  };
 
   const extractEmail = (contact: any) => {
     const emailsArr = Array.isArray(contact?.emails) ? contact.emails : [];
@@ -202,16 +265,19 @@ const ContactSourcing = () => {
     else setSelected(new Set(results.map(idOf)));
   };
 
+  const splitMulti = (s: string) => s.split(/[,\n\r\t;]+/).map(x => x.trim()).filter(Boolean);
+
   const runSearch = async () => {
     setLoading(true);
+    setAllResults([]);
     setResults([]);
     setSelected(new Set());
+    setExpandedBrands(new Set());
     try {
       const payload: Record<string, unknown> = {
         action: "search",
         limit,
       };
-      const splitMulti = (s: string) => s.split(/[,\n\r\t;]+/).map(x => x.trim()).filter(Boolean);
       if (companyName.trim()) payload.companyName = splitMulti(companyName);
       if (companyDomain.trim()) payload.companyDomain = splitMulti(companyDomain);
       if (jobTitle.trim()) payload.jobTitle = splitMulti(jobTitle);
@@ -223,15 +289,85 @@ const ContactSourcing = () => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error + (data.details ? `: ${JSON.stringify(data.details).slice(0, 300)}` : ""));
 
-      setResults(data.results ?? []);
+      const all: SearchResult[] = data.results ?? [];
+      const titleTerms = splitMulti(jobTitle).map((s) => s.toLowerCase());
+      const seniorityTerms = splitMulti(seniority).map((s) => s.toLowerCase());
+      const capped = applyPerBrandCap(all, perBrandCap, new Set(), titleTerms, seniorityTerms);
+      setAllResults(all);
+      setResults(capped);
       setCredits(data.credits ?? null);
-      toast({ title: "Search complete", description: `${data.results?.length ?? 0} contacts found.` });
+
+      const brandCount = new Set(all.map(brandKeyOf)).size;
+      const dropped = all.length - capped.length;
+      toast({
+        title: "Search complete",
+        description: `${all.length} contacts across ${brandCount} brand(s). Showing top ${perBrandCap} per brand${dropped ? ` (${dropped} hidden — click "Show all" on a brand to reveal)` : ""}.`,
+      });
     } catch (e: any) {
       toast({ title: "Search failed", description: e?.message ?? "Unknown error", variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
+
+  // Re-run a Seamless search scoped to one brand to fetch additional contacts
+  // for it. Merges new rows into allResults and expands that brand.
+  const loadMoreForBrand = async (brandKey: string, brandLabel: string) => {
+    setLoadingMoreBrand(brandKey);
+    try {
+      // Find a representative row for the brand to determine domain vs name lookup
+      const sample = allResults.find((r) => brandKeyOf(r) === brandKey);
+      const payload: Record<string, unknown> = { action: "search", limit: 50 };
+      const dom = sample?.companyDomain?.toString().trim();
+      if (dom) payload.companyDomain = [dom];
+      else payload.companyName = [brandLabel];
+      // Preserve job title / seniority filters so "more" matches the same intent
+      if (jobTitle.trim()) payload.jobTitle = splitMulti(jobTitle);
+      if (seniority.trim()) payload.seniority = splitMulti(seniority);
+      if (country.trim()) payload.contactCountry = splitMulti(country);
+      if (industry.trim()) payload.industry = splitMulti(industry);
+
+      const { data, error } = await supabase.functions.invoke("seamless-search", { body: payload });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      const incoming: SearchResult[] = data.results ?? [];
+      // Dedupe by searchResultId/id, then merge
+      const existingIds = new Set(allResults.map(idOf));
+      const additions = incoming.filter(
+        (r) => brandKeyOf(r) === brandKey && !existingIds.has(idOf(r)),
+      );
+      const merged = [...allResults, ...additions];
+      const nextExpanded = new Set(expandedBrands);
+      nextExpanded.add(brandKey);
+      const titleTerms = splitMulti(jobTitle).map((s) => s.toLowerCase());
+      const seniorityTerms = splitMulti(seniority).map((s) => s.toLowerCase());
+      setAllResults(merged);
+      setExpandedBrands(nextExpanded);
+      setResults(applyPerBrandCap(merged, perBrandCap, nextExpanded, titleTerms, seniorityTerms));
+      toast({
+        title: `+${additions.length} more for ${brandLabel}`,
+        description: additions.length
+          ? `Now showing all ${incoming.filter((r) => brandKeyOf(r) === brandKey).length + (allResults.filter((r) => brandKeyOf(r) === brandKey).length - incoming.filter((r) => brandKeyOf(r) === brandKey).length)} contacts for this brand.`
+          : "Seamless didn't return any new contacts for this brand.",
+      });
+    } catch (e: any) {
+      toast({ title: "Couldn't load more", description: e?.message ?? "Unknown error", variant: "destructive" });
+    } finally {
+      setLoadingMoreBrand(null);
+    }
+  };
+
+  const toggleBrandExpanded = (brandKey: string) => {
+    const next = new Set(expandedBrands);
+    if (next.has(brandKey)) next.delete(brandKey);
+    else next.add(brandKey);
+    setExpandedBrands(next);
+    const titleTerms = splitMulti(jobTitle).map((s) => s.toLowerCase());
+    const seniorityTerms = splitMulti(seniority).map((s) => s.toLowerCase());
+    setResults(applyPerBrandCap(allResults, perBrandCap, next, titleTerms, seniorityTerms));
+  };
+
 
   const runEnrich = async () => {
     if (!enrichEmail.trim() && !enrichLinkedIn.trim()) {
@@ -565,6 +701,20 @@ const ContactSourcing = () => {
                     <Input type="number" value={limit} min={1} max={50}
                       onChange={(e) => setLimit(Math.max(1, Math.min(50, Number(e.target.value) || 25)))} />
                   </div>
+                  <div>
+                    <Label>Max contacts per brand</Label>
+                    <Input type="number" value={perBrandCap} min={1} max={50}
+                      onChange={(e) => {
+                        const next = Math.max(1, Math.min(50, Number(e.target.value) || 5));
+                        setPerBrandCap(next);
+                        const titleTerms = splitMulti(jobTitle).map((s) => s.toLowerCase());
+                        const seniorityTerms = splitMulti(seniority).map((s) => s.toLowerCase());
+                        setResults(applyPerBrandCap(allResults, next, expandedBrands, titleTerms, seniorityTerms));
+                      }} />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Caps each brand at the top N most relevant rows so a single brand can't dominate.
+                    </p>
+                  </div>
                 </div>
                 <Button onClick={runSearch} disabled={loading} className="font-sans">
                   {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}
@@ -636,47 +786,128 @@ const ContactSourcing = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {results.map((r) => {
-                      const id = idOf(r);
-                      const li = r.lIProfileUrl ?? r.linkedinUrl;
-                      return (
-                        <TableRow key={id}>
-                          <TableCell>
-                            <Checkbox checked={selected.has(id)} onCheckedChange={() => toggle(id)} />
-                          </TableCell>
-                          <TableCell className="font-sans font-medium">
-                            {r.fullName ?? `${r.firstName ?? ""} ${r.lastName ?? ""}`.trim() ?? "—"}
-                          </TableCell>
-                          <TableCell className="text-sm">{r.title ?? "—"}</TableCell>
-                          <TableCell className="text-sm">{r.company ?? "—"}</TableCell>
-                          <TableCell className="text-sm">{r.email ?? <span className="text-muted-foreground italic">(enrich to reveal)</span>}</TableCell>
-                          <TableCell>
-                            {li ? (
-                              <a href={li} target="_blank" rel="noreferrer" className="inline-flex items-center text-accent hover:underline">
-                                <ExternalLink className="w-3 h-3" />
-                              </a>
-                            ) : "—"}
-                          </TableCell>
-                          <TableCell>
-                            {r._enrichmentStatus === "researching" && (
-                              <Badge variant="outline" title={r._enrichmentMessage ?? ""}>Researching…</Badge>
-                            )}
-                            {r._enrichmentStatus === "no_email" && (
-                              <Badge variant="destructive" title={r._enrichmentMessage ?? ""}>No email</Badge>
-                            )}
-                            {r._enrichmentStatus === "imported" && (
-                              <Badge variant="secondary">Imported</Badge>
-                            )}
-                            {!r._enrichmentStatus && (
-                              r._alreadyImported
-                                ? <Badge variant="secondary">Imported</Badge>
-                                : <Badge>New</Badge>
-                            )}
-                            {r._enrichmentStatus === "done" && !r._alreadyImported && <Badge>Ready</Badge>}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
+                    {(() => {
+                      // Build the brand-grouped render order from the visible
+                      // (capped) results. We also need the per-brand totals from
+                      // the full result set to show "5 of 23" etc.
+                      const groupOrder: string[] = [];
+                      const groupRows = new Map<string, SearchResult[]>();
+                      for (const r of results) {
+                        const k = brandKeyOf(r);
+                        if (!groupRows.has(k)) {
+                          groupRows.set(k, []);
+                          groupOrder.push(k);
+                        }
+                        groupRows.get(k)!.push(r);
+                      }
+                      const allTotals = new Map<string, number>();
+                      for (const r of allResults) {
+                        const k = brandKeyOf(r);
+                        allTotals.set(k, (allTotals.get(k) ?? 0) + 1);
+                      }
+
+                      return groupOrder.flatMap((brandKey) => {
+                        const rows = groupRows.get(brandKey) ?? [];
+                        const label = brandLabelOf(rows[0]);
+                        const totalForBrand = allTotals.get(brandKey) ?? rows.length;
+                        const isExpanded = expandedBrands.has(brandKey);
+                        const hasHidden = totalForBrand > rows.length;
+                        const isLoadingMore = loadingMoreBrand === brandKey;
+
+                        const headerRow = (
+                          <TableRow key={`brand-${brandKey}`} className="bg-muted/40 hover:bg-muted/40">
+                            <TableCell colSpan={7} className="py-2">
+                              <div className="flex items-center justify-between gap-3 flex-wrap">
+                                <div className="font-sans text-sm font-semibold text-primary">
+                                  {label}{" "}
+                                  <span className="text-muted-foreground font-normal">
+                                    — showing {rows.length} of {totalForBrand}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {hasHidden && !isExpanded && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="font-sans h-7"
+                                      onClick={() => toggleBrandExpanded(brandKey)}
+                                    >
+                                      Show all {totalForBrand}
+                                    </Button>
+                                  )}
+                                  {isExpanded && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="font-sans h-7"
+                                      onClick={() => toggleBrandExpanded(brandKey)}
+                                    >
+                                      Collapse to top {perBrandCap}
+                                    </Button>
+                                  )}
+                                  <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    className="font-sans h-7"
+                                    disabled={isLoadingMore}
+                                    onClick={() => loadMoreForBrand(brandKey, label)}
+                                  >
+                                    {isLoadingMore
+                                      ? <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                      : <Search className="w-3 h-3 mr-1" />}
+                                    Find more for this brand
+                                  </Button>
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+
+                        const dataRows = rows.map((r) => {
+                          const id = idOf(r);
+                          const li = r.lIProfileUrl ?? r.linkedinUrl;
+                          return (
+                            <TableRow key={id}>
+                              <TableCell>
+                                <Checkbox checked={selected.has(id)} onCheckedChange={() => toggle(id)} />
+                              </TableCell>
+                              <TableCell className="font-sans font-medium">
+                                {r.fullName ?? `${r.firstName ?? ""} ${r.lastName ?? ""}`.trim() ?? "—"}
+                              </TableCell>
+                              <TableCell className="text-sm">{r.title ?? "—"}</TableCell>
+                              <TableCell className="text-sm">{r.company ?? "—"}</TableCell>
+                              <TableCell className="text-sm">{r.email ?? <span className="text-muted-foreground italic">(enrich to reveal)</span>}</TableCell>
+                              <TableCell>
+                                {li ? (
+                                  <a href={li} target="_blank" rel="noreferrer" className="inline-flex items-center text-accent hover:underline">
+                                    <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                ) : "—"}
+                              </TableCell>
+                              <TableCell>
+                                {r._enrichmentStatus === "researching" && (
+                                  <Badge variant="outline" title={r._enrichmentMessage ?? ""}>Researching…</Badge>
+                                )}
+                                {r._enrichmentStatus === "no_email" && (
+                                  <Badge variant="destructive" title={r._enrichmentMessage ?? ""}>No email</Badge>
+                                )}
+                                {r._enrichmentStatus === "imported" && (
+                                  <Badge variant="secondary">Imported</Badge>
+                                )}
+                                {!r._enrichmentStatus && (
+                                  r._alreadyImported
+                                    ? <Badge variant="secondary">Imported</Badge>
+                                    : <Badge>New</Badge>
+                                )}
+                                {r._enrichmentStatus === "done" && !r._alreadyImported && <Badge>Ready</Badge>}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        });
+
+                        return [headerRow, ...dataRows];
+                      });
+                    })()}
                   </TableBody>
                 </Table>
               </div>
