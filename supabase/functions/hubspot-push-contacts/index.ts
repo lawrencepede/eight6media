@@ -226,8 +226,9 @@ Deno.serve(async (req) => {
       ok: true,
       summary: {
         total: results.length,
-        succeeded: results.filter(r => r.ok).length,
-        failed: results.filter(r => !r.ok).length,
+        succeeded: results.filter((r) => r.ok).length,
+        skipped: results.filter((r) => !r.ok && r.skipped).length,
+        failed: results.filter((r) => !r.ok && !r.skipped).length,
       },
       results,
     });
