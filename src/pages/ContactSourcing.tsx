@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import PasswordGate from "@/components/PasswordGate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -128,12 +129,13 @@ const ContactSourcing = () => {
         action: "search",
         limit,
       };
-      if (companyName.trim()) payload.companyName = companyName.split(",").map(s => s.trim()).filter(Boolean);
-      if (companyDomain.trim()) payload.companyDomain = companyDomain.split(",").map(s => s.trim()).filter(Boolean);
-      if (jobTitle.trim()) payload.jobTitle = jobTitle.split(",").map(s => s.trim()).filter(Boolean);
-      if (seniority.trim()) payload.seniority = seniority.split(",").map(s => s.trim()).filter(Boolean);
-      if (country.trim()) payload.contactCountry = country.split(",").map(s => s.trim()).filter(Boolean);
-      if (industry.trim()) payload.industry = industry.split(",").map(s => s.trim()).filter(Boolean);
+      const splitMulti = (s: string) => s.split(/[,\n\r\t;]+/).map(x => x.trim()).filter(Boolean);
+      if (companyName.trim()) payload.companyName = splitMulti(companyName);
+      if (companyDomain.trim()) payload.companyDomain = splitMulti(companyDomain);
+      if (jobTitle.trim()) payload.jobTitle = splitMulti(jobTitle);
+      if (seniority.trim()) payload.seniority = splitMulti(seniority);
+      if (country.trim()) payload.contactCountry = splitMulti(country);
+      if (industry.trim()) payload.industry = splitMulti(industry);
 
       const { data, error } = await supabase.functions.invoke("seamless-search", { body: payload });
       if (error) throw error;
@@ -419,12 +421,38 @@ const ContactSourcing = () => {
               <Card className="p-6 space-y-4">
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <Label>Company name(s) — comma separated</Label>
-                    <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Acme, Globex" />
+                    <Label>Company name(s) — one per line, or comma separated</Label>
+                    <Textarea
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      placeholder={"Acme\nGlobex\nInitech"}
+                      rows={4}
+                      className="font-mono text-sm"
+                    />
                   </div>
                   <div>
-                    <Label>Company domain(s)</Label>
-                    <Input value={companyDomain} onChange={(e) => setCompanyDomain(e.target.value)} placeholder="acme.com, globex.com" />
+                    <Label>Company domain(s) — paste URLs, one per line</Label>
+                    <Textarea
+                      value={companyDomain}
+                      onChange={(e) => {
+                        // Normalize pasted URLs → bare domains, preserve user separators
+                        const normalized = e.target.value
+                          .split(/(\s|,|;)/)
+                          .map((tok) => {
+                            if (/^[\s,;]+$/.test(tok) || tok === "") return tok;
+                            return tok
+                              .replace(/^https?:\/\//i, "")
+                              .replace(/^www\./i, "")
+                              .replace(/\/.*$/, "")
+                              .toLowerCase();
+                          })
+                          .join("");
+                        setCompanyDomain(normalized);
+                      }}
+                      placeholder={"acme.com\nglobex.com\nhttps://initech.com"}
+                      rows={4}
+                      className="font-mono text-sm"
+                    />
                   </div>
                   <div>
                     <Label>Job title(s)</Label>
