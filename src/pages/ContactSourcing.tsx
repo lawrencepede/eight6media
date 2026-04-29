@@ -33,6 +33,8 @@ interface SearchResult {
   state?: string;
   country?: string;
   _alreadyImported?: boolean;
+  _enrichmentStatus?: "pending" | "researching" | "done" | "no_email" | "imported" | "skipped" | "failed";
+  _enrichmentMessage?: string;
   [k: string]: any;
 }
 
@@ -88,13 +90,18 @@ const ContactSourcing = () => {
 
   const enrichContacts = async (body: Record<string, unknown>) => {
     let latest: any = null;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const { data, error } = await supabase.functions.invoke("seamless-search", { body });
+    let requestIds: string[] | undefined = Array.isArray(body.requestIds) ? body.requestIds as string[] : undefined;
+    // Up to 6 attempts. Each call to the edge function polls Seamless for ~90s,
+    // so this gives Seamless several minutes to finish researching.
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const callBody = { ...body, ...(requestIds ? { requestIds } : {}) };
+      const { data, error } = await supabase.functions.invoke("seamless-search", { body: callBody });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       latest = data;
-      if (data?.complete !== false) break;
-      await new Promise((resolve) => setTimeout(resolve, 2500));
+      if (Array.isArray(data?.requestIds)) requestIds = data.requestIds;
+      if (data?.complete === true) break;
+      await new Promise((resolve) => setTimeout(resolve, 3000));
     }
     return latest;
   };
@@ -169,6 +176,10 @@ const ContactSourcing = () => {
     }
   };
 
+  const updateRowMeta = (id: string, patch: Partial<SearchResult>) => {
+    setResults((prev) => prev.map((r) => (idOf(r) === id ? { ...r, ...patch } : r)));
+  };
+
   const pushSelected = async () => {
     const picks = results.filter((r) => selected.has(idOf(r)));
     if (!picks.length) {
@@ -176,37 +187,91 @@ const ContactSourcing = () => {
       return;
     }
 
-    // Search results are lightweight; they need enrichment first to get email/phone.
-    // If the row already has an email, push directly. Otherwise enrich first.
     const needEnrichment = picks.filter((p) => !p.email && (p.searchResultId || p.id));
     setPushing(true);
     try {
-      let enrichedById = new Map<string, any>();
+      // Map: searchResultId -> { result, complete, hasEmail, status, message }
+      const enrichedById = new Map<string, any>();
 
       if (needEnrichment.length) {
         toast({
           title: "Enriching first…",
-          description: `Pulling full details for ${needEnrichment.length} contact(s) (1 credit each).`,
+          description: `Pulling full details for ${needEnrichment.length} contact(s) (1 credit each). This can take up to a few minutes.`,
         });
+        // Mark rows as researching in the table
+        for (const p of needEnrichment) {
+          updateRowMeta(idOf(p), { _enrichmentStatus: "researching" });
+        }
         const ids = needEnrichment.map((p) => (p.searchResultId ?? p.id) as string);
         const enrich = await enrichContacts({ action: "enrich", searchResultIds: ids });
 
-        const items = (enrich.results ?? []).flatMap((r: any) => r?.result ? [{ key: r.requestId ?? r.searchResultId, ...r.result }] : []);
-        // Best-effort: index by every plausible id in the result
-        for (const it of items) {
-          for (const k of [it.key, it.searchResultId, it.id, it.contactId].filter(Boolean)) {
-            enrichedById.set(String(k), it);
-          }
+        for (const r of enrich?.results ?? []) {
+          const sid = r?.searchResultId ?? r?.result?.searchResultId;
+          if (sid) enrichedById.set(String(sid), r);
         }
       }
 
-      // Build push payload, merging enriched data when available.
-      const contacts = picks.map((p) => {
-        const enr = enrichedById.get(String(p.searchResultId ?? p.id)) ?? {};
-        const merged: any = { ...p, ...enr };
-        const bestEmail = extractEmail(merged);
-        return {
-          seamless_contact_id: String(merged.searchResultId ?? merged.id ?? merged.contactId ?? bestEmail ?? ""),
+      const completed: any[] = [];
+      const stillResearching: SearchResult[] = [];
+      const noEmail: SearchResult[] = [];
+
+      for (const p of picks) {
+        const sid = String(p.searchResultId ?? p.id ?? "");
+        const enr = sid ? enrichedById.get(sid) : null;
+
+        // Already had email from a prior enrich - push directly
+        if (p.email && !enr) {
+          completed.push({
+            seamless_contact_id: sid || p.email,
+            email: p.email,
+            firstName: p.firstName,
+            lastName: p.lastName,
+            fullName: p.fullName,
+            title: p.title,
+            company: p.company,
+            companyDomain: p.companyDomain,
+            phone: p.phone,
+            linkedinUrl: p.lIProfileUrl ?? p.linkedinUrl,
+            city: p.city,
+            state: p.state,
+            country: p.country,
+            raw: p,
+          });
+          continue;
+        }
+
+        if (!enr) {
+          // Couldn't enrich at all
+          stillResearching.push(p);
+          updateRowMeta(idOf(p), { _enrichmentStatus: "researching", _enrichmentMessage: "Awaiting Seamless" });
+          continue;
+        }
+
+        if (!enr.complete) {
+          stillResearching.push(p);
+          updateRowMeta(idOf(p), {
+            _enrichmentStatus: "researching",
+            _enrichmentMessage: enr.status ?? "researching",
+          });
+          continue;
+        }
+
+        const merged: any = { ...p, ...(enr.result ?? {}) };
+        const bestEmail = (enr.result?.email ?? extractEmail(merged) ?? "").toString().trim();
+
+        if (!bestEmail) {
+          noEmail.push(p);
+          updateRowMeta(idOf(p), {
+            _enrichmentStatus: "no_email",
+            _enrichmentMessage: enr.message ?? "Seamless returned no email",
+          });
+          continue;
+        }
+
+        updateRowMeta(idOf(p), { email: bestEmail, _enrichmentStatus: "done" });
+
+        completed.push({
+          seamless_contact_id: String(merged.searchResultId ?? sid ?? merged.contactId ?? bestEmail),
           email: bestEmail,
           firstName: merged.firstName,
           lastName: merged.lastName,
@@ -220,37 +285,54 @@ const ContactSourcing = () => {
           state: merged.contactLocation?.stateAbbr ?? merged.contactLocation?.state ?? merged.state,
           country: merged.contactLocation?.country ?? merged.country,
           raw: merged,
-        };
-      });
-
-      const contactsWithEmail = contacts.filter((c) => c.email);
-      const missingEmails = contacts.length - contactsWithEmail.length;
-      if (missingEmails) {
-        toast({
-          title: `${missingEmails} contact(s) skipped`,
-          description: "Seamless did not return an email after enrichment, so they were not imported to HubSpot.",
         });
       }
 
-      if (!contactsWithEmail.length) {
+      if (stillResearching.length) {
         toast({
-          title: "No email addresses found",
-          description: "Nothing was pushed to HubSpot. Try different contacts or verify the data in Seamless.",
-          variant: "destructive",
+          title: `${stillResearching.length} still researching`,
+          description: "Seamless hasn't finished these yet. Wait a minute and click Push again — they'll resume without using extra credits.",
         });
+      }
+      if (noEmail.length) {
+        toast({
+          title: `${noEmail.length} finished with no email`,
+          description: "Seamless completed research but didn't find an email for these. They were not imported.",
+        });
+      }
+
+      if (!completed.length) {
+        if (!stillResearching.length && !noEmail.length) {
+          toast({
+            title: "Nothing to push",
+            description: "No selected contacts produced an email.",
+            variant: "destructive",
+          });
+        }
         return;
       }
 
       const { data: push, error: pushErr } = await supabase.functions.invoke("hubspot-push-contacts", {
-        body: { contacts: contactsWithEmail, associateCompany, lifecycleStage },
+        body: { contacts: completed, associateCompany, lifecycleStage },
       });
       if (pushErr) throw pushErr;
       if (push?.error) throw new Error(push.error);
 
-      const failed = (push.results ?? []).filter((r: any) => !r.ok);
+      // Mark imported rows
+      const okEmails = new Set<string>(
+        (push.results ?? []).filter((r: any) => r.ok).map((r: any) => String(r.email ?? "").toLowerCase()),
+      );
+      setResults((prev) => prev.map((r) =>
+        okEmails.has(String(r.email ?? "").toLowerCase())
+          ? { ...r, _alreadyImported: true, _enrichmentStatus: "imported" }
+          : r,
+      ));
+
+      const failed = (push.results ?? []).filter((r: any) => !r.ok && !r.skipped);
+      const skipped = (push.results ?? []).filter((r: any) => r.skipped);
       toast({
         title: "Push complete",
-        description: `${push.summary?.succeeded ?? 0} succeeded, ${push.summary?.failed ?? 0} failed.${
+        description: `${push.summary?.succeeded ?? 0} imported, ${push.summary?.skipped ?? skipped.length} skipped (no email), ${push.summary?.failed ?? failed.length} failed.${
           failed.length ? ` First error: ${failed[0]?.error ?? "unknown"}` : ""
         }`,
       });
@@ -437,9 +519,21 @@ const ContactSourcing = () => {
                             ) : "—"}
                           </TableCell>
                           <TableCell>
-                            {r._alreadyImported
-                              ? <Badge variant="secondary">Imported</Badge>
-                              : <Badge>New</Badge>}
+                            {r._enrichmentStatus === "researching" && (
+                              <Badge variant="outline" title={r._enrichmentMessage ?? ""}>Researching…</Badge>
+                            )}
+                            {r._enrichmentStatus === "no_email" && (
+                              <Badge variant="destructive" title={r._enrichmentMessage ?? ""}>No email</Badge>
+                            )}
+                            {r._enrichmentStatus === "imported" && (
+                              <Badge variant="secondary">Imported</Badge>
+                            )}
+                            {!r._enrichmentStatus && (
+                              r._alreadyImported
+                                ? <Badge variant="secondary">Imported</Badge>
+                                : <Badge>New</Badge>
+                            )}
+                            {r._enrichmentStatus === "done" && !r._alreadyImported && <Badge>Ready</Badge>}
                           </TableCell>
                         </TableRow>
                       );
