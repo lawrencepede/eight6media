@@ -376,11 +376,17 @@ const ContactSourcing = () => {
       const emptyBrands: string[] = [];
       const CONCURRENCY = 4;
 
+      // Fetch a wider candidate pool per brand than perBrandCap so our local
+      // relevancy ranker has something to choose from. Without this, Seamless
+      // returns its own top-N (typically seniority-ordered) and our scoring
+      // can't reorder beyond that small set.
+      const candidatePoolPerBrand = Math.min(50, Math.max(perBrandCap * 5, 25));
+
       const runOne = async (q: { label: string; payloadKey: string; value: string }) => {
         const payload: Record<string, unknown> = {
           ...sharedFilters,
           action: "search",
-          limit: perBrandCap,
+          limit: candidatePoolPerBrand,
           [q.payloadKey]: [q.value],
         };
         const { data, error } = await supabase.functions.invoke("seamless-search", { body: payload });
