@@ -145,9 +145,13 @@ const ContactSourcing = () => {
   // Results state
   const [loading, setLoading] = useState(false);
   const [pushing, setPushing] = useState(false);
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [allResults, setAllResults] = useState<SearchResult[]>([]); // every row Seamless returned
+  const [results, setResults] = useState<SearchResult[]>([]);       // capped/visible rows
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [credits, setCredits] = useState<string | null>(null);
+  const [perBrandCap, setPerBrandCap] = useState(5);
+  const [expandedBrands, setExpandedBrands] = useState<Set<string>>(new Set()); // brands user clicked "show all" for
+  const [loadingMoreBrand, setLoadingMoreBrand] = useState<string | null>(null);
 
   const handleSignOut = async () => {
     await signOut();
