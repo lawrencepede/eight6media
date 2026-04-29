@@ -90,13 +90,18 @@ const ContactSourcing = () => {
 
   const enrichContacts = async (body: Record<string, unknown>) => {
     let latest: any = null;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const { data, error } = await supabase.functions.invoke("seamless-search", { body });
+    let requestIds: string[] | undefined = Array.isArray(body.requestIds) ? body.requestIds as string[] : undefined;
+    // Up to 6 attempts. Each call to the edge function polls Seamless for ~90s,
+    // so this gives Seamless several minutes to finish researching.
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const callBody = { ...body, ...(requestIds ? { requestIds } : {}) };
+      const { data, error } = await supabase.functions.invoke("seamless-search", { body: callBody });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       latest = data;
-      if (data?.complete !== false) break;
-      await new Promise((resolve) => setTimeout(resolve, 2500));
+      if (Array.isArray(data?.requestIds)) requestIds = data.requestIds;
+      if (data?.complete === true) break;
+      await new Promise((resolve) => setTimeout(resolve, 3000));
     }
     return latest;
   };
