@@ -200,6 +200,11 @@ Deno.serve(async (req) => {
         }
 
         // 2) Optionally associate company
+        // Tier 1 dedupe: search HubSpot for ALL companies matching the domain
+        // (HubSpot can have duplicates already). If multiple are returned,
+        // prefer the one we've previously associated with another imported
+        // contact for this same domain — that keeps new contacts aligned with
+        // whichever Company record this tool has been treating as canonical.
         let companyId: string | null = null;
         if (associateCompany && c.companyDomain && hubspotContactId) {
           const domain = c.companyDomain.toLowerCase().trim();
@@ -207,12 +212,37 @@ Deno.serve(async (req) => {
             method: "POST",
             body: JSON.stringify({
               filterGroups: [{ filters: [{ propertyName: "domain", operator: "EQ", value: domain }] }],
-              properties: ["domain", "name"],
-              limit: 1,
+              properties: ["domain", "name", "createdate"],
+              sorts: [{ propertyName: "createdate", direction: "ASCENDING" }],
+              limit: 20,
             }),
           }, LOVABLE_API_KEY, HUBSPOT_API_KEY);
 
-          companyId = compSearch.data?.results?.[0]?.id ?? null;
+          const candidates: Array<{ id: string }> = compSearch.data?.results ?? [];
+
+          if (candidates.length > 1) {
+            // Look up which of these company IDs we've used before for this
+            // domain via prior imports. Pull recent imports for the same
+            // domain and inspect their stored hubspot response.
+            const { data: priorForDomain } = await supabase
+              .from("imported_contacts")
+              .select("raw_hubspot_response")
+              .ilike("email", `%@${domain}`)
+              .not("hubspot_contact_id", "is", null)
+              .order("imported_at", { ascending: false })
+              .limit(50);
+
+            const counts = new Map<string, number>();
+            for (const row of priorForDomain ?? []) {
+              const cid = (row as any)?.raw_hubspot_response?.companyId;
+              if (cid) counts.set(String(cid), (counts.get(String(cid)) ?? 0) + 1);
+            }
+            // Prefer a candidate that we've previously linked contacts to.
+            const preferred = candidates.find((x) => counts.has(String(x.id)));
+            companyId = preferred?.id ?? candidates[0].id;
+          } else {
+            companyId = candidates[0]?.id ?? null;
+          }
 
           if (!companyId) {
             const compCreate = await hs("/crm/v3/objects/companies", {
