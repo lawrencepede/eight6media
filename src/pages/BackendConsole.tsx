@@ -98,6 +98,13 @@ const BackendConsole = () => {
       available: true,
     },
     {
+      title: "Contact Sourcing",
+      description: "Search Seamless.ai for contacts and push them straight into HubSpot",
+      icon: <UserPlus className="w-6 h-6" />,
+      to: "/console/contact-sourcing",
+      available: true,
+    },
+    {
       title: "Settings",
       description: "Configure integrations, API keys, and account settings",
       icon: <Settings className="w-6 h-6" />,
