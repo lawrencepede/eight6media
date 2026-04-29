@@ -701,6 +701,20 @@ const ContactSourcing = () => {
                     <Input type="number" value={limit} min={1} max={50}
                       onChange={(e) => setLimit(Math.max(1, Math.min(50, Number(e.target.value) || 25)))} />
                   </div>
+                  <div>
+                    <Label>Max contacts per brand</Label>
+                    <Input type="number" value={perBrandCap} min={1} max={50}
+                      onChange={(e) => {
+                        const next = Math.max(1, Math.min(50, Number(e.target.value) || 5));
+                        setPerBrandCap(next);
+                        const titleTerms = splitMulti(jobTitle).map((s) => s.toLowerCase());
+                        const seniorityTerms = splitMulti(seniority).map((s) => s.toLowerCase());
+                        setResults(applyPerBrandCap(allResults, next, expandedBrands, titleTerms, seniorityTerms));
+                      }} />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Caps each brand at the top N most relevant rows so a single brand can't dominate.
+                    </p>
+                  </div>
                 </div>
                 <Button onClick={runSearch} disabled={loading} className="font-sans">
                   {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}
