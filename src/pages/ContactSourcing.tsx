@@ -269,8 +269,10 @@ const ContactSourcing = () => {
       const arr = groups.get(k) ?? [];
       arr.sort((a, b) => b.score - a.score || a.idx - b.idx);
       const slice = expanded.has(k) ? arr : arr.slice(0, cap);
-      // Keep original Seamless order within the kept slice
-      slice.sort((a, b) => a.idx - b.idx);
+      // When expanded, restore Seamless's original ordering for the full list.
+      // When capped, keep the top rows in relevancy-score order so the most
+      // relevant contact appears first.
+      if (expanded.has(k)) slice.sort((a, b) => a.idx - b.idx);
       for (const item of slice) out.push(item.row);
     }
     return out;
