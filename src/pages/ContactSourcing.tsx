@@ -128,11 +128,11 @@ const ContactSourcing = () => {
   // Search filters
   const [companyName, setCompanyName] = useState("");
   const [companyDomain, setCompanyDomain] = useState("");
-  const [jobTitle, setJobTitle] = useState("");
+  const [jobTitle, setJobTitle] = useState("marketing, influencer, creator, social media");
   const [seniority, setSeniority] = useState("");
   const [country, setCountry] = useState("");
   const [industry, setIndustry] = useState("");
-  const [limit, setLimit] = useState(25);
+  const [limit, setLimit] = useState(200);
 
   // Enrich-by-identity
   const [enrichEmail, setEnrichEmail] = useState("");
@@ -274,28 +274,46 @@ const ContactSourcing = () => {
     setSelected(new Set());
     setExpandedBrands(new Set());
     try {
-      const payload: Record<string, unknown> = {
-        action: "search",
-        limit,
-      };
-      if (companyName.trim()) payload.companyName = splitMulti(companyName);
-      if (companyDomain.trim()) payload.companyDomain = splitMulti(companyDomain);
-      if (jobTitle.trim()) payload.jobTitle = splitMulti(jobTitle);
-      if (seniority.trim()) payload.seniority = splitMulti(seniority);
-      if (country.trim()) payload.contactCountry = splitMulti(country);
-      if (industry.trim()) payload.industry = splitMulti(industry);
+      const baseFilters: Record<string, unknown> = {};
+      if (companyName.trim()) baseFilters.companyName = splitMulti(companyName);
+      if (companyDomain.trim()) baseFilters.companyDomain = splitMulti(companyDomain);
+      if (jobTitle.trim()) baseFilters.jobTitle = splitMulti(jobTitle);
+      if (seniority.trim()) baseFilters.seniority = splitMulti(seniority);
+      if (country.trim()) baseFilters.contactCountry = splitMulti(country);
+      if (industry.trim()) baseFilters.industry = splitMulti(industry);
 
-      const { data, error } = await supabase.functions.invoke("seamless-search", { body: payload });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error + (data.details ? `: ${JSON.stringify(data.details).slice(0, 300)}` : ""));
+      // Seamless caps a single page at 50. Paginate via nextToken until we
+      // either hit the user's requested limit or run out of results.
+      const PAGE_SIZE = 50;
+      const all: SearchResult[] = [];
+      let nextToken: string | null = null;
+      let lastCredits: string | null = null;
+      let safety = 0;
+      while (all.length < limit && safety < 40) {
+        safety += 1;
+        const remaining = limit - all.length;
+        const payload: Record<string, unknown> = {
+          ...baseFilters,
+          action: "search",
+          limit: Math.min(PAGE_SIZE, remaining),
+          ...(nextToken ? { nextToken } : {}),
+        };
+        const { data, error } = await supabase.functions.invoke("seamless-search", { body: payload });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error + (data.details ? `: ${JSON.stringify(data.details).slice(0, 300)}` : ""));
+        const page: SearchResult[] = data.results ?? [];
+        all.push(...page);
+        lastCredits = data.credits ?? lastCredits;
+        nextToken = data.nextToken ?? null;
+        if (!nextToken || page.length === 0) break;
+      }
 
-      const all: SearchResult[] = data.results ?? [];
       const titleTerms = splitMulti(jobTitle).map((s) => s.toLowerCase());
       const seniorityTerms = splitMulti(seniority).map((s) => s.toLowerCase());
       const capped = applyPerBrandCap(all, perBrandCap, new Set(), titleTerms, seniorityTerms);
       setAllResults(all);
       setResults(capped);
-      setCredits(data.credits ?? null);
+      setCredits(lastCredits);
 
       const brandCount = new Set(all.map(brandKeyOf)).size;
       const dropped = all.length - capped.length;
@@ -697,9 +715,12 @@ const ContactSourcing = () => {
                     <Input value={industry} onChange={(e) => setIndustry(e.target.value)} placeholder="Cosmetics, Apparel & Fashion" />
                   </div>
                   <div>
-                    <Label>Result limit (max 50)</Label>
-                    <Input type="number" value={limit} min={1} max={50}
-                      onChange={(e) => setLimit(Math.max(1, Math.min(50, Number(e.target.value) || 25)))} />
+                    <Label>Result limit (max 500)</Label>
+                    <Input type="number" value={limit} min={1} max={500}
+                      onChange={(e) => setLimit(Math.max(1, Math.min(500, Number(e.target.value) || 200)))} />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Seamless returns 50 per page; we auto-paginate up to this number.
+                    </p>
                   </div>
                   <div>
                     <Label>Max contacts per brand</Label>
