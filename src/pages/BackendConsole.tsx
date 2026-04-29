@@ -10,7 +10,8 @@ import {
   Settings,
   ArrowRight,
   BarChart3,
-  Palette
+  Palette,
+  UserPlus
 } from "lucide-react";
 import PasswordGate from "@/components/PasswordGate";
 
@@ -94,6 +95,13 @@ const BackendConsole = () => {
       description: "Fetch brand logos via Brandfetch, link brands to talent with deal details",
       icon: <Palette className="w-6 h-6" />,
       to: "/console/brand-manager",
+      available: true,
+    },
+    {
+      title: "Contact Sourcing",
+      description: "Search Seamless.ai for contacts and push them straight into HubSpot",
+      icon: <UserPlus className="w-6 h-6" />,
+      to: "/console/contact-sourcing",
       available: true,
     },
     {
