@@ -89,6 +89,18 @@ Deno.serve(async (req) => {
         const firstname = c.firstName ?? (c.fullName?.split(" ")[0] ?? "");
         const lastname = c.lastName ?? (c.fullName?.split(" ").slice(1).join(" ") ?? "");
 
+        if (!email) {
+          results.push({
+            email: null,
+            ok: false,
+            skipped: true,
+            error: "Missing email after enrichment; contact was not pushed to HubSpot",
+            name: c.fullName ?? `${firstname} ${lastname}`.trim() ?? null,
+            company: c.company ?? null,
+          });
+          continue;
+        }
+
         const properties: Record<string, string> = {
           ...(email && { email }),
           ...(firstname && { firstname }),
