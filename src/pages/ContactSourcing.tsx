@@ -17,6 +17,88 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Loader2, Search, Sparkles, Upload, ExternalLink, LogOut, User } from "lucide-react";
 
+// Pull a bare domain out of any string fragment: bare URLs, markdown links,
+// HTML anchors, angle-bracket-wrapped URLs, or tracking redirect wrappers.
+function extractDomain(s: string): string {
+  if (!s) return s;
+  let v = s.trim();
+  if (!v) return v;
+
+  const hrefMatch = v.match(/href\s*=\s*["']([^"']+)["']/i);
+  if (hrefMatch) v = hrefMatch[1];
+
+  const mdMatch = v.match(/\]\(([^)]+)\)/);
+  if (mdMatch) v = mdMatch[1];
+
+  const urlMatch = v.match(/https?:\/\/[^\s<>"')]+/i);
+  if (urlMatch) v = urlMatch[0];
+
+  try {
+    const u = new URL(v.startsWith("http") ? v : `https://${v}`);
+    const wrapped =
+      u.searchParams.get("q") ||
+      u.searchParams.get("url") ||
+      u.searchParams.get("u");
+    if (wrapped && /^https?:\/\//i.test(wrapped)) {
+      v = wrapped;
+    }
+    const finalUrl = new URL(v.startsWith("http") ? v : `https://${v}`);
+    return finalUrl.hostname.replace(/^www\./i, "").toLowerCase();
+  } catch {
+    return v
+      .replace(/^<+|>+$/g, "")
+      .replace(/^https?:\/\//i, "")
+      .replace(/^www\./i, "")
+      .replace(/\/.*$/, "")
+      .toLowerCase();
+  }
+}
+
+// Normalize an arbitrary blob of pasted/typed text into newline-separated
+// bare domains. Splits on newlines, commas, semicolons, and tabs.
+function normalizeDomainBlob(raw: string): string {
+  const tokens = raw
+    .split(/[\n\r,;\t]+/)
+    .map((t) => extractDomain(t))
+    .filter((t, i, arr) => (t === "" ? i === arr.length - 1 : true));
+  return tokens.join("\n");
+}
+
+// Extract hyperlinked URLs from an HTML clipboard payload (e.g. when copying
+// a linked cell from Google Sheets). Walks table/list/block elements in order
+// so multi-cell pastes preserve order; falls back to anchors then text.
+function domainsFromHtmlClipboard(html: string): string {
+  try {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    const cells = Array.from(doc.querySelectorAll("td, th, li, p, div"));
+    const tokens: string[] = [];
+
+    if (cells.length) {
+      for (const cell of cells) {
+        const anchor = cell.querySelector("a[href]");
+        const href = anchor?.getAttribute("href")?.trim();
+        const text = (cell.textContent ?? "").trim();
+        if (href) tokens.push(href);
+        else if (text) tokens.push(text);
+      }
+    } else {
+      const anchors = Array.from(doc.querySelectorAll("a[href]"));
+      if (anchors.length) {
+        for (const a of anchors) {
+          const href = a.getAttribute("href");
+          if (href) tokens.push(href);
+        }
+      } else {
+        tokens.push(doc.body?.textContent ?? "");
+      }
+    }
+
+    return normalizeDomainBlob(tokens.join("\n"));
+  } catch {
+    return "";
+  }
+}
+
 interface SearchResult {
   searchResultId?: string;
   id?: string;
