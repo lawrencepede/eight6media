@@ -19,6 +19,39 @@ function json(body: unknown, status = 200) {
   });
 }
 
+const IN_PROGRESS_STATUSES = new Set([
+  "pending",
+  "in_progress",
+  "researching",
+  "queued",
+  "processing",
+  "running",
+  "started",
+]);
+
+function normalizedStatus(status: unknown) {
+  return String(status ?? "").toLowerCase().replace(/[\s-]+/g, "_");
+}
+
+function isInProgress(status: unknown) {
+  return IN_PROGRESS_STATUSES.has(normalizedStatus(status));
+}
+
+function firstString(...values: unknown[]) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return null;
+}
+
+function emailValue(item: any) {
+  return firstString(item?.email, item?.emailAddress, item?.email_address, item?.address, item?.value);
+}
+
+function phoneValue(item: any) {
+  return firstString(item?.phone, item?.number, item?.phoneNumber, item?.phone_number, item?.value);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -106,10 +139,12 @@ Deno.serve(async (req) => {
 
       const requestIds: string[] = d1.requestIds ?? [];
       if (!requestIds.length) return json({ error: "No requestIds returned", details: d1 }, 502);
+      const requestedSearchIds = Array.isArray(payload.searchResultIds) ? payload.searchResultIds as string[] : [];
+      const requestToSearchId = new Map(requestIds.map((requestId, index) => [requestId, requestedSearchIds[index]]));
 
-      // Poll up to ~30s
+      // Poll up to ~60s. Seamless uses "researching" while enrichment is still running.
       let pollData: any = null;
-      for (let i = 0; i < 15; i++) {
+      for (let i = 0; i < 30; i++) {
         await new Promise((res) => setTimeout(res, 2000));
         const url = `${SEAMLESS_BASE}/contacts/research/poll?requestIds=${requestIds.join(",")}`;
         const rp = await fetch(url, { headers: { "Token": SEAMLESS_API_KEY } });
@@ -118,33 +153,36 @@ Deno.serve(async (req) => {
         if (!rp.ok) continue;
         const items = pollData?.results ?? pollData?.data ?? [];
         const allDone = Array.isArray(items) && items.length > 0 &&
-          items.every((it: any) => it?.status && it.status !== "pending" && it.status !== "in_progress");
+          items.every((it: any) => it?.status && !isInProgress(it.status));
         if (allDone) break;
       }
 
       // Normalize each enriched item so the client can find email/phone reliably.
       const rawItems = pollData?.results ?? pollData?.data ?? [];
       const normalized = (Array.isArray(rawItems) ? rawItems : []).map((r: any) => {
-        const inner = r?.result ?? r?.contact ?? r;
+        const inner = r?.result?.contact ?? r?.result ?? r?.contact ?? r?.data ?? r;
         // Seamless returns emails as arrays of objects like { email, type, deliverable }
-        const emailsArr = Array.isArray(inner?.emails) ? inner.emails : [];
-        const phonesArr = Array.isArray(inner?.phones) ? inner.phones : [];
+        const emailsArr = Array.isArray(inner?.emails) ? inner.emails :
+          Array.isArray(inner?.emailAddresses) ? inner.emailAddresses :
+          Array.isArray(inner?.email_addresses) ? inner.email_addresses : [];
+        const phonesArr = Array.isArray(inner?.phones) ? inner.phones :
+          Array.isArray(inner?.phoneNumbers) ? inner.phoneNumbers :
+          Array.isArray(inner?.phone_numbers) ? inner.phone_numbers : [];
         const bestEmail =
-          inner?.email ??
-          inner?.email1 ??
-          emailsArr.find((e: any) => e?.deliverable === true || e?.deliverable === "valid")?.email ??
-          emailsArr[0]?.email ??
+          firstString(inner?.email, inner?.email1, inner?.emailAddress, inner?.businessEmail, inner?.workEmail, inner?.personalEmail, inner?.contactEmail) ??
+          emailValue(emailsArr.find((e: any) => e?.deliverable === true || e?.deliverable === "valid" || e?.deliverable === "deliverable" || e?.status === "valid")) ??
+          emailValue(emailsArr[0]) ??
           null;
         const bestPhone =
-          inner?.phone ??
-          inner?.contactPhone1 ??
-          phonesArr[0]?.phone ??
-          phonesArr[0]?.number ??
+          firstString(inner?.phone, inner?.contactPhone1, inner?.companyPhone1, inner?.phoneNumber) ??
+          phoneValue(phonesArr[0]) ??
           null;
+        const requestId = r?.requestId;
         return {
-          requestId: r?.requestId,
-          searchResultId: r?.searchResultId ?? inner?.searchResultId,
+          requestId,
+          searchResultId: r?.searchResultId ?? inner?.searchResultId ?? requestToSearchId.get(requestId),
           status: r?.status,
+          complete: !isInProgress(r?.status),
           result: {
             ...inner,
             email: bestEmail,
@@ -154,7 +192,13 @@ Deno.serve(async (req) => {
           },
         };
       });
-      return json({ requestIds, results: normalized, raw: pollData });
+      return json({
+        requestIds,
+        complete: normalized.length > 0 && normalized.every((item: any) => item.complete),
+        pendingCount: normalized.filter((item: any) => !item.complete).length,
+        results: normalized,
+        raw: pollData,
+      });
     }
 
     return json({ error: `Unknown action: ${action}` }, 400);
