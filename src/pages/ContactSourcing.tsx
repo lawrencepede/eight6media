@@ -274,52 +274,99 @@ const ContactSourcing = () => {
     setSelected(new Set());
     setExpandedBrands(new Set());
     try {
-      const baseFilters: Record<string, unknown> = {};
-      if (companyName.trim()) baseFilters.companyName = splitMulti(companyName);
-      if (companyDomain.trim()) baseFilters.companyDomain = splitMulti(companyDomain);
-      if (jobTitle.trim()) baseFilters.jobTitle = splitMulti(jobTitle);
-      if (seniority.trim()) baseFilters.seniority = splitMulti(seniority);
-      if (country.trim()) baseFilters.contactCountry = splitMulti(country);
-      if (industry.trim()) baseFilters.industry = splitMulti(industry);
+      const domains = splitMulti(companyDomain);
+      const names = splitMulti(companyName);
+      // One search per brand so a single big brand can't crowd out the rest.
+      // Each brand gets up to perBrandCap rows. Domains and names are queried
+      // separately; if both are present we union them.
+      const brandQueries: Array<{ label: string; payloadKey: "companyDomain" | "companyName"; value: string }> = [
+        ...domains.map((d) => ({ label: d, payloadKey: "companyDomain" as const, value: d })),
+        ...names.map((n) => ({ label: n, payloadKey: "companyName" as const, value: n })),
+      ];
 
-      // Seamless caps a single page at 50. Paginate via nextToken until we
-      // either hit the user's requested limit or run out of results.
-      const PAGE_SIZE = 50;
-      const all: SearchResult[] = [];
-      let nextToken: string | null = null;
-      let lastCredits: string | null = null;
-      let safety = 0;
-      while (all.length < limit && safety < 40) {
-        safety += 1;
-        const remaining = limit - all.length;
+      const sharedFilters: Record<string, unknown> = {};
+      if (jobTitle.trim()) sharedFilters.jobTitle = splitMulti(jobTitle);
+      if (seniority.trim()) sharedFilters.seniority = splitMulti(seniority);
+      if (country.trim()) sharedFilters.contactCountry = splitMulti(country);
+      if (industry.trim()) sharedFilters.industry = splitMulti(industry);
+
+      // If the user didn't specify any brand, fall back to one combined search
+      // honoring the global limit.
+      if (brandQueries.length === 0) {
         const payload: Record<string, unknown> = {
-          ...baseFilters,
+          ...sharedFilters,
           action: "search",
-          limit: Math.min(PAGE_SIZE, remaining),
-          ...(nextToken ? { nextToken } : {}),
+          limit: Math.min(50, limit),
         };
         const { data, error } = await supabase.functions.invoke("seamless-search", { body: payload });
         if (error) throw error;
-        if (data?.error) throw new Error(data.error + (data.details ? `: ${JSON.stringify(data.details).slice(0, 300)}` : ""));
-        const page: SearchResult[] = data.results ?? [];
-        all.push(...page);
-        lastCredits = data.credits ?? lastCredits;
-        nextToken = data.nextToken ?? null;
-        if (!nextToken || page.length === 0) break;
+        if (data?.error) throw new Error(data.error);
+        const all: SearchResult[] = data.results ?? [];
+        const titleTerms = splitMulti(jobTitle).map((s) => s.toLowerCase());
+        const seniorityTerms = splitMulti(seniority).map((s) => s.toLowerCase());
+        const capped = applyPerBrandCap(all, perBrandCap, new Set(), titleTerms, seniorityTerms);
+        setAllResults(all);
+        setResults(capped);
+        setCredits(data.credits ?? null);
+        toast({ title: "Search complete", description: `${all.length} contacts found.` });
+        return;
       }
+
+      // Fan out: one search per brand, capped at perBrandCap each. Run with
+      // concurrency to keep wall-clock time reasonable.
+      const all: SearchResult[] = [];
+      let lastCredits: string | null = null;
+      const emptyBrands: string[] = [];
+      const CONCURRENCY = 4;
+
+      const runOne = async (q: { label: string; payloadKey: string; value: string }) => {
+        const payload: Record<string, unknown> = {
+          ...sharedFilters,
+          action: "search",
+          limit: perBrandCap,
+          [q.payloadKey]: [q.value],
+        };
+        const { data, error } = await supabase.functions.invoke("seamless-search", { body: payload });
+        if (error) throw error;
+        if (data?.error) throw new Error(`${q.label}: ${data.error}`);
+        const rows: SearchResult[] = data.results ?? [];
+        if (data.credits) lastCredits = data.credits;
+        if (rows.length === 0) emptyBrands.push(q.label);
+        return rows;
+      };
+
+      for (let i = 0; i < brandQueries.length; i += CONCURRENCY) {
+        const batch = brandQueries.slice(i, i + CONCURRENCY);
+        const results = await Promise.allSettled(batch.map(runOne));
+        for (const r of results) {
+          if (r.status === "fulfilled") all.push(...r.value);
+          else console.error("brand search failed:", r.reason);
+        }
+      }
+
+      // Dedupe by searchResultId in case the same contact appears under both a
+      // domain query and a name query.
+      const seen = new Set<string>();
+      const deduped = all.filter((r) => {
+        const key = String(r.searchResultId ?? r.id ?? r.email ?? Math.random());
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
 
       const titleTerms = splitMulti(jobTitle).map((s) => s.toLowerCase());
       const seniorityTerms = splitMulti(seniority).map((s) => s.toLowerCase());
-      const capped = applyPerBrandCap(all, perBrandCap, new Set(), titleTerms, seniorityTerms);
-      setAllResults(all);
+      const capped = applyPerBrandCap(deduped, perBrandCap, new Set(), titleTerms, seniorityTerms);
+      setAllResults(deduped);
       setResults(capped);
       setCredits(lastCredits);
 
-      const brandCount = new Set(all.map(brandKeyOf)).size;
-      const dropped = all.length - capped.length;
+      const brandCount = new Set(deduped.map(brandKeyOf)).size;
       toast({
         title: "Search complete",
-        description: `${all.length} contacts across ${brandCount} brand(s). Showing top ${perBrandCap} per brand${dropped ? ` (${dropped} hidden — click "Show all" on a brand to reveal)` : ""}.`,
+        description: `${deduped.length} contacts across ${brandCount} of ${brandQueries.length} brand(s). Top ${perBrandCap} per brand.${
+          emptyBrands.length ? ` No results for: ${emptyBrands.slice(0, 5).join(", ")}${emptyBrands.length > 5 ? "…" : ""}` : ""
+        }`,
       });
     } catch (e: any) {
       toast({ title: "Search failed", description: e?.message ?? "Unknown error", variant: "destructive" });
