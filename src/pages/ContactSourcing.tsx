@@ -160,7 +160,65 @@ const ContactSourcing = () => {
 
   const idOf = (r: SearchResult) => r.searchResultId ?? r.id ?? r.email ?? Math.random().toString();
 
-  const extractEmail = (contact: any) => {
+  // Group results by brand. Use normalized domain when present, else company name.
+  const brandKeyOf = (r: SearchResult): string => {
+    const dom = (r.companyDomain ?? "").toString().trim().toLowerCase().replace(/^www\./, "");
+    if (dom) return dom;
+    return (r.company ?? "").toString().trim().toLowerCase() || "(unknown)";
+  };
+  const brandLabelOf = (r: SearchResult): string =>
+    (r.company?.toString().trim() || r.companyDomain?.toString().trim() || "(unknown brand)");
+
+  // Score a row's relevance to the user's search filters. Higher = more relevant.
+  // Currently weighted toward title + seniority overlap, then presence of an email.
+  const scoreRow = (r: SearchResult, titleTerms: string[], seniorityTerms: string[]): number => {
+    let score = 0;
+    const t = (r.title ?? "").toString().toLowerCase();
+    for (const term of titleTerms) {
+      if (term && t.includes(term)) score += 10;
+    }
+    for (const term of seniorityTerms) {
+      if (term && t.includes(term)) score += 5;
+    }
+    if (r.email) score += 2;
+    if (r.lIProfileUrl ?? r.linkedinUrl) score += 1;
+    return score;
+  };
+
+  // Take the full result set and keep only the top N per brand (unless that
+  // brand has been expanded by the user). Preserves Seamless's original order
+  // among rows with equal score.
+  const applyPerBrandCap = (
+    rows: SearchResult[],
+    cap: number,
+    expanded: Set<string>,
+    titleTerms: string[],
+    seniorityTerms: string[],
+  ): SearchResult[] => {
+    const groups = new Map<string, { row: SearchResult; idx: number; score: number }[]>();
+    rows.forEach((row, idx) => {
+      const k = brandKeyOf(row);
+      const arr = groups.get(k) ?? [];
+      arr.push({ row, idx, score: scoreRow(row, titleTerms, seniorityTerms) });
+      groups.set(k, arr);
+    });
+    const out: SearchResult[] = [];
+    const seenBrandOrder: string[] = [];
+    for (const row of rows) {
+      const k = brandKeyOf(row);
+      if (!seenBrandOrder.includes(k)) seenBrandOrder.push(k);
+    }
+    for (const k of seenBrandOrder) {
+      const arr = groups.get(k) ?? [];
+      arr.sort((a, b) => b.score - a.score || a.idx - b.idx);
+      const slice = expanded.has(k) ? arr : arr.slice(0, cap);
+      // Keep original Seamless order within the kept slice
+      slice.sort((a, b) => a.idx - b.idx);
+      for (const item of slice) out.push(item.row);
+    }
+    return out;
+  };
+
     const emailsArr = Array.isArray(contact?.emails) ? contact.emails : [];
     return (
       contact?.email ||
