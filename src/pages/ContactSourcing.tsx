@@ -169,17 +169,74 @@ const ContactSourcing = () => {
   const brandLabelOf = (r: SearchResult): string =>
     (r.company?.toString().trim() || r.companyDomain?.toString().trim() || "(unknown brand)");
 
+  // Titles that strongly suggest a contact is NOT a relevant marketing/creator
+  // partnerships person. Used to push obvious mismatches to the bottom when the
+  // user is searching for marketing-style roles.
+  const NEGATIVE_TITLE_TERMS = [
+    "sales", "account executive", "account manager", "engineer", "engineering",
+    "developer", "software", "data scientist", "analyst", "finance", "accounting",
+    "controller", "legal", "counsel", "recruiter", "talent acquisition", "hr ",
+    "people ops", "customer success", "support", "operations manager",
+    "supply chain", "logistics", "warehouse", "buyer", "merchandiser",
+    "product manager", "product owner", "designer ", "ux", "ui ", "it ",
+    "security", "cto", "cfo", "coo", "ceo", "founder",
+  ];
+
+  const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const wordBoundaryRegex = (term: string) =>
+    new RegExp(`(?:^|[^a-z0-9])${escapeRegex(term)}(?:[^a-z0-9]|$)`, "i");
+
   // Score a row's relevance to the user's search filters. Higher = more relevant.
-  // Currently weighted toward title + seniority overlap, then presence of an email.
+  // Title-term word-boundary matches are weighted heaviest; multi-term overlap
+  // (e.g. "influencer marketing manager" matching both "influencer" and
+  // "marketing") is rewarded. Obvious off-target functions are penalized.
   const scoreRow = (r: SearchResult, titleTerms: string[], seniorityTerms: string[]): number => {
     let score = 0;
-    const t = (r.title ?? "").toString().toLowerCase();
+    const t = (r.title ?? "").toString().toLowerCase().trim();
+    if (!t) return 0;
+
+    // Title-term matches with word boundaries (so "marketing" doesn't match
+    // "remarketing-adjacent" weirdness, and short terms like "pr" don't match
+    // "product").
+    let titleMatches = 0;
     for (const term of titleTerms) {
-      if (term && t.includes(term)) score += 10;
+      if (!term) continue;
+      if (wordBoundaryRegex(term).test(t)) {
+        score += 15;
+        titleMatches += 1;
+        // Bonus if the term appears early in the title (more likely the
+        // primary function vs. a trailing modifier).
+        const idx = t.indexOf(term);
+        if (idx >= 0 && idx <= 20) score += 3;
+      }
     }
+    // Reward titles that hit multiple search terms (e.g. "influencer marketing").
+    if (titleMatches >= 2) score += 10 * (titleMatches - 1);
+
+    // Exact phrase bonus: if the user typed a multi-word term and it appears
+    // verbatim, that's a very strong signal.
+    for (const term of titleTerms) {
+      if (term && term.includes(" ") && t.includes(term)) score += 8;
+    }
+
+    // Seniority is a soft signal — used as a tiebreaker, not a primary ranker.
     for (const term of seniorityTerms) {
-      if (term && t.includes(term)) score += 5;
+      if (term && wordBoundaryRegex(term).test(t)) score += 4;
     }
+
+    // Penalize titles that are clearly in unrelated functions, but only when
+    // the user is searching for something specific (titleTerms present) AND
+    // we didn't already match a positive title term.
+    if (titleTerms.length > 0 && titleMatches === 0) {
+      for (const neg of NEGATIVE_TITLE_TERMS) {
+        if (t.includes(neg)) {
+          score -= 12;
+          break;
+        }
+      }
+    }
+
+    // Light tiebreakers
     if (r.email) score += 2;
     if (r.lIProfileUrl ?? r.linkedinUrl) score += 1;
     return score;
@@ -212,8 +269,10 @@ const ContactSourcing = () => {
       const arr = groups.get(k) ?? [];
       arr.sort((a, b) => b.score - a.score || a.idx - b.idx);
       const slice = expanded.has(k) ? arr : arr.slice(0, cap);
-      // Keep original Seamless order within the kept slice
-      slice.sort((a, b) => a.idx - b.idx);
+      // When expanded, restore Seamless's original ordering for the full list.
+      // When capped, keep the top rows in relevancy-score order so the most
+      // relevant contact appears first.
+      if (expanded.has(k)) slice.sort((a, b) => a.idx - b.idx);
       for (const item of slice) out.push(item.row);
     }
     return out;
@@ -319,11 +378,17 @@ const ContactSourcing = () => {
       const emptyBrands: string[] = [];
       const CONCURRENCY = 4;
 
+      // Fetch a wider candidate pool per brand than perBrandCap so our local
+      // relevancy ranker has something to choose from. Without this, Seamless
+      // returns its own top-N (typically seniority-ordered) and our scoring
+      // can't reorder beyond that small set.
+      const candidatePoolPerBrand = Math.min(50, Math.max(perBrandCap * 5, 25));
+
       const runOne = async (q: { label: string; payloadKey: string; value: string }) => {
         const payload: Record<string, unknown> = {
           ...sharedFilters,
           action: "search",
-          limit: perBrandCap,
+          limit: candidatePoolPerBrand,
           [q.payloadKey]: [q.value],
         };
         const { data, error } = await supabase.functions.invoke("seamless-search", { body: payload });
