@@ -219,6 +219,7 @@ const ContactSourcing = () => {
     return out;
   };
 
+  const extractEmail = (contact: any) => {
     const emailsArr = Array.isArray(contact?.emails) ? contact.emails : [];
     return (
       contact?.email ||
