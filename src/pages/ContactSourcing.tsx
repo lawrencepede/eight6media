@@ -265,16 +265,19 @@ const ContactSourcing = () => {
     else setSelected(new Set(results.map(idOf)));
   };
 
+  const splitMulti = (s: string) => s.split(/[,\n\r\t;]+/).map(x => x.trim()).filter(Boolean);
+
   const runSearch = async () => {
     setLoading(true);
+    setAllResults([]);
     setResults([]);
     setSelected(new Set());
+    setExpandedBrands(new Set());
     try {
       const payload: Record<string, unknown> = {
         action: "search",
         limit,
       };
-      const splitMulti = (s: string) => s.split(/[,\n\r\t;]+/).map(x => x.trim()).filter(Boolean);
       if (companyName.trim()) payload.companyName = splitMulti(companyName);
       if (companyDomain.trim()) payload.companyDomain = splitMulti(companyDomain);
       if (jobTitle.trim()) payload.jobTitle = splitMulti(jobTitle);
@@ -286,15 +289,85 @@ const ContactSourcing = () => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error + (data.details ? `: ${JSON.stringify(data.details).slice(0, 300)}` : ""));
 
-      setResults(data.results ?? []);
+      const all: SearchResult[] = data.results ?? [];
+      const titleTerms = splitMulti(jobTitle).map((s) => s.toLowerCase());
+      const seniorityTerms = splitMulti(seniority).map((s) => s.toLowerCase());
+      const capped = applyPerBrandCap(all, perBrandCap, new Set(), titleTerms, seniorityTerms);
+      setAllResults(all);
+      setResults(capped);
       setCredits(data.credits ?? null);
-      toast({ title: "Search complete", description: `${data.results?.length ?? 0} contacts found.` });
+
+      const brandCount = new Set(all.map(brandKeyOf)).size;
+      const dropped = all.length - capped.length;
+      toast({
+        title: "Search complete",
+        description: `${all.length} contacts across ${brandCount} brand(s). Showing top ${perBrandCap} per brand${dropped ? ` (${dropped} hidden — click "Show all" on a brand to reveal)` : ""}.`,
+      });
     } catch (e: any) {
       toast({ title: "Search failed", description: e?.message ?? "Unknown error", variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
+
+  // Re-run a Seamless search scoped to one brand to fetch additional contacts
+  // for it. Merges new rows into allResults and expands that brand.
+  const loadMoreForBrand = async (brandKey: string, brandLabel: string) => {
+    setLoadingMoreBrand(brandKey);
+    try {
+      // Find a representative row for the brand to determine domain vs name lookup
+      const sample = allResults.find((r) => brandKeyOf(r) === brandKey);
+      const payload: Record<string, unknown> = { action: "search", limit: 50 };
+      const dom = sample?.companyDomain?.toString().trim();
+      if (dom) payload.companyDomain = [dom];
+      else payload.companyName = [brandLabel];
+      // Preserve job title / seniority filters so "more" matches the same intent
+      if (jobTitle.trim()) payload.jobTitle = splitMulti(jobTitle);
+      if (seniority.trim()) payload.seniority = splitMulti(seniority);
+      if (country.trim()) payload.contactCountry = splitMulti(country);
+      if (industry.trim()) payload.industry = splitMulti(industry);
+
+      const { data, error } = await supabase.functions.invoke("seamless-search", { body: payload });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      const incoming: SearchResult[] = data.results ?? [];
+      // Dedupe by searchResultId/id, then merge
+      const existingIds = new Set(allResults.map(idOf));
+      const additions = incoming.filter(
+        (r) => brandKeyOf(r) === brandKey && !existingIds.has(idOf(r)),
+      );
+      const merged = [...allResults, ...additions];
+      const nextExpanded = new Set(expandedBrands);
+      nextExpanded.add(brandKey);
+      const titleTerms = splitMulti(jobTitle).map((s) => s.toLowerCase());
+      const seniorityTerms = splitMulti(seniority).map((s) => s.toLowerCase());
+      setAllResults(merged);
+      setExpandedBrands(nextExpanded);
+      setResults(applyPerBrandCap(merged, perBrandCap, nextExpanded, titleTerms, seniorityTerms));
+      toast({
+        title: `+${additions.length} more for ${brandLabel}`,
+        description: additions.length
+          ? `Now showing all ${incoming.filter((r) => brandKeyOf(r) === brandKey).length + (allResults.filter((r) => brandKeyOf(r) === brandKey).length - incoming.filter((r) => brandKeyOf(r) === brandKey).length)} contacts for this brand.`
+          : "Seamless didn't return any new contacts for this brand.",
+      });
+    } catch (e: any) {
+      toast({ title: "Couldn't load more", description: e?.message ?? "Unknown error", variant: "destructive" });
+    } finally {
+      setLoadingMoreBrand(null);
+    }
+  };
+
+  const toggleBrandExpanded = (brandKey: string) => {
+    const next = new Set(expandedBrands);
+    if (next.has(brandKey)) next.delete(brandKey);
+    else next.add(brandKey);
+    setExpandedBrands(next);
+    const titleTerms = splitMulti(jobTitle).map((s) => s.toLowerCase());
+    const seniorityTerms = splitMulti(seniority).map((s) => s.toLowerCase());
+    setResults(applyPerBrandCap(allResults, perBrandCap, next, titleTerms, seniorityTerms));
+  };
+
 
   const runEnrich = async () => {
     if (!enrichEmail.trim() && !enrichLinkedIn.trim()) {
