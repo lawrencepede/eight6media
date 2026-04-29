@@ -33,6 +33,8 @@ interface SearchResult {
   state?: string;
   country?: string;
   _alreadyImported?: boolean;
+  _enrichmentStatus?: "pending" | "researching" | "done" | "no_email" | "imported" | "skipped" | "failed";
+  _enrichmentMessage?: string;
   [k: string]: any;
 }
 
