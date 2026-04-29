@@ -10,7 +10,8 @@ import {
   Settings,
   ArrowRight,
   BarChart3,
-  Palette
+  Palette,
+  UserPlus
 } from "lucide-react";
 import PasswordGate from "@/components/PasswordGate";
 
