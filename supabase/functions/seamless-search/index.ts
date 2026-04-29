@@ -122,7 +122,39 @@ Deno.serve(async (req) => {
         if (allDone) break;
       }
 
-      return json({ requestIds, results: pollData?.results ?? pollData?.data ?? pollData });
+      // Normalize each enriched item so the client can find email/phone reliably.
+      const rawItems = pollData?.results ?? pollData?.data ?? [];
+      const normalized = (Array.isArray(rawItems) ? rawItems : []).map((r: any) => {
+        const inner = r?.result ?? r?.contact ?? r;
+        // Seamless returns emails as arrays of objects like { email, type, deliverable }
+        const emailsArr = Array.isArray(inner?.emails) ? inner.emails : [];
+        const phonesArr = Array.isArray(inner?.phones) ? inner.phones : [];
+        const bestEmail =
+          inner?.email ??
+          inner?.email1 ??
+          emailsArr.find((e: any) => e?.deliverable === true || e?.deliverable === "valid")?.email ??
+          emailsArr[0]?.email ??
+          null;
+        const bestPhone =
+          inner?.phone ??
+          inner?.contactPhone1 ??
+          phonesArr[0]?.phone ??
+          phonesArr[0]?.number ??
+          null;
+        return {
+          requestId: r?.requestId,
+          searchResultId: r?.searchResultId ?? inner?.searchResultId,
+          status: r?.status,
+          result: {
+            ...inner,
+            email: bestEmail,
+            phone: bestPhone,
+            emails: emailsArr,
+            phones: phonesArr,
+          },
+        };
+      });
+      return json({ requestIds, results: normalized, raw: pollData });
     }
 
     return json({ error: `Unknown action: ${action}` }, 400);

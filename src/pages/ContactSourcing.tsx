@@ -183,10 +183,17 @@ const ContactSourcing = () => {
       // Build push payload, merging enriched data when available.
       const contacts = picks.map((p) => {
         const enr = enrichedById.get(String(p.searchResultId ?? p.id)) ?? {};
-        const merged = { ...p, ...enr };
+        const merged: any = { ...p, ...enr };
+        const emailsArr = Array.isArray(merged.emails) ? merged.emails : [];
+        const bestEmail =
+          merged.email ||
+          merged.email1 ||
+          emailsArr.find((e: any) => e?.deliverable === true || e?.deliverable === "valid")?.email ||
+          emailsArr[0]?.email ||
+          "";
         return {
-          seamless_contact_id: String(merged.searchResultId ?? merged.id ?? merged.contactId ?? merged.email ?? ""),
-          email: merged.email ?? merged.email1 ?? "",
+          seamless_contact_id: String(merged.searchResultId ?? merged.id ?? merged.contactId ?? bestEmail ?? ""),
+          email: bestEmail,
           firstName: merged.firstName,
           lastName: merged.lastName,
           fullName: merged.fullName ?? merged.name,
@@ -202,15 +209,26 @@ const ContactSourcing = () => {
         };
       });
 
+      const missingEmails = contacts.filter((c) => !c.email).length;
+      if (missingEmails) {
+        toast({
+          title: `${missingEmails} contact(s) had no email after enrichment`,
+          description: "They will still be pushed, but HubSpot may dedupe poorly. Check Seamless data for these.",
+        });
+      }
+
       const { data: push, error: pushErr } = await supabase.functions.invoke("hubspot-push-contacts", {
         body: { contacts, associateCompany, lifecycleStage },
       });
       if (pushErr) throw pushErr;
       if (push?.error) throw new Error(push.error);
 
+      const failed = (push.results ?? []).filter((r: any) => !r.ok);
       toast({
         title: "Push complete",
-        description: `${push.summary?.succeeded ?? 0} succeeded, ${push.summary?.failed ?? 0} failed.`,
+        description: `${push.summary?.succeeded ?? 0} succeeded, ${push.summary?.failed ?? 0} failed.${
+          failed.length ? ` First error: ${failed[0]?.error ?? "unknown"}` : ""
+        }`,
       });
       setSelected(new Set());
     } catch (e: any) {
