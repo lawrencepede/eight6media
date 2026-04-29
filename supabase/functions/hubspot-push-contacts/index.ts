@@ -125,7 +125,30 @@ Deno.serve(async (req) => {
         let hubspotContactId: string | null = null;
         let action: "created" | "updated" = "created";
 
+        // 1a) First check our own imported_contacts table — source of truth, no
+        // race conditions with HubSpot search index. This catches re-pushes of
+        // the same contact even if HubSpot search hasn't indexed them yet.
         if (email) {
+          const { data: priorImport } = await supabase
+            .from("imported_contacts")
+            .select("hubspot_contact_id")
+            .eq("email", email)
+            .not("hubspot_contact_id", "is", null)
+            .order("imported_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (priorImport?.hubspot_contact_id) {
+            hubspotContactId = priorImport.hubspot_contact_id;
+            action = "updated";
+            await hs(`/crm/v3/objects/contacts/${hubspotContactId}`, {
+              method: "PATCH",
+              body: JSON.stringify({ properties }),
+            }, LOVABLE_API_KEY, HUBSPOT_API_KEY);
+          }
+        }
+
+        // 1b) Fall back to HubSpot search by email
+        if (!hubspotContactId && email) {
           const search = await hs("/crm/v3/objects/contacts/search", {
             method: "POST",
             body: JSON.stringify({
@@ -152,10 +175,28 @@ Deno.serve(async (req) => {
             body: JSON.stringify({ properties }),
           }, LOVABLE_API_KEY, HUBSPOT_API_KEY);
           if (!create.ok) {
-            results.push({ email, ok: false, error: `Create failed [${create.status}]`, details: create.data });
-            continue;
+            // HubSpot returns 409 CONFLICT if a contact already exists with that
+            // email (the search index hadn't caught up). Recover by extracting
+            // the existing contact id from the error and updating instead.
+            const conflictId =
+              create.data?.message?.match?.(/Existing ID:\s*(\d+)/)?.[1] ??
+              create.data?.category === "CONFLICT"
+                ? (create.data?.message?.match?.(/(\d{6,})/)?.[1] ?? null)
+                : null;
+            if (create.status === 409 && conflictId) {
+              hubspotContactId = conflictId;
+              action = "updated";
+              await hs(`/crm/v3/objects/contacts/${hubspotContactId}`, {
+                method: "PATCH",
+                body: JSON.stringify({ properties }),
+              }, LOVABLE_API_KEY, HUBSPOT_API_KEY);
+            } else {
+              results.push({ email, ok: false, error: `Create failed [${create.status}]`, details: create.data });
+              continue;
+            }
+          } else {
+            hubspotContactId = create.data?.id ?? null;
           }
-          hubspotContactId = create.data?.id ?? null;
         }
 
         // 2) Optionally associate company
