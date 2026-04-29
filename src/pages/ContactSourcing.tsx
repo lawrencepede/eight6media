@@ -71,6 +71,34 @@ const ContactSourcing = () => {
 
   const idOf = (r: SearchResult) => r.searchResultId ?? r.id ?? r.email ?? Math.random().toString();
 
+  const extractEmail = (contact: any) => {
+    const emailsArr = Array.isArray(contact?.emails) ? contact.emails : [];
+    return (
+      contact?.email ||
+      contact?.email1 ||
+      contact?.emailAddress ||
+      contact?.businessEmail ||
+      contact?.workEmail ||
+      contact?.personalEmail ||
+      emailsArr.find((e: any) => e?.deliverable === true || e?.deliverable === "valid" || e?.status === "valid")?.email ||
+      emailsArr[0]?.email ||
+      ""
+    );
+  };
+
+  const enrichContacts = async (body: Record<string, unknown>) => {
+    let latest: any = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const { data, error } = await supabase.functions.invoke("seamless-search", { body });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      latest = data;
+      if (data?.complete !== false) break;
+      await new Promise((resolve) => setTimeout(resolve, 2500));
+    }
+    return latest;
+  };
+
   const toggle = (id: string) => {
     setSelected((s) => {
       const next = new Set(s);
@@ -127,11 +155,7 @@ const ContactSourcing = () => {
       if (enrichEmail.trim()) contact.email = enrichEmail.trim();
       if (enrichLinkedIn.trim()) contact.liProfileUrl = enrichLinkedIn.trim();
 
-      const { data, error } = await supabase.functions.invoke("seamless-search", {
-        body: { action: "enrich", contacts: [contact] },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      const data = await enrichContacts({ action: "enrich", contacts: [contact] });
 
       const items = (data.results ?? []).flatMap((r: any) => r?.result ? [r.result] : (r?.contact ? [r.contact] : [r]));
       setResults(items);
@@ -165,11 +189,7 @@ const ContactSourcing = () => {
           description: `Pulling full details for ${needEnrichment.length} contact(s) (1 credit each).`,
         });
         const ids = needEnrichment.map((p) => (p.searchResultId ?? p.id) as string);
-        const { data: enrich, error: enErr } = await supabase.functions.invoke("seamless-search", {
-          body: { action: "enrich", searchResultIds: ids },
-        });
-        if (enErr) throw enErr;
-        if (enrich?.error) throw new Error(enrich.error);
+        const enrich = await enrichContacts({ action: "enrich", searchResultIds: ids });
 
         const items = (enrich.results ?? []).flatMap((r: any) => r?.result ? [{ key: r.requestId ?? r.searchResultId, ...r.result }] : []);
         // Best-effort: index by every plausible id in the result
@@ -184,13 +204,7 @@ const ContactSourcing = () => {
       const contacts = picks.map((p) => {
         const enr = enrichedById.get(String(p.searchResultId ?? p.id)) ?? {};
         const merged: any = { ...p, ...enr };
-        const emailsArr = Array.isArray(merged.emails) ? merged.emails : [];
-        const bestEmail =
-          merged.email ||
-          merged.email1 ||
-          emailsArr.find((e: any) => e?.deliverable === true || e?.deliverable === "valid")?.email ||
-          emailsArr[0]?.email ||
-          "";
+        const bestEmail = extractEmail(merged);
         return {
           seamless_contact_id: String(merged.searchResultId ?? merged.id ?? merged.contactId ?? bestEmail ?? ""),
           email: bestEmail,
@@ -209,16 +223,26 @@ const ContactSourcing = () => {
         };
       });
 
-      const missingEmails = contacts.filter((c) => !c.email).length;
+      const contactsWithEmail = contacts.filter((c) => c.email);
+      const missingEmails = contacts.length - contactsWithEmail.length;
       if (missingEmails) {
         toast({
-          title: `${missingEmails} contact(s) had no email after enrichment`,
-          description: "They will still be pushed, but HubSpot may dedupe poorly. Check Seamless data for these.",
+          title: `${missingEmails} contact(s) skipped`,
+          description: "Seamless did not return an email after enrichment, so they were not imported to HubSpot.",
         });
       }
 
+      if (!contactsWithEmail.length) {
+        toast({
+          title: "No email addresses found",
+          description: "Nothing was pushed to HubSpot. Try different contacts or verify the data in Seamless.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { data: push, error: pushErr } = await supabase.functions.invoke("hubspot-push-contacts", {
-        body: { contacts, associateCompany, lifecycleStage },
+        body: { contacts: contactsWithEmail, associateCompany, lifecycleStage },
       });
       if (pushErr) throw pushErr;
       if (push?.error) throw new Error(push.error);
