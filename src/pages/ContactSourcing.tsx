@@ -431,25 +431,65 @@ const ContactSourcing = () => {
                     />
                   </div>
                   <div>
-                    <Label>Company domain(s) — paste URLs, one per line</Label>
+                    <Label>Company domain(s) — paste URLs, markdown links, or HTML anchors</Label>
                     <Textarea
                       value={companyDomain}
                       onChange={(e) => {
-                        // Normalize pasted URLs → bare domains, preserve user separators
-                        const normalized = e.target.value
-                          .split(/(\s|,|;)/)
-                          .map((tok) => {
-                            if (/^[\s,;]+$/.test(tok) || tok === "") return tok;
-                            return tok
+                        const raw = e.target.value;
+
+                        // Helper: pull bare domain out of any string fragment
+                        const extractDomain = (s: string): string => {
+                          if (!s) return s;
+                          let v = s.trim();
+                          if (!v) return v;
+
+                          // 1) HTML anchor: <a href="...">label</a>
+                          const hrefMatch = v.match(/href\s*=\s*["']([^"']+)["']/i);
+                          if (hrefMatch) v = hrefMatch[1];
+
+                          // 2) Markdown link: [label](url)
+                          const mdMatch = v.match(/\]\(([^)]+)\)/);
+                          if (mdMatch) v = mdMatch[1];
+
+                          // 3) Find first http(s) URL inside the fragment (handles
+                          //    angle brackets, surrounding text, etc.)
+                          const urlMatch = v.match(/https?:\/\/[^\s<>"')]+/i);
+                          if (urlMatch) v = urlMatch[0];
+
+                          // 4) Unwrap common redirect/tracking wrappers
+                          //    e.g. google.com/url?q=https://target.com&...
+                          try {
+                            const u = new URL(v.startsWith("http") ? v : `https://${v}`);
+                            const wrapped =
+                              u.searchParams.get("q") ||
+                              u.searchParams.get("url") ||
+                              u.searchParams.get("u");
+                            if (wrapped && /^https?:\/\//i.test(wrapped)) {
+                              v = wrapped;
+                            }
+                            const finalUrl = new URL(v.startsWith("http") ? v : `https://${v}`);
+                            return finalUrl.hostname.replace(/^www\./i, "").toLowerCase();
+                          } catch {
+                            // Fallback: strip protocol/www/path manually
+                            return v
+                              .replace(/^<+|>+$/g, "")
                               .replace(/^https?:\/\//i, "")
                               .replace(/^www\./i, "")
                               .replace(/\/.*$/, "")
                               .toLowerCase();
-                          })
-                          .join("");
-                        setCompanyDomain(normalized);
+                          }
+                        };
+
+                        // Split on line/comma/semicolon/tab boundaries, normalize each
+                        // token, and rejoin with newlines for readability.
+                        const tokens = raw
+                          .split(/[\n\r,;\t]+/)
+                          .map((t) => extractDomain(t))
+                          .filter((t, i, arr) => t === "" ? i === arr.length - 1 : true);
+
+                        setCompanyDomain(tokens.join("\n"));
                       }}
-                      placeholder={"acme.com\nglobex.com\nhttps://initech.com"}
+                      placeholder={"acme.com\nhttps://initech.com\n[Epetome](https://epetome.com)\n<a href=\"https://globex.com\">Globex</a>"}
                       rows={4}
                       className="font-mono text-sm"
                     />
