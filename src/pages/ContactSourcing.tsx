@@ -715,9 +715,12 @@ const ContactSourcing = () => {
                     <Input value={industry} onChange={(e) => setIndustry(e.target.value)} placeholder="Cosmetics, Apparel & Fashion" />
                   </div>
                   <div>
-                    <Label>Result limit (max 50)</Label>
-                    <Input type="number" value={limit} min={1} max={50}
-                      onChange={(e) => setLimit(Math.max(1, Math.min(50, Number(e.target.value) || 25)))} />
+                    <Label>Result limit (max 500)</Label>
+                    <Input type="number" value={limit} min={1} max={500}
+                      onChange={(e) => setLimit(Math.max(1, Math.min(500, Number(e.target.value) || 200)))} />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Seamless returns 50 per page; we auto-paginate up to this number.
+                    </p>
                   </div>
                   <div>
                     <Label>Max contacts per brand</Label>
