@@ -22,6 +22,7 @@ import RosterManagement from "./pages/RosterManagement";
 import PitchGenerator from "./pages/PitchGenerator";
 import MetaAnalytics from "./pages/MetaAnalytics";
 import BrandManager from "./pages/BrandManager";
+import ContactSourcing from "./pages/ContactSourcing";
 
 import NotFound from "./pages/NotFound";
 
