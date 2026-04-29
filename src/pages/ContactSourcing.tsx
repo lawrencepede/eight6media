@@ -421,12 +421,38 @@ const ContactSourcing = () => {
               <Card className="p-6 space-y-4">
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <Label>Company name(s) — comma separated</Label>
-                    <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Acme, Globex" />
+                    <Label>Company name(s) — one per line, or comma separated</Label>
+                    <Textarea
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      placeholder={"Acme\nGlobex\nInitech"}
+                      rows={4}
+                      className="font-mono text-sm"
+                    />
                   </div>
                   <div>
-                    <Label>Company domain(s)</Label>
-                    <Input value={companyDomain} onChange={(e) => setCompanyDomain(e.target.value)} placeholder="acme.com, globex.com" />
+                    <Label>Company domain(s) — paste URLs, one per line</Label>
+                    <Textarea
+                      value={companyDomain}
+                      onChange={(e) => {
+                        // Normalize pasted URLs → bare domains, preserve user separators
+                        const normalized = e.target.value
+                          .split(/(\s|,|;)/)
+                          .map((tok) => {
+                            if (/^[\s,;]+$/.test(tok) || tok === "") return tok;
+                            return tok
+                              .replace(/^https?:\/\//i, "")
+                              .replace(/^www\./i, "")
+                              .replace(/\/.*$/, "")
+                              .toLowerCase();
+                          })
+                          .join("");
+                        setCompanyDomain(normalized);
+                      }}
+                      placeholder={"acme.com\nglobex.com\nhttps://initech.com"}
+                      rows={4}
+                      className="font-mono text-sm"
+                    />
                   </div>
                   <div>
                     <Label>Job title(s)</Label>
