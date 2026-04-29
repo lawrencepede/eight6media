@@ -93,6 +93,14 @@ const App = () => (
                 </ProtectedRoute>
               } 
             />
+            <Route 
+              path="/console/contact-sourcing" 
+              element={
+                <ProtectedRoute>
+                  <ContactSourcing />
+                </ProtectedRoute>
+              } 
+            />
             <Route path="/admin" element={<Admin />} />
             <Route path="/pitch/:slug" element={<Pitch />} />
             
