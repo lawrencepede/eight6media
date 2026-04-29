@@ -181,9 +181,30 @@ const ContactSourcing = () => {
   };
 
   const pushSelected = async () => {
-    const picks = results.filter((r) => selected.has(idOf(r)));
-    if (!picks.length) {
+    const allPicks = results.filter((r) => selected.has(idOf(r)));
+    if (!allPicks.length) {
       toast({ title: "Select at least one contact", variant: "destructive" });
+      return;
+    }
+
+    // Skip rows that we already imported in a previous run. The backend will
+    // also dedupe by email, but skipping client-side avoids wasting credits
+    // on re-enrichment and gives the user a clear message.
+    const alreadyImported = allPicks.filter((p) => p._alreadyImported);
+    const picks = allPicks.filter((p) => !p._alreadyImported);
+
+    if (alreadyImported.length) {
+      toast({
+        title: `${alreadyImported.length} already imported — skipping`,
+        description: "These contacts were imported in a previous run. They won't be pushed again.",
+      });
+      for (const p of alreadyImported) {
+        updateRowMeta(idOf(p), { _enrichmentStatus: "imported" });
+      }
+    }
+
+    if (!picks.length) {
+      toast({ title: "Nothing new to push", description: "All selected contacts were already imported." });
       return;
     }
 
