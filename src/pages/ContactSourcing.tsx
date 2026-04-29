@@ -519,9 +519,21 @@ const ContactSourcing = () => {
                             ) : "—"}
                           </TableCell>
                           <TableCell>
-                            {r._alreadyImported
-                              ? <Badge variant="secondary">Imported</Badge>
-                              : <Badge>New</Badge>}
+                            {r._enrichmentStatus === "researching" && (
+                              <Badge variant="outline" title={r._enrichmentMessage ?? ""}>Researching…</Badge>
+                            )}
+                            {r._enrichmentStatus === "no_email" && (
+                              <Badge variant="destructive" title={r._enrichmentMessage ?? ""}>No email</Badge>
+                            )}
+                            {r._enrichmentStatus === "imported" && (
+                              <Badge variant="secondary">Imported</Badge>
+                            )}
+                            {!r._enrichmentStatus && (
+                              r._alreadyImported
+                                ? <Badge variant="secondary">Imported</Badge>
+                                : <Badge>New</Badge>
+                            )}
+                            {r._enrichmentStatus === "done" && !r._alreadyImported && <Badge>Ready</Badge>}
                           </TableCell>
                         </TableRow>
                       );
