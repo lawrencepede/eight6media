@@ -117,6 +117,8 @@ interface SearchResult {
   country?: string;
   _alreadyImported?: boolean;
   _inHubSpot?: boolean; // true if HubSpot already has this contact
+  _queryDomain?: string; // the input domain that produced this row (if any)
+  _queryName?: string;   // the input company name that produced this row (if any)
   _enrichmentStatus?: "pending" | "researching" | "done" | "no_email" | "imported" | "skipped" | "failed";
   _enrichmentMessage?: string;
   [k: string]: any;
