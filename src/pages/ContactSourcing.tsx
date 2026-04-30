@@ -466,9 +466,16 @@ const ContactSourcing = () => {
         if (error) throw error;
         if (data?.error) throw new Error(`${q.label}: ${data.error}`);
         const rows: SearchResult[] = data.results ?? [];
+        // Tag each row with the query that produced it so we can flag
+        // exact vs fuzzy matches in the UI later.
+        const tagged = rows.map((r) => ({
+          ...r,
+          _queryDomain: q.payloadKey === "companyDomain" ? q.value : r._queryDomain,
+          _queryName: q.payloadKey === "companyName" ? q.value : r._queryName,
+        }));
         if (data.credits) lastCredits = data.credits;
-        if (rows.length === 0) emptyBrands.push(q.label);
-        return rows;
+        if (tagged.length === 0) emptyBrands.push(q.label);
+        return tagged;
       };
 
       for (let i = 0; i < brandQueries.length; i += CONCURRENCY) {
