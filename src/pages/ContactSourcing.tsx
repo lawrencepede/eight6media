@@ -435,6 +435,8 @@ const ContactSourcing = () => {
         setResults(capped);
         setCredits(data.credits ?? null);
         toast({ title: "Search complete", description: `${all.length} contacts found.` });
+        // Fire-and-forget HubSpot duplicate check; updates badges when done
+        checkHubSpotForRows(capped);
         return;
       }
 
