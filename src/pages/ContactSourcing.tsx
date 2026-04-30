@@ -349,6 +349,7 @@ const ContactSourcing = () => {
       if (seniority.trim()) sharedFilters.seniority = splitMulti(seniority);
       if (country.trim()) sharedFilters.contactCountry = splitMulti(country);
       if (industry.trim()) sharedFilters.industry = splitMulti(industry);
+      if (contactName.trim()) sharedFilters.contactName = splitMulti(contactName);
 
       // If the user didn't specify any brand, fall back to one combined search
       // honoring the global limit.
