@@ -1024,16 +1024,35 @@ const ContactSourcing = () => {
                           </TableRow>
                         );
 
+                        const pickStr = (...vals: any[]) => {
+                          for (const v of vals) {
+                            if (typeof v === "string" && v.trim()) return v.trim();
+                          }
+                          return "";
+                        };
+                        const displayName = (r: SearchResult) => {
+                          const inner: any = (r as any).contact ?? (r as any).result ?? r;
+                          const full = pickStr(
+                            r.fullName, (r as any).full_name, (r as any).name, (r as any).displayName, (r as any).display_name,
+                            inner?.fullName, inner?.full_name, inner?.name, inner?.displayName, inner?.display_name,
+                          );
+                          if (full) return full;
+                          const first = pickStr(r.firstName, (r as any).first_name, (r as any).givenName, inner?.firstName, inner?.first_name, inner?.givenName);
+                          const last = pickStr(r.lastName, (r as any).last_name, (r as any).familyName, (r as any).surname, inner?.lastName, inner?.last_name, inner?.familyName, inner?.surname);
+                          return `${first} ${last}`.trim();
+                        };
+
                         const dataRows = rows.map((r) => {
                           const id = idOf(r);
                           const li = r.lIProfileUrl ?? r.linkedinUrl;
+                          const name = displayName(r);
                           return (
                             <TableRow key={id}>
                               <TableCell>
                                 <Checkbox checked={selected.has(id)} onCheckedChange={() => toggle(id)} />
                               </TableCell>
                               <TableCell className="font-sans font-medium">
-                                {r.fullName || `${r.firstName ?? ""} ${r.lastName ?? ""}`.trim() || "—"}
+                                {name || "—"}
                               </TableCell>
                               <TableCell className="text-sm">{r.title ?? "—"}</TableCell>
                               <TableCell className="text-sm">{r.company ?? "—"}</TableCell>
