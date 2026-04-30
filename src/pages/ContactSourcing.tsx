@@ -821,6 +821,14 @@ const ContactSourcing = () => {
                     <Input value={seniority} onChange={(e) => setSeniority(e.target.value)} placeholder="C-Level, VP, Director" />
                   </div>
                   <div>
+                    <Label>Contact name(s)</Label>
+                    <Input
+                      value={contactName}
+                      onChange={(e) => setContactName(e.target.value)}
+                      placeholder="Jane Doe, John Smith"
+                    />
+                  </div>
+                  <div>
                     <Label>Country</Label>
                     <Input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="United States" />
                   </div>
