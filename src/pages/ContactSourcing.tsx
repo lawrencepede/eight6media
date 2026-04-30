@@ -130,6 +130,7 @@ const ContactSourcing = () => {
   const [companyDomain, setCompanyDomain] = useState("");
   const [jobTitle, setJobTitle] = useState("marketing, influencer, creator, social media");
   const [seniority, setSeniority] = useState("");
+  const [contactName, setContactName] = useState("");
   const [country, setCountry] = useState("");
   const [industry, setIndustry] = useState("");
   const [limit, setLimit] = useState(200);
@@ -348,6 +349,7 @@ const ContactSourcing = () => {
       if (seniority.trim()) sharedFilters.seniority = splitMulti(seniority);
       if (country.trim()) sharedFilters.contactCountry = splitMulti(country);
       if (industry.trim()) sharedFilters.industry = splitMulti(industry);
+      if (contactName.trim()) sharedFilters.contactName = splitMulti(contactName);
 
       // If the user didn't specify any brand, fall back to one combined search
       // honoring the global limit.
@@ -817,6 +819,14 @@ const ContactSourcing = () => {
                   <div>
                     <Label>Seniority</Label>
                     <Input value={seniority} onChange={(e) => setSeniority(e.target.value)} placeholder="C-Level, VP, Director" />
+                  </div>
+                  <div>
+                    <Label>Contact name(s)</Label>
+                    <Input
+                      value={contactName}
+                      onChange={(e) => setContactName(e.target.value)}
+                      placeholder="Jane Doe, John Smith"
+                    />
                   </div>
                   <div>
                     <Label>Country</Label>
