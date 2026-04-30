@@ -532,6 +532,86 @@ const ContactSourcing = () => {
     setResults((prev) => prev.map((r) => (idOf(r) === id ? { ...r, ...patch } : r)));
   };
 
+  // Enrich selected rows without pushing to HubSpot. Pulls emails (1 credit each)
+  // and writes them back into the table so the user can review before pushing.
+  const enrichSelectedOnly = async () => {
+    const picks = results.filter((r) => selected.has(idOf(r)));
+    if (!picks.length) {
+      toast({ title: "Select at least one contact", variant: "destructive" });
+      return;
+    }
+    const needEnrichment = picks.filter((p) => !p.email && (p.searchResultId || p.id));
+    if (!needEnrichment.length) {
+      toast({ title: "Nothing to enrich", description: "All selected contacts already have emails." });
+      return;
+    }
+    setPushing(true);
+    try {
+      toast({
+        title: "Enriching…",
+        description: `Pulling full details for ${needEnrichment.length} contact(s) (1 credit each). This can take up to a few minutes.`,
+      });
+      for (const p of needEnrichment) {
+        updateRowMeta(idOf(p), { _enrichmentStatus: "researching" });
+      }
+      const ids = needEnrichment.map((p) => (p.searchResultId ?? p.id) as string);
+      const enrich = await enrichContacts({ action: "enrich", searchResultIds: ids });
+
+      const enrichedById = new Map<string, any>();
+      for (const r of enrich?.results ?? []) {
+        const sid = r?.searchResultId ?? r?.result?.searchResultId;
+        if (sid) enrichedById.set(String(sid), r);
+      }
+
+      let withEmail = 0;
+      let stillResearching = 0;
+      let noEmail = 0;
+      for (const p of needEnrichment) {
+        const sid = String(p.searchResultId ?? p.id ?? "");
+        const enr = sid ? enrichedById.get(sid) : null;
+        if (!enr || !enr.complete) {
+          stillResearching += 1;
+          updateRowMeta(idOf(p), {
+            _enrichmentStatus: "researching",
+            _enrichmentMessage: enr?.status ?? "Awaiting Seamless",
+          });
+          continue;
+        }
+        const merged: any = { ...p, ...(enr.result ?? {}) };
+        const bestEmail = (enr.result?.email ?? extractEmail(merged) ?? "").toString().trim();
+        if (!bestEmail) {
+          noEmail += 1;
+          updateRowMeta(idOf(p), {
+            _enrichmentStatus: "no_email",
+            _enrichmentMessage: enr.message ?? "Seamless returned no email",
+          });
+          continue;
+        }
+        withEmail += 1;
+        updateRowMeta(idOf(p), {
+          email: bestEmail,
+          firstName: merged.firstName ?? p.firstName,
+          lastName: merged.lastName ?? p.lastName,
+          fullName: merged.fullName ?? merged.name ?? p.fullName,
+          title: merged.title ?? p.title,
+          company: merged.company ?? p.company,
+          companyDomain: merged.companyDomain ?? merged.website ?? merged.emailDomain ?? p.companyDomain,
+          phone: merged.contactPhone1 ?? merged.companyPhone1 ?? merged.phone ?? p.phone,
+          lIProfileUrl: merged.lIProfileUrl ?? merged.linkedinUrl ?? p.lIProfileUrl,
+          _enrichmentStatus: "done",
+        });
+      }
+      toast({
+        title: "Enrichment complete",
+        description: `${withEmail} email(s) revealed${noEmail ? `, ${noEmail} no email` : ""}${stillResearching ? `, ${stillResearching} still researching` : ""}. Review then push to HubSpot.`,
+      });
+    } catch (e: any) {
+      toast({ title: "Enrichment failed", description: e?.message ?? "Unknown error", variant: "destructive" });
+    } finally {
+      setPushing(false);
+    }
+  };
+
   const pushSelected = async () => {
     const allPicks = results.filter((r) => selected.has(idOf(r)));
     if (!allPicks.length) {
