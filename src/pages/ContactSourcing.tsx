@@ -769,6 +769,24 @@ const ContactSourcing = () => {
 
             <TabsContent value="search">
               <Card className="p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-serif text-lg">Search settings</h3>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setCompanyName("");
+                      setCompanyDomain("");
+                      setJobTitle("");
+                      setSeniority("");
+                      setContactName("");
+                      setCountry("");
+                      setIndustry("");
+                    }}
+                  >
+                    Clear all fields
+                  </Button>
+                </div>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <Label>Company name(s) — one per line, or comma separated</Label>
