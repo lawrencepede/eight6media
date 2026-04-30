@@ -116,6 +116,7 @@ interface SearchResult {
   state?: string;
   country?: string;
   _alreadyImported?: boolean;
+  _inHubSpot?: boolean; // true if HubSpot already has this contact
   _enrichmentStatus?: "pending" | "researching" | "done" | "no_email" | "imported" | "skipped" | "failed";
   _enrichmentMessage?: string;
   [k: string]: any;
@@ -312,6 +313,70 @@ const ContactSourcing = () => {
     return latest;
   };
 
+  // Build the same name-key the edge function uses for local fallback matching
+  const identityKey = (r: SearchResult): string => {
+    const f = (r.firstName ?? "").trim().toLowerCase();
+    const l = (r.lastName ?? "").trim().toLowerCase();
+    const c = (r.company ?? "").trim().toLowerCase();
+    if (!f && !l) return "";
+    return `${f}|${l}|${c}`;
+  };
+
+  // Ask the edge function which of these rows already exist in HubSpot
+  // (by email) or in our imported_contacts table (by name+company).
+  const checkHubSpotForRows = async (rows: SearchResult[]) => {
+    if (!rows.length) return;
+    const emails = rows
+      .map((r) => (r.email ?? "").toString().trim().toLowerCase())
+      .filter(Boolean);
+    const identities = rows
+      .filter((r) => !r.email)
+      .map((r) => ({
+        firstName: r.firstName ?? "",
+        lastName: r.lastName ?? "",
+        company: r.company ?? "",
+      }))
+      .filter((i) => i.firstName || i.lastName);
+
+    if (!emails.length && !identities.length) return;
+
+    try {
+      const { data, error } = await supabase.functions.invoke("hubspot-check-existing", {
+        body: { emails, identities },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      const hsEmails = new Set<string>(
+        (data?.emailsInHubSpot ?? []).map((e: string) => e.toLowerCase()),
+      );
+      const localKeys = new Set<string>(
+        (data?.localMatches ?? []).map((m: any) => m?.key).filter(Boolean),
+      );
+
+      const flag = (rs: SearchResult[]) =>
+        rs.map((r) => {
+          const e = (r.email ?? "").toString().trim().toLowerCase();
+          const k = identityKey(r);
+          const hit = (e && hsEmails.has(e)) || (!e && k && localKeys.has(k));
+          return hit ? { ...r, _inHubSpot: true, _alreadyImported: true } : r;
+        });
+      setAllResults((prev) => flag(prev));
+      setResults((prev) => flag(prev));
+
+      const hitCount = (hsEmails.size + localKeys.size);
+      if (hitCount > 0) {
+        toast({
+          title: `${hitCount} already in HubSpot`,
+          description: "Marked rows so you can skip enriching them.",
+        });
+      }
+    } catch (e: any) {
+      console.error("HubSpot check failed:", e);
+      // Non-fatal — just don't mark rows
+    }
+  };
+
   const toggle = (id: string) => {
     setSelected((s) => {
       const next = new Set(s);
@@ -370,6 +435,8 @@ const ContactSourcing = () => {
         setResults(capped);
         setCredits(data.credits ?? null);
         toast({ title: "Search complete", description: `${all.length} contacts found.` });
+        // Fire-and-forget HubSpot duplicate check; updates badges when done
+        checkHubSpotForRows(capped);
         return;
       }
 
@@ -435,6 +502,8 @@ const ContactSourcing = () => {
           emptyBrands.length ? ` No results for: ${emptyBrands.slice(0, 5).join(", ")}${emptyBrands.length > 5 ? "…" : ""}` : ""
         }`,
       });
+      // Fire-and-forget HubSpot duplicate check; updates badges when done
+      checkHubSpotForRows(capped);
     } catch (e: any) {
       toast({ title: "Search failed", description: e?.message ?? "Unknown error", variant: "destructive" });
     } finally {
@@ -540,9 +609,16 @@ const ContactSourcing = () => {
       toast({ title: "Select at least one contact", variant: "destructive" });
       return;
     }
-    const needEnrichment = picks.filter((p) => !p.email && (p.searchResultId || p.id));
+    const inHubSpot = picks.filter((p) => p._inHubSpot);
+    const needEnrichment = picks.filter((p) => !p.email && !p._inHubSpot && (p.searchResultId || p.id));
+    if (inHubSpot.length) {
+      toast({
+        title: `Skipping ${inHubSpot.length} already in HubSpot`,
+        description: "Not spending Seamless credits on contacts already in your HubSpot.",
+      });
+    }
     if (!needEnrichment.length) {
-      toast({ title: "Nothing to enrich", description: "All selected contacts already have emails." });
+      toast({ title: "Nothing to enrich", description: "All selected contacts already have emails or are in HubSpot." });
       return;
     }
     setPushing(true);
@@ -1229,9 +1305,11 @@ const ContactSourcing = () => {
                                   <Badge variant="secondary">Imported</Badge>
                                 )}
                                 {!r._enrichmentStatus && (
-                                  r._alreadyImported
-                                    ? <Badge variant="secondary">Imported</Badge>
-                                    : <Badge>New</Badge>
+                                  r._inHubSpot
+                                    ? <Badge variant="secondary" title="Already exists in HubSpot">In HubSpot</Badge>
+                                    : r._alreadyImported
+                                      ? <Badge variant="secondary">Imported</Badge>
+                                      : <Badge>New</Badge>
                                 )}
                                 {r._enrichmentStatus === "done" && !r._alreadyImported && <Badge>Ready</Badge>}
                               </TableCell>
