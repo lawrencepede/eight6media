@@ -15,7 +15,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, Loader2, Search, Sparkles, Upload, ExternalLink, LogOut, User } from "lucide-react";
+import { ArrowLeft, Loader2, Search, Sparkles, Upload, ExternalLink, LogOut, User, Download } from "lucide-react";
 
 // Pull a bare domain out of any string fragment: bare URLs, markdown links,
 // HTML anchors, angle-bracket-wrapped URLs, or tracking redirect wrappers.
