@@ -117,6 +117,8 @@ interface SearchResult {
   country?: string;
   _alreadyImported?: boolean;
   _inHubSpot?: boolean; // true if HubSpot already has this contact
+  _queryDomain?: string; // the input domain that produced this row (if any)
+  _queryName?: string;   // the input company name that produced this row (if any)
   _enrichmentStatus?: "pending" | "researching" | "done" | "no_email" | "imported" | "skipped" | "failed";
   _enrichmentMessage?: string;
   [k: string]: any;
@@ -464,9 +466,16 @@ const ContactSourcing = () => {
         if (error) throw error;
         if (data?.error) throw new Error(`${q.label}: ${data.error}`);
         const rows: SearchResult[] = data.results ?? [];
+        // Tag each row with the query that produced it so we can flag
+        // exact vs fuzzy matches in the UI later.
+        const tagged = rows.map((r) => ({
+          ...r,
+          _queryDomain: q.payloadKey === "companyDomain" ? q.value : r._queryDomain,
+          _queryName: q.payloadKey === "companyName" ? q.value : r._queryName,
+        }));
         if (data.credits) lastCredits = data.credits;
-        if (rows.length === 0) emptyBrands.push(q.label);
-        return rows;
+        if (tagged.length === 0) emptyBrands.push(q.label);
+        return tagged;
       };
 
       for (let i = 0; i < brandQueries.length; i += CONCURRENCY) {
@@ -1205,12 +1214,43 @@ const ContactSourcing = () => {
                         const hasHidden = totalForBrand > rows.length;
                         const isLoadingMore = loadingMoreBrand === brandKey;
 
+                        const normDom = (s?: string) =>
+                          (s ?? "").toString().trim().toLowerCase().replace(/^www\./, "").replace(/\/.*$/, "");
+                        const returnedDomain = normDom(rows[0]?.companyDomain);
+                        // Collect all input domains/names that produced rows in this group.
+                        const inputDomains = Array.from(new Set(rows.map((r) => normDom(r._queryDomain)).filter(Boolean)));
+                        const inputNames = Array.from(new Set(rows.map((r) => (r._queryName ?? "").trim()).filter(Boolean)));
+                        const isExactDomainMatch =
+                          inputDomains.length > 0 && inputDomains.some((d) => d === returnedDomain);
+                        const wasNameQuery = inputDomains.length === 0 && inputNames.length > 0;
+                        const matchBadge = inputDomains.length === 0 && inputNames.length === 0
+                          ? null
+                          : wasNameQuery
+                            ? <Badge variant="secondary" className="font-sans text-[10px]">Name match</Badge>
+                            : isExactDomainMatch
+                              ? <Badge variant="secondary" className="font-sans text-[10px] bg-primary/15 text-primary border-primary/30">Exact URL match</Badge>
+                              : <Badge variant="destructive" className="font-sans text-[10px]">Fuzzy match — verify</Badge>;
+                        const inputLabel = inputDomains.length
+                          ? inputDomains.join(", ")
+                          : inputNames.join(", ");
+
                         const headerRow = (
                           <TableRow key={`brand-${brandKey}`} className="bg-muted/40 hover:bg-muted/40">
                             <TableCell colSpan={7} className="py-2">
                               <div className="flex items-center justify-between gap-3 flex-wrap">
-                                <div className="font-sans text-sm font-semibold text-primary">
-                                  {label}{" "}
+                                <div className="font-sans text-sm font-semibold text-primary flex items-center gap-2 flex-wrap">
+                                  <span>{label}</span>
+                                  {returnedDomain && (
+                                    <span className="text-muted-foreground font-normal text-xs">
+                                      (<a href={`https://${returnedDomain}`} target="_blank" rel="noreferrer" className="underline hover:text-primary">{returnedDomain}</a>)
+                                    </span>
+                                  )}
+                                  {matchBadge}
+                                  {!isExactDomainMatch && inputDomains.length > 0 && (
+                                    <span className="text-muted-foreground font-normal text-xs">
+                                      you searched: <code className="text-foreground">{inputLabel}</code>
+                                    </span>
+                                  )}
                                   <span className="text-muted-foreground font-normal">
                                     — showing {rows.length} of {totalForBrand}
                                   </span>
