@@ -376,6 +376,8 @@ const ContactSourcing = () => {
       // Non-fatal — just don't mark rows
     }
   };
+
+  const toggle = (id: string) => {
     setSelected((s) => {
       const next = new Set(s);
       next.has(id) ? next.delete(id) : next.add(id);
