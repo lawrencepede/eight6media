@@ -116,6 +116,7 @@ interface SearchResult {
   state?: string;
   country?: string;
   _alreadyImported?: boolean;
+  _inHubSpot?: boolean; // true if HubSpot already has this contact
   _enrichmentStatus?: "pending" | "researching" | "done" | "no_email" | "imported" | "skipped" | "failed";
   _enrichmentMessage?: string;
   [k: string]: any;
