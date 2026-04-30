@@ -609,9 +609,16 @@ const ContactSourcing = () => {
       toast({ title: "Select at least one contact", variant: "destructive" });
       return;
     }
-    const needEnrichment = picks.filter((p) => !p.email && (p.searchResultId || p.id));
+    const inHubSpot = picks.filter((p) => p._inHubSpot);
+    const needEnrichment = picks.filter((p) => !p.email && !p._inHubSpot && (p.searchResultId || p.id));
+    if (inHubSpot.length) {
+      toast({
+        title: `Skipping ${inHubSpot.length} already in HubSpot`,
+        description: "Not spending Seamless credits on contacts already in your HubSpot.",
+      });
+    }
     if (!needEnrichment.length) {
-      toast({ title: "Nothing to enrich", description: "All selected contacts already have emails." });
+      toast({ title: "Nothing to enrich", description: "All selected contacts already have emails or are in HubSpot." });
       return;
     }
     setPushing(true);
