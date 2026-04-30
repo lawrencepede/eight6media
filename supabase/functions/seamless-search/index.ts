@@ -165,10 +165,48 @@ Deno.serve(async (req) => {
         imported = new Set((existing ?? []).map((r: any) => r.seamless_contact_id));
       }
 
-      const enriched = (Array.isArray(results) ? results : []).map((r: any) => ({
-        ...r,
-        _alreadyImported: imported.has(r?.searchResultId ?? r?.id),
-      }));
+      const enriched = (Array.isArray(results) ? results : []).map((r: any) => {
+        const inner = r?.contact ?? r?.result ?? r;
+        const firstName = firstString(
+          r?.firstName, r?.first_name, r?.givenName, r?.given_name,
+          inner?.firstName, inner?.first_name, inner?.givenName, inner?.given_name,
+        );
+        const lastName = firstString(
+          r?.lastName, r?.last_name, r?.familyName, r?.family_name, r?.surname,
+          inner?.lastName, inner?.last_name, inner?.familyName, inner?.family_name, inner?.surname,
+        );
+        const fullName = firstString(
+          r?.fullName, r?.full_name, r?.name, r?.displayName, r?.display_name,
+          inner?.fullName, inner?.full_name, inner?.name, inner?.displayName, inner?.display_name,
+        ) ?? [firstName, lastName].filter(Boolean).join(" ").trim() || null;
+        const title = firstString(
+          r?.title, r?.jobTitle, r?.job_title, r?.position,
+          inner?.title, inner?.jobTitle, inner?.job_title, inner?.position,
+        );
+        const company = firstString(
+          r?.company, r?.companyName, r?.company_name, r?.employer, r?.organization,
+          inner?.company, inner?.companyName, inner?.company_name, inner?.employer, inner?.organization,
+        );
+        const companyDomain = firstString(
+          r?.companyDomain, r?.company_domain, r?.domain, r?.website,
+          inner?.companyDomain, inner?.company_domain, inner?.domain, inner?.website,
+        );
+        const linkedinUrl = firstString(
+          r?.lIProfileUrl, r?.linkedinUrl, r?.linkedin_url, r?.linkedin,
+          inner?.lIProfileUrl, inner?.linkedinUrl, inner?.linkedin_url, inner?.linkedin,
+        );
+        return {
+          ...r,
+          firstName: firstName ?? r?.firstName ?? null,
+          lastName: lastName ?? r?.lastName ?? null,
+          fullName: fullName ?? r?.fullName ?? null,
+          title: title ?? r?.title ?? null,
+          company: company ?? r?.company ?? null,
+          companyDomain: companyDomain ?? r?.companyDomain ?? null,
+          lIProfileUrl: linkedinUrl ?? r?.lIProfileUrl ?? null,
+          _alreadyImported: imported.has(r?.searchResultId ?? r?.id),
+        };
+      });
 
       return json({ results: enriched, nextToken, credits, raw: data });
     }
