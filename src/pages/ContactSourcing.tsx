@@ -1015,7 +1015,7 @@ const ContactSourcing = () => {
                                 <Checkbox checked={selected.has(id)} onCheckedChange={() => toggle(id)} />
                               </TableCell>
                               <TableCell className="font-sans font-medium">
-                                {r.fullName ?? `${r.firstName ?? ""} ${r.lastName ?? ""}`.trim() ?? "—"}
+                                {r.fullName || `${r.firstName ?? ""} ${r.lastName ?? ""}`.trim() || "—"}
                               </TableCell>
                               <TableCell className="text-sm">{r.title ?? "—"}</TableCell>
                               <TableCell className="text-sm">{r.company ?? "—"}</TableCell>
