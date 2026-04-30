@@ -1215,7 +1215,15 @@ const ContactSourcing = () => {
                         const isLoadingMore = loadingMoreBrand === brandKey;
 
                         const normDom = (s?: string) =>
-                          (s ?? "").toString().trim().toLowerCase().replace(/^www\./, "").replace(/\/.*$/, "");
+                          (s ?? "")
+                            .toString()
+                            .trim()
+                            .toLowerCase()
+                            .replace(/^https?:\/\//, "")
+                            .replace(/^www\./, "")
+                            .replace(/\/.*$/, "")
+                            .replace(/[?#].*$/, "")
+                            .replace(/\s+/g, "");
                         const returnedDomain = normDom(rows[0]?.companyDomain);
                         // Collect all input domains/names that produced rows in this group.
                         const inputDomains = Array.from(new Set(rows.map((r) => normDom(r._queryDomain)).filter(Boolean)));
