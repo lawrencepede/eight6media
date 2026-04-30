@@ -397,6 +397,7 @@ const ContactSourcing = () => {
         if (error) throw error;
         if (data?.error) throw new Error(`${q.label}: ${data.error}`);
         const rows: SearchResult[] = data.results ?? [];
+        if (rows[0]) console.log("[seamless-search] sample row keys for", q.label, Object.keys(rows[0]), rows[0]);
         if (data.credits) lastCredits = data.credits;
         if (rows.length === 0) emptyBrands.push(q.label);
         return rows;
