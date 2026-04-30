@@ -456,24 +456,72 @@ const ContactSourcing = () => {
       const candidatePoolPerBrand = Math.min(50, Math.max(perBrandCap * 5, 25));
 
       const runOne = async (q: { label: string; payloadKey: string; value: string }) => {
-        const payload: Record<string, unknown> = {
-          ...sharedFilters,
-          action: "search",
-          limit: candidatePoolPerBrand,
-          [q.payloadKey]: [q.value],
+        const fetchOnce = async (payloadKey: string, value: string) => {
+          const payload: Record<string, unknown> = {
+            ...sharedFilters,
+            action: "search",
+            limit: candidatePoolPerBrand,
+            [payloadKey]: [value],
+          };
+          const { data, error } = await supabase.functions.invoke("seamless-search", { body: payload });
+          if (error) throw error;
+          if (data?.error) throw new Error(`${q.label}: ${data.error}`);
+          if (data.credits) lastCredits = data.credits;
+          const rows: SearchResult[] = data.results ?? [];
+          return rows;
         };
-        const { data, error } = await supabase.functions.invoke("seamless-search", { body: payload });
-        if (error) throw error;
-        if (data?.error) throw new Error(`${q.label}: ${data.error}`);
-        const rows: SearchResult[] = data.results ?? [];
-        // Tag each row with the query that produced it so we can flag
-        // exact vs fuzzy matches in the UI later.
-        const tagged = rows.map((r) => ({
+
+        // Build fallback ladder when initial query is by domain and returns 0:
+        //   1) original domain (e.g. blueprint.bryanjohnson.com)
+        //   2) root domain stripped of subdomains (bryanjohnson.com)
+        //   3) company name derived from root (e.g. "bryanjohnson")
+        const buildAttempts = (): Array<{ payloadKey: string; value: string; tagDomain?: string; tagName?: string }> => {
+          const attempts: Array<{ payloadKey: string; value: string; tagDomain?: string; tagName?: string }> = [
+            { payloadKey: q.payloadKey, value: q.value, tagDomain: q.payloadKey === "companyDomain" ? q.value : undefined, tagName: q.payloadKey === "companyName" ? q.value : undefined },
+          ];
+          if (q.payloadKey === "companyDomain") {
+            const dom = q.value.toLowerCase().trim()
+              .replace(/^https?:\/\//, "")
+              .replace(/^www\./, "")
+              .replace(/\/.*$/, "")
+              .replace(/[?#].*$/, "");
+            const parts = dom.split(".").filter(Boolean);
+            // Strip subdomain when host has 3+ labels and isn't a known 2-part TLD like co.uk
+            const twoPartTlds = new Set(["co.uk", "ac.uk", "org.uk", "gov.uk", "com.au", "co.nz", "co.jp"]);
+            const last2 = parts.slice(-2).join(".");
+            if (parts.length >= 3 && !twoPartTlds.has(last2)) {
+              const root = parts.slice(-2).join(".");
+              if (root && root !== dom) {
+                attempts.push({ payloadKey: "companyDomain", value: root, tagDomain: q.value });
+              }
+            }
+            // Derive a name from the SLD (e.g. tryamulet.com -> "tryamulet"; also try without "try" prefix)
+            const sld = (parts.length >= 2 ? parts[parts.length - 2] : parts[0]) ?? "";
+            if (sld) {
+              attempts.push({ payloadKey: "companyName", value: sld, tagDomain: q.value });
+              if (/^try[a-z]/.test(sld)) {
+                attempts.push({ payloadKey: "companyName", value: sld.slice(3), tagDomain: q.value });
+              }
+            }
+          }
+          return attempts;
+        };
+
+        const attempts = buildAttempts();
+        let chosen: { rows: SearchResult[]; tagDomain?: string; tagName?: string } = { rows: [] };
+        for (const a of attempts) {
+          const rows = await fetchOnce(a.payloadKey, a.value);
+          if (rows.length > 0) {
+            chosen = { rows, tagDomain: a.tagDomain, tagName: a.tagName ?? (a.payloadKey === "companyName" ? a.value : undefined) };
+            break;
+          }
+        }
+
+        const tagged = chosen.rows.map((r) => ({
           ...r,
-          _queryDomain: q.payloadKey === "companyDomain" ? q.value : r._queryDomain,
-          _queryName: q.payloadKey === "companyName" ? q.value : r._queryName,
+          _queryDomain: chosen.tagDomain ?? r._queryDomain,
+          _queryName: chosen.tagName ?? r._queryName,
         }));
-        if (data.credits) lastCredits = data.credits;
         if (tagged.length === 0) emptyBrands.push(q.label);
         return tagged;
       };
