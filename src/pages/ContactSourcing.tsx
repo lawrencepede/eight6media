@@ -1256,7 +1256,15 @@ const ContactSourcing = () => {
                                   {matchBadge}
                                   {!isExactDomainMatch && inputDomains.length > 0 && (
                                     <span className="text-muted-foreground font-normal text-xs">
-                                      you searched: <code className="text-foreground">{inputLabel}</code>
+                                      you searched:{" "}
+                                      <a
+                                        href={`https://${inputDomains[0]}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="underline text-foreground hover:text-primary"
+                                      >
+                                        <code>{inputLabel}</code>
+                                      </a>
                                     </span>
                                   )}
                                   <span className="text-muted-foreground font-normal">
