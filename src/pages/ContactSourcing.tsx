@@ -1305,9 +1305,11 @@ const ContactSourcing = () => {
                                   <Badge variant="secondary">Imported</Badge>
                                 )}
                                 {!r._enrichmentStatus && (
-                                  r._alreadyImported
-                                    ? <Badge variant="secondary">Imported</Badge>
-                                    : <Badge>New</Badge>
+                                  r._inHubSpot
+                                    ? <Badge variant="secondary" title="Already exists in HubSpot">In HubSpot</Badge>
+                                    : r._alreadyImported
+                                      ? <Badge variant="secondary">Imported</Badge>
+                                      : <Badge>New</Badge>
                                 )}
                                 {r._enrichmentStatus === "done" && !r._alreadyImported && <Badge>Ready</Badge>}
                               </TableCell>
