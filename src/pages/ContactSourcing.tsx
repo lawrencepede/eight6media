@@ -15,7 +15,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, Loader2, Search, Sparkles, Upload, ExternalLink, LogOut, User } from "lucide-react";
+import { ArrowLeft, Loader2, Search, Sparkles, Upload, ExternalLink, LogOut, User, Download } from "lucide-react";
 
 // Pull a bare domain out of any string fragment: bare URLs, markdown links,
 // HTML anchors, angle-bracket-wrapped URLs, or tracking redirect wrappers.
@@ -612,6 +612,62 @@ const ContactSourcing = () => {
     }
   };
 
+  // Export selected rows as CSV (opens cleanly in Excel + Google Sheets)
+  const exportSelected = () => {
+    const picks = results.filter((r) => selected.has(idOf(r)));
+    if (!picks.length) {
+      toast({ title: "Select at least one contact", variant: "destructive" });
+      return;
+    }
+    const pickStr = (...vals: any[]) => {
+      for (const v of vals) if (typeof v === "string" && v.trim()) return v.trim();
+      return "";
+    };
+    const nameOf = (r: SearchResult) => {
+      const inner: any = (r as any).contact ?? (r as any).result ?? r;
+      const full = pickStr(
+        r.fullName, (r as any).full_name, (r as any).name, (r as any).displayName, (r as any).display_name,
+        inner?.fullName, inner?.full_name, inner?.name, inner?.displayName, inner?.display_name,
+      );
+      if (full) return full;
+      const first = pickStr(r.firstName, (r as any).first_name, (r as any).givenName, inner?.firstName, inner?.first_name, inner?.givenName);
+      const last = pickStr(r.lastName, (r as any).last_name, (r as any).familyName, (r as any).surname, inner?.lastName, inner?.last_name, inner?.familyName, inner?.surname);
+      return `${first} ${last}`.trim();
+    };
+    const headers = ["Name", "Title", "Company", "Company Domain", "Email", "Phone", "LinkedIn", "City", "State", "Country"];
+    const escape = (v: any) => {
+      const s = v == null ? "" : String(v);
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const lines = [headers.join(",")];
+    for (const r of picks) {
+      lines.push([
+        nameOf(r),
+        r.title ?? "",
+        r.company ?? "",
+        r.companyDomain ?? "",
+        r.email ?? "",
+        r.phone ?? "",
+        r.lIProfileUrl ?? r.linkedinUrl ?? "",
+        r.city ?? "",
+        r.state ?? "",
+        r.country ?? "",
+      ].map(escape).join(","));
+    }
+    // Prepend BOM so Excel detects UTF-8 correctly
+    const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const stamp = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `seamless-contacts-${stamp}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast({ title: "Exported", description: `${picks.length} contact(s) downloaded as CSV.` });
+  };
+
   const pushSelected = async () => {
     const allPicks = results.filter((r) => selected.has(idOf(r)));
     if (!allPicks.length) {
@@ -1014,6 +1070,15 @@ const ContactSourcing = () => {
                   >
                     {pushing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
                     Enrich {selected.size} (reveal email)
+                  </Button>
+                  <Button
+                    onClick={exportSelected}
+                    disabled={selected.size === 0}
+                    variant="outline"
+                    className="font-sans"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Export {selected.size} to CSV
                   </Button>
                   <Button onClick={pushSelected} disabled={pushing || selected.size === 0} className="font-sans">
                     {pushing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
