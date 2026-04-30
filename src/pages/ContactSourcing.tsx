@@ -1006,6 +1006,15 @@ const ContactSourcing = () => {
                     placeholder="lifecycle stage (e.g. lead)"
                     className="w-48"
                   />
+                  <Button
+                    onClick={enrichSelectedOnly}
+                    disabled={pushing || selected.size === 0}
+                    variant="outline"
+                    className="font-sans"
+                  >
+                    {pushing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
+                    Enrich {selected.size} (reveal email)
+                  </Button>
                   <Button onClick={pushSelected} disabled={pushing || selected.size === 0} className="font-sans">
                     {pushing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
                     Push {selected.size} to HubSpot
