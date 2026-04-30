@@ -130,6 +130,7 @@ const ContactSourcing = () => {
   const [companyDomain, setCompanyDomain] = useState("");
   const [jobTitle, setJobTitle] = useState("marketing, influencer, creator, social media");
   const [seniority, setSeniority] = useState("");
+  const [contactName, setContactName] = useState("");
   const [country, setCountry] = useState("");
   const [industry, setIndustry] = useState("");
   const [limit, setLimit] = useState(200);
