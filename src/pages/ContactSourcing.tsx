@@ -502,6 +502,8 @@ const ContactSourcing = () => {
           emptyBrands.length ? ` No results for: ${emptyBrands.slice(0, 5).join(", ")}${emptyBrands.length > 5 ? "…" : ""}` : ""
         }`,
       });
+      // Fire-and-forget HubSpot duplicate check; updates badges when done
+      checkHubSpotForRows(capped);
     } catch (e: any) {
       toast({ title: "Search failed", description: e?.message ?? "Unknown error", variant: "destructive" });
     } finally {
