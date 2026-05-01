@@ -1,73 +1,79 @@
 import { useEffect } from "react";
+// Font assets — imported so Vite emits hashed URLs and bundles them.
+import canardWoff2 from "@/assets/fonts/TAN-StCanard-Regular.woff2";
+import canardOtf from "@/assets/fonts/TAN-StCanard-Regular.otf";
+import biroWoff from "@/assets/fonts/BiroScript-Reduced.ttf";
+import biroOtf from "@/assets/fonts/BiroScript-Reduced.otf";
 
 /**
  * Temporary holding page for thenotagency.com.
  * Self-contained: no shared Navigation/Footer.
- * Color palette stored in mem://design/thenotagency-palette
+ * Color palette stored in mem://design/thenotagency-palette.
  *
- * Fonts: Anton (heavy condensed display) + Caveat (handwritten) loaded
- * from Google Fonts as placeholders until the real Canva fonts are
- * uploaded into src/assets/fonts/.
+ * Fonts (page-scoped via injected @font-face so the rest of the
+ * Eight-Six site keeps its Playfair/Inter stack untouched):
+ *   - TAN St. Canard — heavy condensed display
+ *   - Biro Script Reduced — handwritten accent
  */
 const NotAgency = () => {
   useEffect(() => {
     const prevTitle = document.title;
     document.title = "The Not Agency";
 
-    // Inject Google Fonts only when this page is mounted, so the rest
-    // of the Eight-Six site keeps its Playfair/Inter stack untouched.
-    const preconnect1 = document.createElement("link");
-    preconnect1.rel = "preconnect";
-    preconnect1.href = "https://fonts.googleapis.com";
-    const preconnect2 = document.createElement("link");
-    preconnect2.rel = "preconnect";
-    preconnect2.href = "https://fonts.gstatic.com";
-    preconnect2.crossOrigin = "anonymous";
-    const fontLink = document.createElement("link");
-    fontLink.rel = "stylesheet";
-    fontLink.href =
-      "https://fonts.googleapis.com/css2?family=Anton&family=Caveat:wght@500;700&display=swap";
-
-    document.head.appendChild(preconnect1);
-    document.head.appendChild(preconnect2);
-    document.head.appendChild(fontLink);
+    const style = document.createElement("style");
+    style.setAttribute("data-notagency-fonts", "true");
+    style.textContent = `
+      @font-face {
+        font-family: 'TAN St Canard';
+        src: url('${canardWoff2}') format('woff2'),
+             url('${canardOtf}') format('opentype');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'Biro Script';
+        src: url('${biroOtf}') format('opentype'),
+             url('${biroWoff}') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+    `;
+    document.head.appendChild(style);
 
     return () => {
       document.title = prevTitle;
-      document.head.removeChild(preconnect1);
-      document.head.removeChild(preconnect2);
-      document.head.removeChild(fontLink);
+      document.head.removeChild(style);
     };
   }, []);
 
-  // Brand palette (kept inline rather than added to global tokens so
-  // it cannot leak into Eight-Six components).
+  // Brand palette
   const OLIVE = "#838E00";
   const PALE_BLUE = "#CAD7EB";
   const DEEP_BROWN = "#421E18";
   const WARM_BROWN = "#523838";
 
-  const displayFont = `'Anton', 'Arial Narrow', Impact, sans-serif`;
-  const handFont = `'Caveat', 'Bradley Hand', cursive`;
+  const displayFont = `'TAN St Canard', 'Arial Narrow', Impact, sans-serif`;
+  const handFont = `'Biro Script', 'Bradley Hand', cursive`;
 
   return (
     <main
       className="min-h-screen w-full flex flex-col"
       style={{ backgroundColor: OLIVE, color: DEEP_BROWN }}
     >
-      {/* Hero */}
       <section className="flex-1 flex items-center px-6 sm:px-12 md:px-20 py-16">
         <div className="w-full max-w-6xl mx-auto">
           <div className="relative">
-            {/* NOT. with handwritten note */}
             <div className="flex items-start gap-4 sm:gap-6 mb-2 sm:mb-4">
               <h1
                 style={{
                   fontFamily: displayFont,
                   color: PALE_BLUE,
                   fontSize: "clamp(4.5rem, 14vw, 11rem)",
-                  lineHeight: 0.85,
-                  letterSpacing: "-0.02em",
+                  lineHeight: 1,
+                  letterSpacing: "-0.01em",
+                  margin: 0,
                 }}
               >
                 NOT.
@@ -78,7 +84,7 @@ const NotAgency = () => {
                 style={{
                   fontFamily: handFont,
                   color: PALE_BLUE,
-                  fontSize: "clamp(1rem, 1.8vw, 1.5rem)",
+                  fontSize: "clamp(1.1rem, 2vw, 1.75rem)",
                   transform: "rotate(-4deg)",
                   whiteSpace: "nowrap",
                 }}
@@ -88,14 +94,13 @@ const NotAgency = () => {
               </span>
             </div>
 
-            {/* Mobile-only handwritten line */}
             <div
               aria-hidden
               className="sm:hidden mb-4"
               style={{
                 fontFamily: handFont,
                 color: PALE_BLUE,
-                fontSize: "1.25rem",
+                fontSize: "1.4rem",
                 transform: "rotate(-2deg)",
               }}
             >
@@ -107,8 +112,9 @@ const NotAgency = () => {
                 fontFamily: displayFont,
                 color: DEEP_BROWN,
                 fontSize: "clamp(3.5rem, 12vw, 9.5rem)",
-                lineHeight: 0.88,
-                letterSpacing: "-0.01em",
+                lineHeight: 1.05,
+                letterSpacing: "0",
+                margin: 0,
               }}
             >
               ANOTHER
@@ -117,7 +123,6 @@ const NotAgency = () => {
             </h2>
           </div>
 
-          {/* CTA */}
           <div className="mt-12 sm:mt-16">
             <a
               href="mailto:lawrence@eight6media.com"
@@ -125,7 +130,7 @@ const NotAgency = () => {
               style={{
                 fontFamily: displayFont,
                 letterSpacing: "0.08em",
-                fontSize: "0.95rem",
+                fontSize: "1.05rem",
                 color: OLIVE,
                 backgroundColor: DEEP_BROWN,
                 padding: "1rem 2rem",
@@ -138,7 +143,6 @@ const NotAgency = () => {
         </div>
       </section>
 
-      {/* Footer line */}
       <footer
         className="px-6 sm:px-12 md:px-20 py-6 flex flex-col sm:flex-row gap-2 sm:gap-6 items-start sm:items-center justify-between"
         style={{ color: WARM_BROWN, fontFamily: "'Inter', sans-serif", fontSize: "0.75rem" }}
