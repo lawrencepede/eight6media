@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Navigation from "@/components/Navigation";
 import ScrollToTop from "@/components/ScrollToTop";
@@ -32,10 +32,13 @@ const queryClient = new QueryClient();
 
 const AppShell = () => {
   const isNotAgencyHost = useIsNotAgencyHost();
+  const location = useLocation();
+  const isNotAgencyRoute = location.pathname === "/notagency";
+  const hideNav = isNotAgencyHost || isNotAgencyRoute;
   return (
     <AuthProvider>
       <ScrollToTop />
-      {!isNotAgencyHost && <Navigation />}
+      {!hideNav && <Navigation />}
       <Routes>
         {/* Domain-aware homepage: thenotagency.com sees the holding page,
             everyone else sees Eight-Six Media. */}
