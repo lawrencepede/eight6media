@@ -8,6 +8,7 @@ import placardBold from "@/assets/fonts/PlacardNext-Bold.ttf";
 import placardCondBold from "@/assets/fonts/PlacardNext-CondBold.ttf";
 import coreBandi from "@/assets/fonts/CoreBandiFaceW01-Regular.ttf";
 import arrowImg from "@/assets/notagency-arrow.png";
+import envelopeImg from "@/assets/notagency-envelope.png";
 
 /**
  * Temporary holding page for thenotagency.com.
@@ -464,8 +465,11 @@ const NotAgency = () => {
                 letterSpacing: "0.08em",
                 fontSize: "1.05rem",
                 color: OLIVE,
-                backgroundColor: "#FAABFE",
-                padding: "1rem 2rem",
+                backgroundImage: `url(${envelopeImg})`,
+                backgroundSize: "100% 100%",
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "center",
+                padding: "1.75rem 3rem",
                 textDecoration: "none",
               }}
             >
