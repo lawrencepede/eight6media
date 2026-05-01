@@ -71,8 +71,9 @@ const NotAgency = () => {
                   fontFamily: displayFont,
                   color: PALE_BLUE,
                   fontSize: "clamp(4.5rem, 14vw, 11rem)",
-                  lineHeight: 0.85,
-                  letterSpacing: "-0.02em",
+                  lineHeight: 1,
+                  letterSpacing: "-0.01em",
+                  margin: 0,
                 }}
               >
                 NOT.
@@ -111,8 +112,9 @@ const NotAgency = () => {
                 fontFamily: displayFont,
                 color: DEEP_BROWN,
                 fontSize: "clamp(3.5rem, 12vw, 9.5rem)",
-                lineHeight: 0.88,
-                letterSpacing: "-0.01em",
+                lineHeight: 1.05,
+                letterSpacing: "0",
+                margin: 0,
               }}
             >
               ANOTHER
