@@ -4,6 +4,7 @@ import canardWoff2 from "@/assets/fonts/TAN-StCanard-Regular.woff2";
 import canardOtf from "@/assets/fonts/TAN-StCanard-Regular.otf";
 import biroWoff from "@/assets/fonts/BiroScript-Reduced.ttf";
 import biroOtf from "@/assets/fonts/BiroScript-Reduced.otf";
+import placardBold from "@/assets/fonts/PlacardNext-Bold.ttf";
 
 /**
  * Temporary holding page for thenotagency.com.
