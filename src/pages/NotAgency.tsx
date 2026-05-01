@@ -440,7 +440,7 @@ const NotAgency = () => {
             </div>
           )}
 
-          <div className="mt-12 sm:mt-16">
+          <div style={{ marginTop: "1.02rem" }}>
             <a
               href="mailto:lawrence@eight6media.com"
               className="inline-block transition-transform hover:-translate-y-0.5"
