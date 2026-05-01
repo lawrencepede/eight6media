@@ -68,6 +68,7 @@ const NotAgency = () => {
   // Brand palette
   const OLIVE = "#838E00";
   const PALE_BLUE = "#CAD7EB";
+  const ARROW_GREEN = "#ddf48c";
   const DEEP_BROWN = "#421E18";
   const WARM_BROWN = "#523838";
 
