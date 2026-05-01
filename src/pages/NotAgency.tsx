@@ -91,14 +91,7 @@ const NotAgency = () => {
     heroRect: new DOMRect(),
   });
 
-  // Persist
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(layout));
-    } catch {
-      /* ignore */
-    }
-  }, [layout]);
+  // No persistence — defaults are the source of truth.
 
   useEffect(() => {
     const prevTitle = document.title;
