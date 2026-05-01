@@ -440,26 +440,7 @@ const NotAgency = () => {
             </div>
           )}
 
-          <div style={{ marginTop: "1.02em", fontSize: "clamp(3.5rem, 12vw, 9.5rem)" }}>
-            <div style={{ fontSize: "1rem" }}>
-              <a
-                href="mailto:lawrence@eight6media.com"
-                className="inline-block transition-transform hover:-translate-y-0.5"
-                style={{
-                  fontFamily: displayFont,
-                  letterSpacing: "0.08em",
-                  fontSize: "1.05rem",
-                  color: OLIVE,
-                  backgroundColor: "#FAABFE",
-                  padding: "1rem 2rem",
-                  textDecoration: "none",
-                }}
-              >
-                GET IN TOUCH →
-              </a>
-            </div>
-          </div>
-          <div style={{ display: "none" }}>
+          <div style={{ marginTop: "1.02rem" }}>
             <a
               href="mailto:lawrence@eight6media.com"
               className="inline-block transition-transform hover:-translate-y-0.5"
