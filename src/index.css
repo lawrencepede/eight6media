@@ -1,5 +1,36 @@
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Inter:wght@300;400;500;600&display=swap');
 
+/* The Not Agency — display fonts. Declared in CSS (not JS) so the browser
+   discovers and downloads them during initial CSS parse, eliminating the
+   font-swap flash on first load. */
+@font-face {
+  font-family: 'TAN St Canard';
+  src: url('/fonts/TAN-StCanard-Regular.woff2') format('woff2'),
+       url('/fonts/TAN-StCanard-Regular.otf') format('opentype');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Biro Script';
+  src: url('/fonts/BiroScript-Reduced.otf') format('opentype'),
+       url('/fonts/BiroScript-Reduced.ttf') format('truetype');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Placard Next';
+  src: url('/fonts/PlacardNext-Bold.ttf') format('truetype');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Placard Next Cond';
+  src: url('/fonts/PlacardNext-CondBold.ttf') format('truetype');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Core Bandi';
+  src: url('/fonts/CoreBandiFaceW01-Regular.ttf') format('truetype');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
