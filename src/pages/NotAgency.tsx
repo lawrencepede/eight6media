@@ -1,12 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-// Font assets — imported so Vite emits hashed URLs and bundles them.
-import canardWoff2 from "@/assets/fonts/TAN-StCanard-Regular.woff2";
-import canardOtf from "@/assets/fonts/TAN-StCanard-Regular.otf";
-import biroWoff from "@/assets/fonts/BiroScript-Reduced.ttf";
-import biroOtf from "@/assets/fonts/BiroScript-Reduced.otf";
-import placardBold from "@/assets/fonts/PlacardNext-Bold.ttf";
-import placardCondBold from "@/assets/fonts/PlacardNext-CondBold.ttf";
-import coreBandi from "@/assets/fonts/CoreBandiFaceW01-Regular.ttf";
+// Fonts are declared in src/index.css and preloaded in index.html so they
+// load with the initial CSS pass — no JS-mounted FOUT.
 import arrowImg from "@/assets/notagency-arrow.png";
 import envelopeImg from "@/assets/notagency-envelope.png";
 
@@ -98,42 +92,8 @@ const NotAgency = () => {
     const prevTitle = document.title;
     document.title = "The Not Agency";
 
-    const style = document.createElement("style");
-    style.setAttribute("data-notagency-fonts", "true");
-    style.textContent = `
-      @font-face {
-        font-family: 'TAN St Canard';
-        src: url('${canardWoff2}') format('woff2'),
-             url('${canardOtf}') format('opentype');
-        font-weight: 400; font-style: normal; font-display: swap;
-      }
-      @font-face {
-        font-family: 'Biro Script';
-        src: url('${biroOtf}') format('opentype'),
-             url('${biroWoff}') format('truetype');
-        font-weight: 400; font-style: normal; font-display: swap;
-      }
-      @font-face {
-        font-family: 'Placard Next';
-        src: url('${placardBold}') format('truetype');
-        font-weight: 700; font-style: normal; font-display: swap;
-      }
-      @font-face {
-        font-family: 'Placard Next Cond';
-        src: url('${placardCondBold}') format('truetype');
-        font-weight: 700; font-style: normal; font-display: swap;
-      }
-      @font-face {
-        font-family: 'Core Bandi';
-        src: url('${coreBandi}') format('truetype');
-        font-weight: 400; font-style: normal; font-display: swap;
-      }
-    `;
-    document.head.appendChild(style);
-
     return () => {
       document.title = prevTitle;
-      document.head.removeChild(style);
     };
   }, []);
 

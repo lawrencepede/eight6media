@@ -37,6 +37,11 @@
         } catch (e) {}
       })();
     </script>
+
+    <!-- Preload critical Not Agency display fonts so the browser fetches them
+         in parallel with HTML parsing, before the JS bundle even runs. -->
+    <link rel="preload" as="font" type="font/ttf" href="/fonts/PlacardNext-CondBold.ttf" crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/TAN-StCanard-Regular.woff2" crossorigin />
   </head>
 
   <body>
