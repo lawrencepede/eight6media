@@ -316,8 +316,6 @@ const NotAgency = () => {
                 margin: 0,
               }}
             >
-              JUST
-              <br />
               ANOTHER
               <br />
               TALENT AGENCY
