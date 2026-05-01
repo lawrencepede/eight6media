@@ -290,13 +290,13 @@ const NotAgency = () => {
           {/* Headlines — heroRef is anchored here so the floating arrow + text
               track the headline block at every viewport size. */}
           <div ref={heroRef} className="relative">
-            <div className="flex items-start gap-4 sm:gap-6 mb-2 sm:mb-4">
+            <div className="flex items-start gap-4 sm:gap-6">
               <h1
                 style={{
                   fontFamily: displayFont,
                   color: PALE_BLUE,
                   fontSize: "clamp(4.5rem, 14vw, 11rem)",
-                  lineHeight: 1,
+                  lineHeight: 0.93,
                   letterSpacing: "-0.01em",
                   margin: 0,
                 }}
@@ -311,7 +311,7 @@ const NotAgency = () => {
                 fontWeight: 700,
                 color: DEEP_BROWN,
                 fontSize: "clamp(3.5rem, 12vw, 9.5rem)",
-                lineHeight: 0.85,
+                lineHeight: 0.93,
                 letterSpacing: "0",
                 margin: 0,
               }}
