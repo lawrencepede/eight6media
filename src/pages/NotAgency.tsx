@@ -282,14 +282,22 @@ const NotAgency = () => {
               zIndex: 5,
             }}
           >
-            <img
-              src={arrowImg}
-              alt=""
-              draggable={false}
+            {/* Tint the arrow PNG to exactly match ARROW_GREEN by using
+                it as a CSS mask over a solid color block. */}
+            <div
+              aria-hidden
               style={{
                 width: "100%",
                 height: "100%",
-                display: "block",
+                backgroundColor: ARROW_GREEN,
+                WebkitMaskImage: `url(${arrowImg})`,
+                maskImage: `url(${arrowImg})`,
+                WebkitMaskRepeat: "no-repeat",
+                maskRepeat: "no-repeat",
+                WebkitMaskSize: "contain",
+                maskSize: "contain",
+                WebkitMaskPosition: "center",
+                maskPosition: "center",
                 pointerEvents: "none",
               }}
             />
