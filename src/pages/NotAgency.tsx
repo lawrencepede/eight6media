@@ -342,7 +342,7 @@ const NotAgency = () => {
                 fontFamily: handFont,
                 fontSize: layout.text.size,
                 color: ARROW_GREEN,
-                lineHeight: 1,
+                lineHeight: 0.85,
                 display: "inline-block",
                 pointerEvents: "none",
                 textAlign: "center",
