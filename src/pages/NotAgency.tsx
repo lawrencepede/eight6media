@@ -114,26 +114,33 @@ const NotAgency = () => {
                 </span>
                 {/* Hand-drawn curved arrow pointing down-left toward "NOT." */}
                 <svg
-                  width="90"
-                  height="60"
-                  viewBox="0 0 90 60"
+                  width="140"
+                  height="90"
+                  viewBox="0 0 140 90"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
-                  style={{ marginTop: "-0.25rem", marginLeft: "-0.25rem" }}
+                  style={{ marginTop: "-0.5rem", marginLeft: "-1rem", overflow: "visible" }}
                 >
-                  {/* Curl: starts under the text on the right, curves down-left */}
+                  {/* Curl: starts under the text on the right, sweeps down-left toward NOT. */}
                   <path
-                    d="M82 4 C 70 18, 55 28, 38 38"
+                    d="M132 6 C 110 22, 80 38, 32 70"
                     stroke={PALE_BLUE}
-                    strokeWidth="2"
+                    strokeWidth="2.5"
                     strokeLinecap="round"
                     fill="none"
                   />
-                  {/* Arrowhead at the end of the curl */}
+                  {/* Arrowhead at the tip — two short strokes forming a V pointing down-left */}
                   <path
-                    d="M38 38 L 46 34 M38 38 L 42 46"
+                    d="M32 70 L 48 64"
                     stroke={PALE_BLUE}
-                    strokeWidth="2"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    fill="none"
+                  />
+                  <path
+                    d="M32 70 L 40 82"
+                    stroke={PALE_BLUE}
+                    strokeWidth="2.5"
                     strokeLinecap="round"
                     fill="none"
                   />
