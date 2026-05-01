@@ -227,13 +227,6 @@ const NotAgency = () => {
         <span style={{ letterSpacing: "0.08em", textTransform: "uppercase" }}>
           © {new Date().getFullYear()} The Not Agency
         </span>
-        <a
-          href="mailto:lawrence@eight6media.com"
-          style={{ color: WARM_BROWN, letterSpacing: "0.05em" }}
-          className="hover:opacity-70 transition-opacity"
-        >
-          lawrence@eight6media.com
-        </a>
       </footer>
     </main>
   );
