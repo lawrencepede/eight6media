@@ -440,7 +440,7 @@ const NotAgency = () => {
             </div>
           )}
 
-          <div style={{ marginTop: "1.02rem" }}>
+          <div style={{ marginTop: "1.02rem", marginLeft: "0.08em", fontSize: "clamp(3.5rem, 12vw, 9.5rem)" }}>
             <div>
             <a
               href="mailto:lawrence@eight6media.com"
