@@ -457,6 +457,7 @@ const NotAgency = () => {
             >
               GET IN TOUCH →
             </a>
+            </div>
           </div>
         </div>
       </section>
