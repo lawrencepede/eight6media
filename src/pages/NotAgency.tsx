@@ -345,9 +345,12 @@ const NotAgency = () => {
                 lineHeight: 1,
                 display: "inline-block",
                 pointerEvents: "none",
+                textAlign: "center",
               }}
             >
-              your typical partnerships
+              your typical
+              <br />
+              partnerships
             </span>
             {editMode && <SelectionChrome target="text" />}
           </div>
