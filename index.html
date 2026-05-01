@@ -17,6 +17,26 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@Lovable" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+
+    <!-- Domain-aware favicon: swap to Not Agency mark on thenotagency.com -->
+    <script>
+      (function () {
+        try {
+          var host = window.location.hostname;
+          if (host === "thenotagency.com" || host === "www.thenotagency.com") {
+            var link = document.querySelector("link[rel='icon']");
+            if (!link) {
+              link = document.createElement("link");
+              link.rel = "icon";
+              document.head.appendChild(link);
+            }
+            link.type = "image/png";
+            link.href = "/favicon-notagency.png";
+            document.title = "The Not Agency";
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
 
   <body>
