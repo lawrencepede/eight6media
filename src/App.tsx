@@ -112,6 +112,16 @@ const AppShell = () => {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
+  );
+};
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <AppShell />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
