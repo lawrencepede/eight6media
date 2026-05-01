@@ -21,7 +21,7 @@ import arrowImg from "@/assets/notagency-arrow.png";
 type Item = {
   xPct: number; // center x as % of hero
   yPct: number; // center y as % of hero
-  size: number; // px — width for arrow, font-size for text
+  sizeEm: number; // size relative to the headline font-size (em)
   rotation: number; // degrees
 };
 
@@ -30,37 +30,45 @@ type Layout = {
   text: Item;
 };
 
-const STORAGE_KEY = "notagency.layout.v3";
-
+// Sizes are expressed in em relative to the TALENT AGENCY headline font-size,
+// so the arrow + handwriting scale together with the responsive headline and
+// stay locked relative to it at every viewport.
 const DEFAULT_LAYOUT: Layout = {
-  arrow: { xPct: 29.6, yPct: -2.1, size: 69, rotation: -19 },
-  text: { xPct: 38.9, yPct: 3.5, size: 21, rotation: -14 },
+  arrow: { xPct: 29.6, yPct: -2.1, sizeEm: 0.56, rotation: -19 },
+  text: { xPct: 38.9, yPct: 3.5, sizeEm: 0.17, rotation: -14 },
 };
 
 type ItemKey = keyof Layout;
 type DragMode = "move" | "rotate" | "resize";
 
 const NotAgency = () => {
-  const [layout, setLayout] = useState<Layout>(() => {
-    if (typeof window === "undefined") return DEFAULT_LAYOUT;
-    try {
-      const saved = window.localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return {
-          arrow: { ...DEFAULT_LAYOUT.arrow, ...(parsed.arrow ?? {}) },
-          text: { ...DEFAULT_LAYOUT.text, ...(parsed.text ?? {}) },
-        };
-      }
-    } catch {
-      /* ignore */
-    }
-    return DEFAULT_LAYOUT;
-  });
+  // Defaults always win on load — no localStorage override. Edit mode still
+  // works in-session for tweaking; just copy the HUD values back into
+  // DEFAULT_LAYOUT to bake new positions.
+  const [layout, setLayout] = useState<Layout>(DEFAULT_LAYOUT);
 
   const editMode =
     typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).get("edit") === "1";
+
+  // Live headline font-size in px, used to convert em <-> px for rendering
+  // and for the edit-mode resize handle math.
+  const [headlinePx, setHeadlinePx] = useState<number>(() => {
+    if (typeof window === "undefined") return 100;
+    // Mirror clamp(3.5rem, 12vw, 9.5rem) at 16px root.
+    const vw = window.innerWidth;
+    return Math.max(56, Math.min(152, vw * 0.12));
+  });
+
+  useEffect(() => {
+    const compute = () => {
+      const vw = window.innerWidth;
+      setHeadlinePx(Math.max(56, Math.min(152, vw * 0.12)));
+    };
+    compute();
+    window.addEventListener("resize", compute);
+    return () => window.removeEventListener("resize", compute);
+  }, []);
 
   const heroRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{
@@ -83,14 +91,7 @@ const NotAgency = () => {
     heroRect: new DOMRect(),
   });
 
-  // Persist
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(layout));
-    } catch {
-      /* ignore */
-    }
-  }, [layout]);
+  // No persistence — defaults are the source of truth.
 
   useEffect(() => {
     const prevTitle = document.title;
@@ -162,22 +163,28 @@ const NotAgency = () => {
       }));
     } else if (d.mode === "resize") {
       const dist = Math.hypot(e.clientX - d.centerX, e.clientY - d.centerY);
-      // Arrow: distance ≈ half-width. Text: scale relative to start.
+      const hp = headlinePx || 100;
       if (target === "arrow") {
-        const newSize = Math.max(60, Math.min(800, Math.round(dist * 2)));
-        setLayout((s) => ({ ...s, arrow: { ...s.arrow, size: newSize } }));
+        // dist ≈ half-width in px → convert to em via headline px.
+        const newEm = Math.max(0.1, Math.min(8, (dist * 2) / hp));
+        setLayout((s) => ({
+          ...s,
+          arrow: { ...s.arrow, sizeEm: Math.round(newEm * 1000) / 1000 },
+        }));
       } else {
-        // For text, use distance ratio against original click distance.
         const startDist = Math.hypot(
           d.startX - d.centerX,
           d.startY - d.centerY
         );
         const ratio = startDist > 0 ? dist / startDist : 1;
-        const newSize = Math.max(
-          10,
-          Math.min(120, Math.round(d.startState.size * ratio))
+        const newEm = Math.max(
+          0.05,
+          Math.min(2, d.startState.sizeEm * ratio)
         );
-        setLayout((s) => ({ ...s, text: { ...s.text, size: newSize } }));
+        setLayout((s) => ({
+          ...s,
+          text: { ...s.text, sizeEm: Math.round(newEm * 1000) / 1000 },
+        }));
       }
     }
   }, []);
@@ -347,7 +354,7 @@ const NotAgency = () => {
             <span
               style={{
                 fontFamily: handFont,
-                fontSize: layout.text.size,
+                fontSize: `${layout.text.sizeEm * headlinePx}px`,
                 color: ARROW_GREEN,
                 lineHeight: 0.85,
                 display: "inline-block",
@@ -369,8 +376,8 @@ const NotAgency = () => {
               position: "absolute",
               left: `${layout.arrow.xPct}%`,
               top: `${layout.arrow.yPct}%`,
-              width: layout.arrow.size,
-              height: layout.arrow.size / arrowAspect,
+              width: layout.arrow.sizeEm * headlinePx,
+              height: (layout.arrow.sizeEm * headlinePx) / arrowAspect,
               transform: `translate(-50%, -50%) rotate(${layout.arrow.rotation}deg)`,
               touchAction: "none",
               cursor: editMode ? "move" : "default",
@@ -421,10 +428,10 @@ const NotAgency = () => {
               <div style={{ fontWeight: 700, marginBottom: 4 }}>Edit mode</div>
               <div style={{ marginTop: 4, fontWeight: 700 }}>Arrow</div>
               <div>x: {layout.arrow.xPct.toFixed(1)}%  y: {layout.arrow.yPct.toFixed(1)}%</div>
-              <div>width: {layout.arrow.size}px  rot: {layout.arrow.rotation}°</div>
+              <div>size: {layout.arrow.sizeEm.toFixed(3)}em ({Math.round(layout.arrow.sizeEm * headlinePx)}px)  rot: {layout.arrow.rotation}°</div>
               <div style={{ marginTop: 6, fontWeight: 700 }}>Text</div>
               <div>x: {layout.text.xPct.toFixed(1)}%  y: {layout.text.yPct.toFixed(1)}%</div>
-              <div>size: {layout.text.size}px  rot: {layout.text.rotation}°</div>
+              <div>size: {layout.text.sizeEm.toFixed(3)}em ({Math.round(layout.text.sizeEm * headlinePx)}px)  rot: {layout.text.rotation}°</div>
               <button
                 onClick={() => setLayout(DEFAULT_LAYOUT)}
                 style={{
