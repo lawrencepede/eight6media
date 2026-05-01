@@ -449,7 +449,7 @@ const NotAgency = () => {
                 letterSpacing: "0.08em",
                 fontSize: "1.05rem",
                 color: OLIVE,
-                backgroundColor: DEEP_BROWN,
+                backgroundColor: "#FAABFE",
                 padding: "1rem 2rem",
                 textDecoration: "none",
               }}
