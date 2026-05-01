@@ -440,8 +440,8 @@ const NotAgency = () => {
             </div>
           )}
 
-          <div style={{ marginTop: "1.02rem", marginLeft: "-0.06em", fontSize: "clamp(3.5rem, 12vw, 9.5rem)" }}>
-            <div style={{ fontSize: "1rem" }}>
+          <div style={{ marginTop: "1.02rem" }}>
+            <div>
             <a
               href="mailto:lawrence@eight6media.com"
               className="inline-block transition-transform hover:-translate-y-0.5"
