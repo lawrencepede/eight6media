@@ -21,7 +21,7 @@ import arrowImg from "@/assets/notagency-arrow.png";
 type Item = {
   xPct: number; // center x as % of hero
   yPct: number; // center y as % of hero
-  size: number; // px — width for arrow, font-size for text
+  sizeEm: number; // size relative to the headline font-size (em)
   rotation: number; // degrees
 };
 
@@ -30,37 +30,45 @@ type Layout = {
   text: Item;
 };
 
-const STORAGE_KEY = "notagency.layout.v3";
-
+// Sizes are expressed in em relative to the TALENT AGENCY headline font-size,
+// so the arrow + handwriting scale together with the responsive headline and
+// stay locked relative to it at every viewport.
 const DEFAULT_LAYOUT: Layout = {
-  arrow: { xPct: 29.6, yPct: -2.1, size: 69, rotation: -19 },
-  text: { xPct: 38.9, yPct: 3.5, size: 21, rotation: -14 },
+  arrow: { xPct: 29.6, yPct: -2.1, sizeEm: 0.56, rotation: -19 },
+  text: { xPct: 38.9, yPct: 3.5, sizeEm: 0.17, rotation: -14 },
 };
 
 type ItemKey = keyof Layout;
 type DragMode = "move" | "rotate" | "resize";
 
 const NotAgency = () => {
-  const [layout, setLayout] = useState<Layout>(() => {
-    if (typeof window === "undefined") return DEFAULT_LAYOUT;
-    try {
-      const saved = window.localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return {
-          arrow: { ...DEFAULT_LAYOUT.arrow, ...(parsed.arrow ?? {}) },
-          text: { ...DEFAULT_LAYOUT.text, ...(parsed.text ?? {}) },
-        };
-      }
-    } catch {
-      /* ignore */
-    }
-    return DEFAULT_LAYOUT;
-  });
+  // Defaults always win on load — no localStorage override. Edit mode still
+  // works in-session for tweaking; just copy the HUD values back into
+  // DEFAULT_LAYOUT to bake new positions.
+  const [layout, setLayout] = useState<Layout>(DEFAULT_LAYOUT);
 
   const editMode =
     typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).get("edit") === "1";
+
+  // Live headline font-size in px, used to convert em <-> px for rendering
+  // and for the edit-mode resize handle math.
+  const [headlinePx, setHeadlinePx] = useState<number>(() => {
+    if (typeof window === "undefined") return 100;
+    // Mirror clamp(3.5rem, 12vw, 9.5rem) at 16px root.
+    const vw = window.innerWidth;
+    return Math.max(56, Math.min(152, vw * 0.12));
+  });
+
+  useEffect(() => {
+    const compute = () => {
+      const vw = window.innerWidth;
+      setHeadlinePx(Math.max(56, Math.min(152, vw * 0.12)));
+    };
+    compute();
+    window.addEventListener("resize", compute);
+    return () => window.removeEventListener("resize", compute);
+  }, []);
 
   const heroRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{
