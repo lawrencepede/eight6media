@@ -286,9 +286,10 @@ const NotAgency = () => {
       style={{ backgroundColor: OLIVE, color: DEEP_BROWN }}
     >
       <section className="flex-1 flex items-center px-6 sm:px-12 md:px-20 py-16">
-        <div ref={heroRef} className="w-full max-w-6xl mx-auto relative">
-          {/* Headlines */}
-          <div className="relative">
+        <div className="w-full max-w-6xl mx-auto relative">
+          {/* Headlines — heroRef is anchored here so the floating arrow + text
+              track the headline block at every viewport size. */}
+          <div ref={heroRef} className="relative">
             <div className="flex items-start gap-4 sm:gap-6 mb-2 sm:mb-4">
               <h1
                 style={{
