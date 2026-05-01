@@ -4,6 +4,7 @@ import canardWoff2 from "@/assets/fonts/TAN-StCanard-Regular.woff2";
 import canardOtf from "@/assets/fonts/TAN-StCanard-Regular.otf";
 import biroWoff from "@/assets/fonts/BiroScript-Reduced.ttf";
 import biroOtf from "@/assets/fonts/BiroScript-Reduced.otf";
+import placardBold from "@/assets/fonts/PlacardNext-Bold.ttf";
 
 /**
  * Temporary holding page for thenotagency.com.
@@ -39,6 +40,13 @@ const NotAgency = () => {
         font-style: normal;
         font-display: swap;
       }
+      @font-face {
+        font-family: 'Placard Next';
+        src: url('${placardBold}') format('truetype');
+        font-weight: 700;
+        font-style: normal;
+        font-display: swap;
+      }
     `;
     document.head.appendChild(style);
 
@@ -55,6 +63,7 @@ const NotAgency = () => {
   const WARM_BROWN = "#523838";
 
   const displayFont = `'TAN St Canard', 'Arial Narrow', Impact, sans-serif`;
+  const placardFont = `'Placard Next', 'Arial Narrow', Impact, sans-serif`;
   const handFont = `'Biro Script', 'Bradley Hand', cursive`;
 
   return (
@@ -109,7 +118,8 @@ const NotAgency = () => {
 
             <h2
               style={{
-                fontFamily: displayFont,
+                fontFamily: placardFont,
+                fontWeight: 700,
                 color: DEEP_BROWN,
                 fontSize: "clamp(3.5rem, 12vw, 9.5rem)",
                 lineHeight: 1.05,
@@ -117,6 +127,8 @@ const NotAgency = () => {
                 margin: 0,
               }}
             >
+              JUST
+              <br />
               ANOTHER
               <br />
               TALENT AGENCY
