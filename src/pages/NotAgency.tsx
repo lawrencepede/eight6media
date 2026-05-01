@@ -295,7 +295,7 @@ const NotAgency = () => {
                 style={{
                   fontFamily: displayFont,
                   color: PALE_BLUE,
-                  fontSize: "clamp(4.5rem, 14vw, 11rem)",
+                  fontSize: "clamp(3rem, 9vw, 7rem)",
                   lineHeight: 0.93,
                   letterSpacing: "-0.01em",
                   margin: 0,
