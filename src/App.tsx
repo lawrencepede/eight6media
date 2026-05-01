@@ -2,12 +2,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Navigation from "@/components/Navigation";
 import ScrollToTop from "@/components/ScrollToTop";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { useIsNotAgencyHost } from "@/hooks/useIsNotAgencyHost";
 import Index from "./pages/Index";
+import NotAgency from "./pages/NotAgency";
 import Work from "./pages/Work";
 import Roster from "./pages/Roster";
 import ForBrands from "./pages/ForBrands";
@@ -28,17 +30,22 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <ScrollToTop />
-          <Navigation />
-          <Routes>
-            <Route path="/" element={<Index />} />
+const AppShell = () => {
+  const isNotAgencyHost = useIsNotAgencyHost();
+  const location = useLocation();
+  const isNotAgencyRoute = location.pathname === "/notagency";
+  const hideNav = isNotAgencyHost || isNotAgencyRoute;
+  return (
+    <AuthProvider>
+      <ScrollToTop />
+      {!hideNav && <Navigation />}
+      <Routes>
+        {/* Domain-aware homepage: thenotagency.com sees the holding page,
+            everyone else sees Eight-Six Media. */}
+        <Route path="/" element={isNotAgencyHost ? <NotAgency /> : <Index />} />
+        {/* Always-available preview route so we can QA on lovable.app. */}
+        <Route path="/notagency" element={<NotAgency />} />
+        {/* Eight-Six routes — kept available on all hosts for now. */}
             <Route path="/work" element={<Work />} />
             <Route path="/roster" element={<Roster />} />
             <Route path="/for-brands" element={<ForBrands />} />
@@ -108,6 +115,16 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
+  );
+};
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <AppShell />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

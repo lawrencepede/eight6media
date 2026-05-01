@@ -1,40 +1,56 @@
-I found the likely root cause: the app is treating Seamless enrichment results as usable even while Seamless still reports the contacts as `researching`. The recent database records show contacts with `status: researching`, `email: null`, and empty `emails: []`, yet they were still created in HubSpot. That means the current wait/merge logic is not strict enough, and in some cases the frontend is falling back to the original search row rather than a finished enriched result.
+## Temporary landing page at thenotagency.com
 
-Plan to resolve it:
+A domain-aware landing page that renders only when visitors arrive on `thenotagency.com`. The Eight-Six site stays untouched on `eight6media.lovable.app` and the preview URL.
 
-1. Tighten the Seamless polling function
-   - Update `seamless-search` so it does not return `complete: true` unless every selected contact has a terminal status like `done`/`complete`/`finished`.
-   - Treat `researching` as still pending even if the API returns partial contact objects.
-   - Preserve a clear `pendingCount`, `missingEmailCount`, and per-contact `status/message` so the UI can explain what happened.
-   - Extract emails from all documented Seamless fields, especially `email`, `email1`, `email2`, `email3`, and their validation metadata (`email1EmailAI`, etc.), not just `emails[]`.
+### What you'll see
 
-2. Fix frontend matching and waiting
-   - Increase the frontend enrichment retry window so it gives Seamless time to finish instead of retrying only a few short times.
-   - Index enriched results by both `searchResultId` and `requestId`, but when merging into selected contacts, only use a finished enriched result for that exact search result.
-   - Do not import a row if enrichment is still pending/researching.
-   - Change the toast copy from a generic “No email addresses found” to distinguish:
-     - “Still researching, try again shortly”
-     - “Finished but Seamless did not return an email”
-     - “Email found and imported”
+A single full-screen page on the olive (`#838E00`) background recreating the Canva mockup:
 
-3. Add a safer backend guard
-   - Keep the HubSpot function from creating contacts without email addresses.
-   - Make it validate email presence and basic email shape before creating/updating HubSpot records.
-   - Return skipped contacts separately from failed contacts so the UI can show the reason.
+```text
+┌───────────────────────────────────────────┐
+│                                           │
+│  NOT.        ⌐ your typical partnerships  │
+│  ANOTHER                                  │
+│  TALENT AGENCY                            │
+│                                           │
+│                                           │
+│           [ Get in touch → ]              │
+│                                           │
+│                                           │
+│   © the not agency · lawrence@eight6...   │
+└───────────────────────────────────────────┘
+```
 
-4. Add a debugging view in the Contact Sourcing page
-   - Show an enrichment status column after pushing/enriching: `researching`, `done`, `no email`, `imported`, etc.
-   - This will make it obvious whether Seamless is still working versus genuinely not having data for that contact.
+- "NOT." in pale blue (`#CAD7EB`), the rest in deep brown (`#523838` / `#421E18`) — heavy condensed display type
+- Handwritten "your typical partnerships" with little arrow, in cream/blue
+- Single CTA → `mailto:lawrence@eight6media.com`
+- Tiny footer line (copyright + email)
+- No nav, no other sections — truly a holding page
 
-5. Optional cleanup for bad HubSpot records already created
-   - The earlier versions already created several HubSpot contacts with no email. I can add a one-time cleanup helper or backend action to locate the blank-email contacts created by this tool so you can remove or review them.
+### What I need from you
 
-Technical notes:
-- No new secrets are needed; `SEAMLESS_API_KEY` and the HubSpot connector secret are already configured.
-- No database schema change is strictly required for the fix.
-- The main code changes will be in:
-  - `supabase/functions/seamless-search/index.ts`
-  - `supabase/functions/hubspot-push-contacts/index.ts`
-  - `src/pages/ContactSourcing.tsx`
+1. **Two font files** uploaded into chat:
+   - The heavy condensed display font from the mockup (looks like Druk Wide / Compacta / Knockout — whatever the actual Canva file uses). Upload `.ttf`, `.otf`, `.woff`, or `.woff2`.
+   - The handwritten script font for "your typical partnerships"
+2. (Optional) If you want me to use specific copy beyond what's on the mockup + a CTA + the email line, send it. Otherwise I'll keep it to exactly what's shown.
 
-After approval, I’ll implement this so the tool either imports contacts with real emails or clearly tells you Seamless is still processing / did not provide an email, instead of creating blank HubSpot records or showing a misleading generic error.
+I'll wire them in via `@font-face` and use them only on the Not Agency page so they don't affect the rest of the site.
+
+### Technical implementation
+
+1. **Save the color palette to memory** at `mem://design/thenotagency-palette` with all 12 colors + the 4 designated background colors, so future work on this brand stays consistent.
+2. **New page** `src/pages/NotAgency.tsx` — self-contained, full-bleed olive background, no `Navigation`/`Footer` from the existing site.
+3. **Domain-aware routing** in `src/App.tsx`:
+   - At the `/` route, check `window.location.hostname`. If it matches `thenotagency.com` or `www.thenotagency.com`, render `<NotAgency />` instead of `<Index />`. Otherwise render `<Index />` as today.
+   - Also hide the global `<Navigation />` on the not-agency host (it's a standalone landing page).
+   - Add an explicit `/notagency` route too, so we can preview it on the lovable.app URL before the DNS fully propagates.
+4. **Fonts** placed in `src/assets/fonts/` and loaded via a scoped `@font-face` block in `src/index.css` (or a page-local style block). Only the Not Agency page applies them — Eight-Six keeps Playfair/Inter.
+5. **No new routes for the user to remember** — `thenotagency.com/` just works.
+
+### Out of scope (call out separately if you want them)
+
+- Email capture / waitlist form (would need a Lovable Cloud table + form)
+- SEO meta tags swap per-domain (can add later — `index.html` is shared across domains so the title/OG tags will currently say "Lovable App" on both)
+- Favicon swap per-domain
+
+Reply with the two font files and I'll ship it.
