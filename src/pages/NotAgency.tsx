@@ -5,6 +5,7 @@ import canardOtf from "@/assets/fonts/TAN-StCanard-Regular.otf";
 import biroWoff from "@/assets/fonts/BiroScript-Reduced.ttf";
 import biroOtf from "@/assets/fonts/BiroScript-Reduced.otf";
 import placardBold from "@/assets/fonts/PlacardNext-Bold.ttf";
+import placardCondBold from "@/assets/fonts/PlacardNext-CondBold.ttf";
 
 /**
  * Temporary holding page for thenotagency.com.
@@ -47,6 +48,13 @@ const NotAgency = () => {
         font-style: normal;
         font-display: swap;
       }
+      @font-face {
+        font-family: 'Placard Next Cond';
+        src: url('${placardCondBold}') format('truetype');
+        font-weight: 700;
+        font-style: normal;
+        font-display: swap;
+      }
     `;
     document.head.appendChild(style);
 
@@ -63,7 +71,7 @@ const NotAgency = () => {
   const WARM_BROWN = "#523838";
 
   const displayFont = `'TAN St Canard', 'Arial Narrow', Impact, sans-serif`;
-  const placardFont = `'Placard Next', 'Arial Narrow', Impact, sans-serif`;
+  const placardFont = `'Placard Next Cond', 'Arial Narrow', Impact, sans-serif`;
   const handFont = `'Biro Script', 'Bradley Hand', cursive`;
 
   return (
@@ -87,33 +95,90 @@ const NotAgency = () => {
               >
                 NOT.
               </h1>
-              <span
+              <div
                 aria-hidden
-                className="hidden sm:inline-block pt-4 md:pt-6"
-                style={{
-                  fontFamily: handFont,
-                  color: PALE_BLUE,
-                  fontSize: "clamp(1.1rem, 2vw, 1.75rem)",
-                  transform: "rotate(-4deg)",
-                  whiteSpace: "nowrap",
-                }}
+                className="hidden sm:flex flex-col items-start pt-4 md:pt-6"
+                style={{ color: PALE_BLUE }}
               >
-                <span style={{ marginRight: "0.4em" }}>⌐</span>
-                your typical partnerships
-              </span>
+                <span
+                  style={{
+                    fontFamily: handFont,
+                    fontSize: "clamp(1.1rem, 2vw, 1.75rem)",
+                    transform: "rotate(-4deg)",
+                    whiteSpace: "nowrap",
+                    transformOrigin: "left center",
+                    marginLeft: "0.5rem",
+                  }}
+                >
+                  your typical partnerships
+                </span>
+                {/* Hand-drawn curved arrow pointing down-left toward "NOT." */}
+                <svg
+                  width="140"
+                  height="90"
+                  viewBox="0 0 140 90"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  style={{ marginTop: "-0.5rem", marginLeft: "-1rem", overflow: "visible" }}
+                >
+                  {/* Curl: starts under the text on the right, sweeps down-left toward NOT. */}
+                  <path
+                    d="M132 6 C 110 22, 80 38, 32 70"
+                    stroke={PALE_BLUE}
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    fill="none"
+                  />
+                  {/* Arrowhead at the tip — two short strokes forming a V pointing down-left */}
+                  <path
+                    d="M32 70 L 48 64"
+                    stroke={PALE_BLUE}
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    fill="none"
+                  />
+                  <path
+                    d="M32 70 L 40 82"
+                    stroke={PALE_BLUE}
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    fill="none"
+                  />
+                </svg>
+              </div>
             </div>
 
+            {/* Mobile: text + small inline arrow */}
             <div
               aria-hidden
-              className="sm:hidden mb-4"
-              style={{
-                fontFamily: handFont,
-                color: PALE_BLUE,
-                fontSize: "1.4rem",
-                transform: "rotate(-2deg)",
-              }}
+              className="sm:hidden mb-4 flex items-center gap-2"
+              style={{ color: PALE_BLUE }}
             >
-              ⌐ your typical partnerships
+              <svg width="32" height="20" viewBox="0 0 32 20" fill="none">
+                <path
+                  d="M28 3 C 20 8, 12 12, 6 16"
+                  stroke={PALE_BLUE}
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  fill="none"
+                />
+                <path
+                  d="M6 16 L 12 14 M6 16 L 9 20"
+                  stroke={PALE_BLUE}
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  fill="none"
+                />
+              </svg>
+              <span
+                style={{
+                  fontFamily: handFont,
+                  fontSize: "1.4rem",
+                  transform: "rotate(-2deg)",
+                }}
+              >
+                your typical partnerships
+              </span>
             </div>
 
             <h2
