@@ -95,33 +95,83 @@ const NotAgency = () => {
               >
                 NOT.
               </h1>
-              <span
+              <div
                 aria-hidden
-                className="hidden sm:inline-block pt-4 md:pt-6"
-                style={{
-                  fontFamily: handFont,
-                  color: PALE_BLUE,
-                  fontSize: "clamp(1.1rem, 2vw, 1.75rem)",
-                  transform: "rotate(-4deg)",
-                  whiteSpace: "nowrap",
-                }}
+                className="hidden sm:flex flex-col items-start pt-4 md:pt-6"
+                style={{ color: PALE_BLUE }}
               >
-                <span style={{ marginRight: "0.4em" }}>⌐</span>
-                your typical partnerships
-              </span>
+                <span
+                  style={{
+                    fontFamily: handFont,
+                    fontSize: "clamp(1.1rem, 2vw, 1.75rem)",
+                    transform: "rotate(-4deg)",
+                    whiteSpace: "nowrap",
+                    transformOrigin: "left center",
+                    marginLeft: "0.5rem",
+                  }}
+                >
+                  your typical partnerships
+                </span>
+                {/* Hand-drawn curved arrow pointing down-left toward "NOT." */}
+                <svg
+                  width="90"
+                  height="60"
+                  viewBox="0 0 90 60"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  style={{ marginTop: "-0.25rem", marginLeft: "-0.25rem" }}
+                >
+                  {/* Curl: starts under the text on the right, curves down-left */}
+                  <path
+                    d="M82 4 C 70 18, 55 28, 38 38"
+                    stroke={PALE_BLUE}
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    fill="none"
+                  />
+                  {/* Arrowhead at the end of the curl */}
+                  <path
+                    d="M38 38 L 46 34 M38 38 L 42 46"
+                    stroke={PALE_BLUE}
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    fill="none"
+                  />
+                </svg>
+              </div>
             </div>
 
+            {/* Mobile: text + small inline arrow */}
             <div
               aria-hidden
-              className="sm:hidden mb-4"
-              style={{
-                fontFamily: handFont,
-                color: PALE_BLUE,
-                fontSize: "1.4rem",
-                transform: "rotate(-2deg)",
-              }}
+              className="sm:hidden mb-4 flex items-center gap-2"
+              style={{ color: PALE_BLUE }}
             >
-              ⌐ your typical partnerships
+              <svg width="32" height="20" viewBox="0 0 32 20" fill="none">
+                <path
+                  d="M28 3 C 20 8, 12 12, 6 16"
+                  stroke={PALE_BLUE}
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  fill="none"
+                />
+                <path
+                  d="M6 16 L 12 14 M6 16 L 9 20"
+                  stroke={PALE_BLUE}
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  fill="none"
+                />
+              </svg>
+              <span
+                style={{
+                  fontFamily: handFont,
+                  fontSize: "1.4rem",
+                  transform: "rotate(-2deg)",
+                }}
+              >
+                your typical partnerships
+              </span>
             </div>
 
             <h2
