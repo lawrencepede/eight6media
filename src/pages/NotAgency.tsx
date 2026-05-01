@@ -6,6 +6,7 @@ import biroWoff from "@/assets/fonts/BiroScript-Reduced.ttf";
 import biroOtf from "@/assets/fonts/BiroScript-Reduced.otf";
 import placardBold from "@/assets/fonts/PlacardNext-Bold.ttf";
 import placardCondBold from "@/assets/fonts/PlacardNext-CondBold.ttf";
+import arrowImg from "@/assets/notagency-arrow.png";
 
 /**
  * Temporary holding page for thenotagency.com.
