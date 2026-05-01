@@ -10,42 +10,51 @@ import arrowImg from "@/assets/notagency-arrow.png";
 
 /**
  * Temporary holding page for thenotagency.com.
- * Self-contained: no shared Navigation/Footer.
  *
  * Edit mode: append `?edit=1` to the URL to drag, rotate, and resize
- * the hand-drawn arrow. Values are saved to localStorage so they
- * persist across reloads. Once you're happy, copy the values shown
- * in the on-screen badge and bake them into DEFAULT_ARROW below.
+ * the arrow AND the handwritten text. Values persist in localStorage.
+ * Once happy, copy the values from the on-screen HUD and bake them
+ * into DEFAULT_LAYOUT below.
  */
 
-type ArrowState = {
-  // Position is a percentage of the hero container so it stays roughly
-  // in place across viewport sizes.
-  xPct: number;
-  yPct: number;
-  width: number; // px
+type Item = {
+  xPct: number; // center x as % of hero
+  yPct: number; // center y as % of hero
+  size: number; // px — width for arrow, font-size for text
   rotation: number; // degrees
 };
 
-const STORAGE_KEY = "notagency.arrow.v1";
-
-const DEFAULT_ARROW: ArrowState = {
-  xPct: 38,
-  yPct: 18,
-  width: 200,
-  rotation: 0,
+type Layout = {
+  arrow: Item;
+  text: Item;
 };
 
+const STORAGE_KEY = "notagency.layout.v2";
+
+const DEFAULT_LAYOUT: Layout = {
+  arrow: { xPct: 38, yPct: 18, size: 200, rotation: 0 },
+  text: { xPct: 50, yPct: 8, size: 28, rotation: -4 },
+};
+
+type ItemKey = keyof Layout;
+type DragMode = "move" | "rotate" | "resize";
+
 const NotAgency = () => {
-  const [arrow, setArrow] = useState<ArrowState>(() => {
-    if (typeof window === "undefined") return DEFAULT_ARROW;
+  const [layout, setLayout] = useState<Layout>(() => {
+    if (typeof window === "undefined") return DEFAULT_LAYOUT;
     try {
       const saved = window.localStorage.getItem(STORAGE_KEY);
-      if (saved) return { ...DEFAULT_ARROW, ...JSON.parse(saved) };
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          arrow: { ...DEFAULT_LAYOUT.arrow, ...(parsed.arrow ?? {}) },
+          text: { ...DEFAULT_LAYOUT.text, ...(parsed.text ?? {}) },
+        };
+      }
     } catch {
       /* ignore */
     }
-    return DEFAULT_ARROW;
+    return DEFAULT_LAYOUT;
   });
 
   const editMode =
@@ -54,31 +63,33 @@ const NotAgency = () => {
 
   const heroRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{
-    mode: "move" | "rotate" | "resize" | null;
+    target: ItemKey | null;
+    mode: DragMode | null;
     startX: number;
     startY: number;
-    startState: ArrowState;
+    startState: Item;
     centerX: number;
     centerY: number;
     heroRect: DOMRect;
   }>({
+    target: null,
     mode: null,
     startX: 0,
     startY: 0,
-    startState: DEFAULT_ARROW,
+    startState: DEFAULT_LAYOUT.arrow,
     centerX: 0,
     centerY: 0,
     heroRect: new DOMRect(),
   });
 
-  // Persist arrow values
+  // Persist
   useEffect(() => {
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(arrow));
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(layout));
     } catch {
       /* ignore */
     }
-  }, [arrow]);
+  }, [layout]);
 
   useEffect(() => {
     const prevTitle = document.title;
@@ -118,11 +129,11 @@ const NotAgency = () => {
     };
   }, []);
 
-  // Pointer handlers shared across move/rotate/resize.
   const handlePointerMove = useCallback((e: PointerEvent) => {
     const d = dragRef.current;
-    if (!d.mode) return;
+    if (!d.mode || !d.target) return;
     e.preventDefault();
+    const target = d.target;
 
     if (d.mode === "move") {
       const dx = e.clientX - d.startX;
@@ -131,42 +142,65 @@ const NotAgency = () => {
         d.startState.xPct + (dx / d.heroRect.width) * 100;
       const newYPct =
         d.startState.yPct + (dy / d.heroRect.height) * 100;
-      setArrow((s) => ({ ...s, xPct: newXPct, yPct: newYPct }));
+      setLayout((s) => ({
+        ...s,
+        [target]: { ...s[target], xPct: newXPct, yPct: newYPct },
+      }));
     } else if (d.mode === "rotate") {
       const angle =
         (Math.atan2(e.clientY - d.centerY, e.clientX - d.centerX) * 180) /
         Math.PI;
-      // Offset by 90° so dragging straight down feels like 0°.
-      setArrow((s) => ({ ...s, rotation: Math.round(angle + 90) }));
+      setLayout((s) => ({
+        ...s,
+        [target]: { ...s[target], rotation: Math.round(angle + 90) },
+      }));
     } else if (d.mode === "resize") {
       const dist = Math.hypot(e.clientX - d.centerX, e.clientY - d.centerY);
-      // Treat distance from center as half-width.
-      const newWidth = Math.max(60, Math.min(800, Math.round(dist * 2)));
-      setArrow((s) => ({ ...s, width: newWidth }));
+      // Arrow: distance ≈ half-width. Text: scale relative to start.
+      if (target === "arrow") {
+        const newSize = Math.max(60, Math.min(800, Math.round(dist * 2)));
+        setLayout((s) => ({ ...s, arrow: { ...s.arrow, size: newSize } }));
+      } else {
+        // For text, use distance ratio against original click distance.
+        const startDist = Math.hypot(
+          d.startX - d.centerX,
+          d.startY - d.centerY
+        );
+        const ratio = startDist > 0 ? dist / startDist : 1;
+        const newSize = Math.max(
+          10,
+          Math.min(120, Math.round(d.startState.size * ratio))
+        );
+        setLayout((s) => ({ ...s, text: { ...s.text, size: newSize } }));
+      }
     }
   }, []);
 
   const handlePointerUp = useCallback(() => {
     dragRef.current.mode = null;
+    dragRef.current.target = null;
     window.removeEventListener("pointermove", handlePointerMove);
     window.removeEventListener("pointerup", handlePointerUp);
   }, [handlePointerMove]);
 
   const startDrag = (
-    mode: "move" | "rotate" | "resize",
+    target: ItemKey,
+    mode: DragMode,
     e: React.PointerEvent
   ) => {
     if (!editMode || !heroRef.current) return;
     e.preventDefault();
     e.stopPropagation();
     const heroRect = heroRef.current.getBoundingClientRect();
-    const centerX = heroRect.left + (arrow.xPct / 100) * heroRect.width;
-    const centerY = heroRect.top + (arrow.yPct / 100) * heroRect.height;
+    const item = layout[target];
+    const centerX = heroRect.left + (item.xPct / 100) * heroRect.width;
+    const centerY = heroRect.top + (item.yPct / 100) * heroRect.height;
     dragRef.current = {
+      target,
       mode,
       startX: e.clientX,
       startY: e.clientY,
-      startState: { ...arrow },
+      startState: { ...item },
       centerX,
       centerY,
       heroRect,
@@ -186,7 +220,65 @@ const NotAgency = () => {
   const placardFont = `'Placard Next Cond', 'Arial Narrow', Impact, sans-serif`;
   const handFont = `'Biro Script', 'Bradley Hand', cursive`;
 
-  const arrowAspect = 1920 / 1080; // approximate from source PNG
+  const arrowAspect = 1920 / 1080;
+
+  // Reusable selection chrome (outline + rotate handle + resize handle)
+  const SelectionChrome = ({ target }: { target: ItemKey }) => (
+    <>
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          border: `1px dashed ${DEEP_BROWN}`,
+          pointerEvents: "none",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: -20,
+          width: 1,
+          height: 20,
+          background: DEEP_BROWN,
+          transform: "translateX(-50%)",
+          pointerEvents: "none",
+        }}
+      />
+      <div
+        onPointerDown={(e) => startDrag(target, "rotate", e)}
+        title="Drag to rotate"
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: -28,
+          transform: "translateX(-50%)",
+          width: 16,
+          height: 16,
+          borderRadius: "50%",
+          background: DEEP_BROWN,
+          border: `2px solid ${ARROW_GREEN}`,
+          cursor: "grab",
+          touchAction: "none",
+        }}
+      />
+      <div
+        onPointerDown={(e) => startDrag(target, "resize", e)}
+        title="Drag to resize"
+        style={{
+          position: "absolute",
+          right: -8,
+          bottom: -8,
+          width: 14,
+          height: 14,
+          background: ARROW_GREEN,
+          border: `2px solid ${DEEP_BROWN}`,
+          cursor: "nwse-resize",
+          touchAction: "none",
+        }}
+      />
+    </>
+  );
 
   return (
     <main
@@ -210,41 +302,6 @@ const NotAgency = () => {
               >
                 NOT.
               </h1>
-              <div
-                aria-hidden
-                className="hidden sm:flex flex-col items-start pt-4 md:pt-6"
-              >
-                <span
-                  style={{
-                    fontFamily: handFont,
-                    fontSize: "clamp(1.1rem, 2vw, 1.75rem)",
-                    transform: "rotate(-4deg)",
-                    whiteSpace: "nowrap",
-                    transformOrigin: "left center",
-                    marginLeft: "0.5rem",
-                    color: ARROW_GREEN,
-                  }}
-                >
-                  your typical partnerships
-                </span>
-              </div>
-            </div>
-
-            {/* Mobile handwritten line (no arrow on mobile, kept simple) */}
-            <div
-              aria-hidden
-              className="sm:hidden mb-4 flex flex-col items-start gap-1"
-            >
-              <span
-                style={{
-                  fontFamily: handFont,
-                  fontSize: "1.4rem",
-                  transform: "rotate(-2deg)",
-                  color: ARROW_GREEN,
-                }}
-              >
-                your typical partnerships
-              </span>
             </div>
 
             <h2
@@ -266,24 +323,53 @@ const NotAgency = () => {
             </h2>
           </div>
 
-          {/* Free-floating arrow — draggable in edit mode */}
+          {/* Free-floating handwritten text */}
           <div
-            onPointerDown={(e) => startDrag("move", e)}
+            onPointerDown={(e) => startDrag("text", "move", e)}
             style={{
               position: "absolute",
-              left: `${arrow.xPct}%`,
-              top: `${arrow.yPct}%`,
-              width: arrow.width,
-              height: arrow.width / arrowAspect,
-              transform: `translate(-50%, -50%) rotate(${arrow.rotation}deg)`,
+              left: `${layout.text.xPct}%`,
+              top: `${layout.text.yPct}%`,
+              transform: `translate(-50%, -50%) rotate(${layout.text.rotation}deg)`,
+              touchAction: "none",
+              cursor: editMode ? "move" : "default",
+              userSelect: "none",
+              zIndex: 6,
+              padding: "4px 6px",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: handFont,
+                fontSize: layout.text.size,
+                color: ARROW_GREEN,
+                lineHeight: 1,
+                display: "inline-block",
+                pointerEvents: "none",
+              }}
+            >
+              your typical partnerships
+            </span>
+            {editMode && <SelectionChrome target="text" />}
+          </div>
+
+          {/* Free-floating arrow */}
+          <div
+            onPointerDown={(e) => startDrag("arrow", "move", e)}
+            style={{
+              position: "absolute",
+              left: `${layout.arrow.xPct}%`,
+              top: `${layout.arrow.yPct}%`,
+              width: layout.arrow.size,
+              height: layout.arrow.size / arrowAspect,
+              transform: `translate(-50%, -50%) rotate(${layout.arrow.rotation}deg)`,
               touchAction: "none",
               cursor: editMode ? "move" : "default",
               userSelect: "none",
               zIndex: 5,
             }}
           >
-            {/* Tint the arrow PNG to exactly match ARROW_GREEN by using
-                it as a CSS mask over a solid color block. */}
             <div
               aria-hidden
               style={{
@@ -301,65 +387,7 @@ const NotAgency = () => {
                 pointerEvents: "none",
               }}
             />
-            {editMode && (
-              <>
-                {/* Selection outline */}
-                <div
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    border: `1px dashed ${DEEP_BROWN}`,
-                    pointerEvents: "none",
-                  }}
-                />
-                {/* Rotate handle (top) */}
-                <div
-                  onPointerDown={(e) => startDrag("rotate", e)}
-                  title="Drag to rotate"
-                  style={{
-                    position: "absolute",
-                    left: "50%",
-                    top: -28,
-                    transform: "translateX(-50%)",
-                    width: 16,
-                    height: 16,
-                    borderRadius: "50%",
-                    background: DEEP_BROWN,
-                    border: `2px solid ${ARROW_GREEN}`,
-                    cursor: "grab",
-                    touchAction: "none",
-                  }}
-                />
-                <div
-                  style={{
-                    position: "absolute",
-                    left: "50%",
-                    top: -20,
-                    width: 1,
-                    height: 20,
-                    background: DEEP_BROWN,
-                    transform: "translateX(-50%)",
-                    pointerEvents: "none",
-                  }}
-                />
-                {/* Resize handle (bottom-right) */}
-                <div
-                  onPointerDown={(e) => startDrag("resize", e)}
-                  title="Drag to resize"
-                  style={{
-                    position: "absolute",
-                    right: -8,
-                    bottom: -8,
-                    width: 14,
-                    height: 14,
-                    background: ARROW_GREEN,
-                    border: `2px solid ${DEEP_BROWN}`,
-                    cursor: "nwse-resize",
-                    touchAction: "none",
-                  }}
-                />
-              </>
-            )}
+            {editMode && <SelectionChrome target="arrow" />}
           </div>
 
           {/* Edit mode HUD */}
@@ -378,18 +406,18 @@ const NotAgency = () => {
                 zIndex: 50,
                 lineHeight: 1.5,
                 boxShadow: "0 6px 24px rgba(0,0,0,0.25)",
-                maxWidth: 280,
+                maxWidth: 320,
               }}
             >
-              <div style={{ fontWeight: 700, marginBottom: 4 }}>
-                Arrow edit mode
-              </div>
-              <div>x: {arrow.xPct.toFixed(1)}%</div>
-              <div>y: {arrow.yPct.toFixed(1)}%</div>
-              <div>width: {arrow.width}px</div>
-              <div>rotation: {arrow.rotation}°</div>
+              <div style={{ fontWeight: 700, marginBottom: 4 }}>Edit mode</div>
+              <div style={{ marginTop: 4, fontWeight: 700 }}>Arrow</div>
+              <div>x: {layout.arrow.xPct.toFixed(1)}%  y: {layout.arrow.yPct.toFixed(1)}%</div>
+              <div>width: {layout.arrow.size}px  rot: {layout.arrow.rotation}°</div>
+              <div style={{ marginTop: 6, fontWeight: 700 }}>Text</div>
+              <div>x: {layout.text.xPct.toFixed(1)}%  y: {layout.text.yPct.toFixed(1)}%</div>
+              <div>size: {layout.text.size}px  rot: {layout.text.rotation}°</div>
               <button
-                onClick={() => setArrow(DEFAULT_ARROW)}
+                onClick={() => setLayout(DEFAULT_LAYOUT)}
                 style={{
                   marginTop: 8,
                   background: ARROW_GREEN,
@@ -402,10 +430,10 @@ const NotAgency = () => {
                   fontWeight: 700,
                 }}
               >
-                Reset
+                Reset both
               </button>
               <div style={{ marginTop: 6, opacity: 0.8 }}>
-                Drag arrow to move · top dot to rotate · corner to resize
+                Drag to move · top dot = rotate · corner = resize
               </div>
             </div>
           )}
