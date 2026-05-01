@@ -29,11 +29,11 @@ type Layout = {
   text: Item;
 };
 
-const STORAGE_KEY = "notagency.layout.v2";
+const STORAGE_KEY = "notagency.layout.v3";
 
 const DEFAULT_LAYOUT: Layout = {
-  arrow: { xPct: 51.6, yPct: -3.2, size: 200, rotation: 0 },
-  text: { xPct: 67.2, yPct: 4.0, size: 28, rotation: -4 },
+  arrow: { xPct: 29.6, yPct: -2.1, size: 69, rotation: -19 },
+  text: { xPct: 38.9, yPct: 3.5, size: 21, rotation: -14 },
 };
 
 type ItemKey = keyof Layout;
