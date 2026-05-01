@@ -354,7 +354,7 @@ const NotAgency = () => {
             <span
               style={{
                 fontFamily: handFont,
-                fontSize: layout.text.size,
+                fontSize: `${layout.text.sizeEm * headlinePx}px`,
                 color: ARROW_GREEN,
                 lineHeight: 0.85,
                 display: "inline-block",
@@ -376,8 +376,8 @@ const NotAgency = () => {
               position: "absolute",
               left: `${layout.arrow.xPct}%`,
               top: `${layout.arrow.yPct}%`,
-              width: layout.arrow.size,
-              height: layout.arrow.size / arrowAspect,
+              width: layout.arrow.sizeEm * headlinePx,
+              height: (layout.arrow.sizeEm * headlinePx) / arrowAspect,
               transform: `translate(-50%, -50%) rotate(${layout.arrow.rotation}deg)`,
               touchAction: "none",
               cursor: editMode ? "move" : "default",
@@ -428,10 +428,10 @@ const NotAgency = () => {
               <div style={{ fontWeight: 700, marginBottom: 4 }}>Edit mode</div>
               <div style={{ marginTop: 4, fontWeight: 700 }}>Arrow</div>
               <div>x: {layout.arrow.xPct.toFixed(1)}%  y: {layout.arrow.yPct.toFixed(1)}%</div>
-              <div>width: {layout.arrow.size}px  rot: {layout.arrow.rotation}°</div>
+              <div>size: {layout.arrow.sizeEm.toFixed(3)}em ({Math.round(layout.arrow.sizeEm * headlinePx)}px)  rot: {layout.arrow.rotation}°</div>
               <div style={{ marginTop: 6, fontWeight: 700 }}>Text</div>
               <div>x: {layout.text.xPct.toFixed(1)}%  y: {layout.text.yPct.toFixed(1)}%</div>
-              <div>size: {layout.text.size}px  rot: {layout.text.rotation}°</div>
+              <div>size: {layout.text.sizeEm.toFixed(3)}em ({Math.round(layout.text.sizeEm * headlinePx)}px)  rot: {layout.text.rotation}°</div>
               <button
                 onClick={() => setLayout(DEFAULT_LAYOUT)}
                 style={{
