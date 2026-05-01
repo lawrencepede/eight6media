@@ -143,6 +143,11 @@ const NotAgency = () => {
               >
                 your typical partnerships
               </span>
+              <img
+                src={arrowImg}
+                alt=""
+                style={{ width: "120px", height: "auto", marginLeft: "-0.5rem" }}
+              />
             </div>
 
             <h2
