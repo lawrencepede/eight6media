@@ -322,7 +322,6 @@ const NotAgency = () => {
               <br />
               TALENT AGENCY
             </h2>
-          </div>
 
           {/* Free-floating handwritten text */}
           <div
@@ -389,6 +388,7 @@ const NotAgency = () => {
               }}
             />
             {editMode && <SelectionChrome target="arrow" />}
+          </div>
           </div>
 
           {/* Edit mode HUD */}
