@@ -7,7 +7,9 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Navigation from "@/components/Navigation";
 import ScrollToTop from "@/components/ScrollToTop";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { useIsNotAgencyHost } from "@/hooks/useIsNotAgencyHost";
 import Index from "./pages/Index";
+import NotAgency from "./pages/NotAgency";
 import Work from "./pages/Work";
 import Roster from "./pages/Roster";
 import ForBrands from "./pages/ForBrands";
@@ -28,17 +30,19 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <ScrollToTop />
-          <Navigation />
-          <Routes>
-            <Route path="/" element={<Index />} />
+const AppShell = () => {
+  const isNotAgencyHost = useIsNotAgencyHost();
+  return (
+    <AuthProvider>
+      <ScrollToTop />
+      {!isNotAgencyHost && <Navigation />}
+      <Routes>
+        {/* Domain-aware homepage: thenotagency.com sees the holding page,
+            everyone else sees Eight-Six Media. */}
+        <Route path="/" element={isNotAgencyHost ? <NotAgency /> : <Index />} />
+        {/* Always-available preview route so we can QA on lovable.app. */}
+        <Route path="/notagency" element={<NotAgency />} />
+        {/* Eight-Six routes — kept available on all hosts for now. */}
             <Route path="/work" element={<Work />} />
             <Route path="/roster" element={<Roster />} />
             <Route path="/for-brands" element={<ForBrands />} />
