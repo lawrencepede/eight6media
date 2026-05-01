@@ -310,7 +310,7 @@ const NotAgency = () => {
                 fontWeight: 700,
                 color: DEEP_BROWN,
                 fontSize: "clamp(3.5rem, 12vw, 9.5rem)",
-                lineHeight: 1.05,
+                lineHeight: 0.85,
                 letterSpacing: "0",
                 margin: 0,
               }}
