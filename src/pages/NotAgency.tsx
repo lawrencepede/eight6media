@@ -163,22 +163,28 @@ const NotAgency = () => {
       }));
     } else if (d.mode === "resize") {
       const dist = Math.hypot(e.clientX - d.centerX, e.clientY - d.centerY);
-      // Arrow: distance ≈ half-width. Text: scale relative to start.
+      const hp = headlinePx || 100;
       if (target === "arrow") {
-        const newSize = Math.max(60, Math.min(800, Math.round(dist * 2)));
-        setLayout((s) => ({ ...s, arrow: { ...s.arrow, size: newSize } }));
+        // dist ≈ half-width in px → convert to em via headline px.
+        const newEm = Math.max(0.1, Math.min(8, (dist * 2) / hp));
+        setLayout((s) => ({
+          ...s,
+          arrow: { ...s.arrow, sizeEm: Math.round(newEm * 1000) / 1000 },
+        }));
       } else {
-        // For text, use distance ratio against original click distance.
         const startDist = Math.hypot(
           d.startX - d.centerX,
           d.startY - d.centerY
         );
         const ratio = startDist > 0 ? dist / startDist : 1;
-        const newSize = Math.max(
-          10,
-          Math.min(120, Math.round(d.startState.size * ratio))
+        const newEm = Math.max(
+          0.05,
+          Math.min(2, d.startState.sizeEm * ratio)
         );
-        setLayout((s) => ({ ...s, text: { ...s.text, size: newSize } }));
+        setLayout((s) => ({
+          ...s,
+          text: { ...s.text, sizeEm: Math.round(newEm * 1000) / 1000 },
+        }));
       }
     }
   }, []);
