@@ -16,6 +16,9 @@ const Navigation = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
 
+  const isLightHero = location.pathname === "/v2/work";
+  const logoColor = scrolled || isLightHero ? "var(--dark-brown)" : "var(--sky)";
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -54,7 +57,7 @@ const Navigation = () => {
           style={{
             fontFamily: "var(--font-wordmark)",
             fontSize: "1.5rem",
-            color: "var(--sky)",
+            color: logoColor,
             letterSpacing: "-0.01em",
             lineHeight: 1,
           }}
