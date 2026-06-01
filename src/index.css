@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Inter:wght@300;400;500;600&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Archivo+Narrow:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Six+Caps&display=swap');
 
 /* The Not Agency — display fonts. Declared in CSS (not JS) so the browser
    discovers and downloads them during initial CSS parse, eliminating the
@@ -227,3 +227,76 @@
     background: hsl(var(--muted-foreground) / 0.6);
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────────
+   NOT. BRAND SYSTEM (v2 site only)
+   Scoped under .v2-root so it never leaks into v1 / NotAgency / shadcn.
+   ───────────────────────────────────────────────────────────────────── */
+
+/* Placard Next family — some files may not exist locally yet; browser
+   falls back through stack (Archivo Narrow / Impact). */
+@font-face { font-family: 'Placard Next'; src: url('/fonts/PlacardNextRegular.TTF') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Placard Next'; src: url('/fonts/PlacardNextMedium.TTF') format('truetype'); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Placard Next'; src: url('/fonts/PlacardNextLight.TTF') format('truetype'); font-weight: 300; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Placard Next Cond'; src: url('/fonts/PlacardNextCondRg.TTF') format('truetype'), url('/fonts/PlacardNext-CondBold.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Placard Next Cond'; src: url('/fonts/PlacardNextCnMed.TTF') format('truetype'), url('/fonts/PlacardNext-CondBold.ttf') format('truetype'); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Placard Next Cond'; src: url('/fonts/PlacardNextCondLt.TTF') format('truetype'); font-weight: 300; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Placard Next Comp'; src: url('/fonts/PlacardNextCompMed.TTF') format('truetype'), url('/fonts/PlacardNext-CondBold.ttf') format('truetype'); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Placard Next Wide'; src: url('/fonts/PlacardNextWideRg.TTF') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Placard Next Wide'; src: url('/fonts/PlacardNextWideMed.TTF') format('truetype'); font-weight: 500; font-style: normal; font-display: swap; }
+
+/* Not. tokens scoped to v2 root — won't affect v1 site */
+.v2-root {
+  --olive:       #838E00;
+  --mauve:       #CE89C6;
+  --sky:         #CAD7EB;
+  --lime:        #DDF48C;
+  --lemon:       #F3FFB7;
+  --terracotta:  #523838;
+  --peach:       #F6A970;
+  --indigo:      #280F91;
+  --lavender:    #FAABFE;
+  --rust:        #A34C28;
+  --gold:        #D8D355;
+  --dark-brown:  #421E18;
+  --ink:         #421E18;
+  --ink-light:   #523838;
+  --paper:       #F3FFB7;
+
+  --font-wordmark:     'TAN St Canard', 'Arial Narrow', Impact, sans-serif;
+  --font-display:      'Placard Next Comp', 'Placard Next Cond', 'Archivo Narrow', 'Six Caps', Impact, sans-serif;
+  --font-display-cond: 'Placard Next Cond', 'Archivo Narrow', Impact, sans-serif;
+  --font-body:         'Courier Prime', 'Courier New', monospace;
+  --font-hand:         'Biro Script', 'Bradley Hand', cursive;
+
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--lemon);
+}
+
+.v2-root ::selection { background: var(--indigo); color: var(--lemon); }
+
+.v2-root .label {
+  font-family: var(--font-body);
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  line-height: 1.4;
+}
+
+/* v2-scoped marquee — adds display:flex which the global utility lacks */
+.v2-root .animate-marquee {
+  display: flex;
+  animation: marquee 24s linear infinite;
+  will-change: transform;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.v2-root .fade-up { opacity: 0; animation: fadeUp 0.7s ease forwards; }
+.v2-root .fade-up-delay-1 { animation-delay: 0.1s; }
+.v2-root .fade-up-delay-2 { animation-delay: 0.2s; }
+.v2-root .fade-up-delay-3 { animation-delay: 0.35s; }
+.v2-root .fade-up-delay-4 { animation-delay: 0.5s; }
