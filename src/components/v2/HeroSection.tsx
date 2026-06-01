@@ -1,8 +1,60 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+
+type ScribbleConfig = {
+  offsetX: number;   // px, horizontal nudge of whole group
+  offsetY: number;   // px, vertical nudge of whole group
+  scale: number;     // overall scale multiplier
+  textRotate: number;     // deg, rotation of handwritten text
+  textOffsetX: number;    // px, nudge text relative to arrow
+  textOffsetY: number;    // px
+  arrowRotate: number;    // deg, rotation of arrow
+  arrowOffsetX: number;   // px
+  arrowOffsetY: number;   // px
+};
+
+const DEFAULTS: ScribbleConfig = {
+  offsetX: 0,
+  offsetY: 0,
+  scale: 1,
+  textRotate: -8,
+  textOffsetX: 0,
+  textOffsetY: 0,
+  arrowRotate: 0,
+  arrowOffsetX: 0,
+  arrowOffsetY: 0,
+};
+
+const STORAGE_KEY = "v2-hero-scribble-v1";
 
 const HeroSection = () => {
   const heroRef = useRef<HTMLDivElement>(null);
+  const [cfg, setCfg] = useState<ScribbleConfig>(DEFAULTS);
+  const [panelOpen, setPanelOpen] = useState(false);
+
+  // Load saved config
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) setCfg({ ...DEFAULTS, ...JSON.parse(raw) });
+    } catch {}
+  }, []);
+
+  // Persist on change
+  useEffect(() => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg)); } catch {}
+  }, [cfg]);
+
+  // Toggle panel with `Shift + P`
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.shiftKey && (e.key === "P" || e.key === "p")) {
+        setPanelOpen((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -13,6 +65,9 @@ const HeroSection = () => {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const update = (patch: Partial<ScribbleConfig>) =>
+    setCfg((prev) => ({ ...prev, ...patch }));
 
   return (
     <section
@@ -70,6 +125,8 @@ const HeroSection = () => {
               left: "clamp(9rem, 28vw, 22rem)",
               pointerEvents: "none",
               userSelect: "none",
+              transform: `translate(${cfg.offsetX}px, ${cfg.offsetY}px) scale(${cfg.scale})`,
+              transformOrigin: "top left",
             }}
           >
             <svg
@@ -80,6 +137,8 @@ const HeroSection = () => {
                 position: "absolute",
                 top: "1.6em",
                 left: "-1.2em",
+                transform: `translate(${cfg.arrowOffsetX}px, ${cfg.arrowOffsetY}px) rotate(${cfg.arrowRotate}deg)`,
+                transformOrigin: "center",
               }}
               fill="none"
             >
@@ -93,7 +152,7 @@ const HeroSection = () => {
                 fontSize: "clamp(0.9rem, 2.2vw, 1.6rem)",
                 color: "var(--lemon)",
                 display: "block",
-                transform: "rotate(-8deg)",
+                transform: `translate(${cfg.textOffsetX}px, ${cfg.textOffsetY}px) rotate(${cfg.textRotate}deg)`,
                 lineHeight: 1.15,
                 whiteSpace: "nowrap",
               }}
@@ -246,6 +305,125 @@ const HeroSection = () => {
           }
         `}</style>
       </div>
+
+      {/* Dev positioning panel — toggle with the small button (bottom-right) or Shift+P */}
+      <button
+        onClick={() => setPanelOpen((v) => !v)}
+        style={{
+          position: "fixed",
+          bottom: 16,
+          right: 16,
+          zIndex: 9999,
+          padding: "0.5rem 0.75rem",
+          fontFamily: "var(--font-body)",
+          fontSize: "0.625rem",
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
+          backgroundColor: "var(--dark-brown)",
+          color: "var(--lemon)",
+          border: "1px solid var(--lemon)",
+          cursor: "pointer",
+          opacity: 0.85,
+        }}
+        aria-label="Toggle scribble position panel"
+      >
+        {panelOpen ? "Close" : "Adjust scribble"}
+      </button>
+
+      {panelOpen && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 64,
+            right: 16,
+            zIndex: 9999,
+            width: 280,
+            padding: "1rem 1rem 0.75rem",
+            backgroundColor: "var(--dark-brown)",
+            color: "var(--lemon)",
+            fontFamily: "var(--font-body)",
+            fontSize: "0.7rem",
+            border: "1px solid var(--lemon)",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+            maxHeight: "80vh",
+            overflowY: "auto",
+          }}
+        >
+          <div style={{ marginBottom: "0.5rem", letterSpacing: "0.18em", textTransform: "uppercase", opacity: 0.7 }}>
+            Scribble position
+          </div>
+
+          {([
+            ["Group X", "offsetX", -400, 400, 1],
+            ["Group Y", "offsetY", -400, 400, 1],
+            ["Scale", "scale", 0.3, 2.5, 0.01],
+            ["Arrow X", "arrowOffsetX", -200, 200, 1],
+            ["Arrow Y", "arrowOffsetY", -200, 200, 1],
+            ["Arrow rotate", "arrowRotate", -180, 180, 1],
+            ["Text X", "textOffsetX", -200, 200, 1],
+            ["Text Y", "textOffsetY", -200, 200, 1],
+            ["Text rotate", "textRotate", -45, 45, 1],
+          ] as const).map(([label, key, min, max, step]) => (
+            <div key={key} style={{ marginBottom: "0.6rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
+                <span>{label}</span>
+                <span style={{ opacity: 0.7 }}>{cfg[key]}</span>
+              </div>
+              <input
+                type="range"
+                min={min}
+                max={max}
+                step={step}
+                value={cfg[key]}
+                onChange={(e) => update({ [key]: parseFloat(e.target.value) } as Partial<ScribbleConfig>)}
+                style={{ width: "100%", accentColor: "var(--lemon)" }}
+              />
+            </div>
+          ))}
+
+          <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.75rem" }}>
+            <button
+              onClick={() => setCfg(DEFAULTS)}
+              style={{
+                flex: 1,
+                padding: "0.5rem",
+                backgroundColor: "transparent",
+                color: "var(--lemon)",
+                border: "1px solid var(--lemon)",
+                cursor: "pointer",
+                fontFamily: "var(--font-body)",
+                fontSize: "0.625rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.18em",
+              }}
+            >
+              Reset
+            </button>
+            <button
+              onClick={() => {
+                navigator.clipboard?.writeText(JSON.stringify(cfg, null, 2));
+              }}
+              style={{
+                flex: 1,
+                padding: "0.5rem",
+                backgroundColor: "var(--lemon)",
+                color: "var(--dark-brown)",
+                border: "1px solid var(--lemon)",
+                cursor: "pointer",
+                fontFamily: "var(--font-body)",
+                fontSize: "0.625rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.18em",
+              }}
+            >
+              Copy values
+            </button>
+          </div>
+          <div style={{ marginTop: "0.5rem", opacity: 0.55, fontSize: "0.6rem" }}>
+            Saved locally. Toggle with Shift + P.
+          </div>
+        </div>
+      )}
     </section>
   );
 };
