@@ -1,3 +1,4 @@
+import Navigation from "@/components/v2/Navigation";
 import HeroSection from "@/components/v2/HeroSection";
 import MarqueeSection from "@/components/v2/MarqueeSection";
 import ManifestoSection from "@/components/v2/ManifestoSection";
@@ -8,6 +9,7 @@ import Footer from "@/components/v2/Footer";
 
 const Index = () => (
   <div className="v2-root" style={{ minHeight: "100svh" }}>
+    <Navigation />
     <HeroSection />
     <MarqueeSection />
     <ManifestoSection />
