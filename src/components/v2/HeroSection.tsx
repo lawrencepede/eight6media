@@ -18,7 +18,7 @@ const DEFAULTS: ScribbleConfig = {
   offsetY: 7,
   scale: 1,
   textRotate: -29,
-  textOffsetX: 50,
+  textOffsetX: 110,
   textOffsetY: -32,
   arrowRotate: 27,
   arrowOffsetX: -25,
