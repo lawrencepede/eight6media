@@ -1,56 +1,66 @@
-## Temporary landing page at thenotagency.com
+# Parallel v2 of the Eight-Six site
 
-A domain-aware landing page that renders only when visitors arrive on `thenotagency.com`. The Eight-Six site stays untouched on `eight6media.lovable.app` and the preview URL.
+Goal: stand up a complete second version of the marketing site that lives alongside the current one, so you can flip between them page-for-page and cherry-pick what you like. The Not. landing (`/notagency` + thenotagency.com host) is untouched.
 
-### What you'll see
+## Routing
 
-A single full-screen page on the olive (`#838E00`) background recreating the Canva mockup:
+v1 stays exactly where it is. v2 mounts under a `/v2` prefix with a matching page for every current marketing route:
 
-```text
-┌───────────────────────────────────────────┐
-│                                           │
-│  NOT.        ⌐ your typical partnerships  │
-│  ANOTHER                                  │
-│  TALENT AGENCY                            │
-│                                           │
-│                                           │
-│           [ Get in touch → ]              │
-│                                           │
-│                                           │
-│   © the not agency · lawrence@eight6...   │
-└───────────────────────────────────────────┘
+```
+/                  → v1 Index           |  /v2                  → v2 Index
+/work              → v1 Work            |  /v2/work             → v2 Work
+/roster            → v1 Roster          |  /v2/roster           → v2 Roster
+/for-brands        → v1 ForBrands       |  /v2/for-brands       → v2 ForBrands
+/for-creators      → v1 ForCreators     |  /v2/for-creators     → v2 ForCreators
+/about             → v1 About           |  /v2/about            → v2 About
 ```
 
-- "NOT." in pale blue (`#CAD7EB`), the rest in deep brown (`#523838` / `#421E18`) — heavy condensed display type
-- Handwritten "your typical partnerships" with little arrow, in cream/blue
-- Single CTA → `mailto:lawrence@eight6media.com`
-- Tiny footer line (copyright + email)
-- No nav, no other sections — truly a holding page
+Out of scope for v2 (kept v1-only): `/notagency`, `/auth`, `/console/*`, `/admin`, `/pitch/:slug`, the thenotagency.com host override.
 
-### What I need from you
+## Floating version toggle
 
-1. **Two font files** uploaded into chat:
-   - The heavy condensed display font from the mockup (looks like Druk Wide / Compacta / Knockout — whatever the actual Canva file uses). Upload `.ttf`, `.otf`, `.woff`, or `.woff2`.
-   - The handwritten script font for "your typical partnerships"
-2. (Optional) If you want me to use specific copy beyond what's on the mockup + a CTA + the email line, send it. Otherwise I'll keep it to exactly what's shown.
+A small fixed pill in the bottom-right of every marketing page (v1 and v2) that shows the current version and jumps to the matching page in the other version. Hidden on `/notagency`, `/auth`, `/console/*`, `/admin`, `/pitch/*`, and on the thenotagency.com host.
 
-I'll wire them in via `@font-face` and use them only on the Not Agency page so they don't affect the rest of the site.
+- Click flips `/foo` ↔ `/v2/foo` preserving the rest of the path, query, and hash.
+- Remembers last choice in `localStorage` so deep links from elsewhere can optionally honor it (off by default — URL is the source of truth).
+- Visually unobtrusive, neutral styling so it doesn't bias either design.
 
-### Technical implementation
+## File structure
 
-1. **Save the color palette to memory** at `mem://design/thenotagency-palette` with all 12 colors + the 4 designated background colors, so future work on this brand stays consistent.
-2. **New page** `src/pages/NotAgency.tsx` — self-contained, full-bleed olive background, no `Navigation`/`Footer` from the existing site.
-3. **Domain-aware routing** in `src/App.tsx`:
-   - At the `/` route, check `window.location.hostname`. If it matches `thenotagency.com` or `www.thenotagency.com`, render `<NotAgency />` instead of `<Index />`. Otherwise render `<Index />` as today.
-   - Also hide the global `<Navigation />` on the not-agency host (it's a standalone landing page).
-   - Add an explicit `/notagency` route too, so we can preview it on the lovable.app URL before the DNS fully propagates.
-4. **Fonts** placed in `src/assets/fonts/` and loaded via a scoped `@font-face` block in `src/index.css` (or a page-local style block). Only the Not Agency page applies them — Eight-Six keeps Playfair/Inter.
-5. **No new routes for the user to remember** — `thenotagency.com/` just works.
+Fork-friendly layout so v2 can evolve independently without touching v1 files:
 
-### Out of scope (call out separately if you want them)
+```
+src/
+  pages/
+    v2/
+      Index.tsx
+      Work.tsx
+      Roster.tsx
+      ForBrands.tsx
+      ForCreators.tsx
+      About.tsx
+  components/
+    v2/                       ← v2-specific components live here
+  components/
+    VersionToggle.tsx         ← shared floating switcher
+```
 
-- Email capture / waitlist form (would need a Lovable Cloud table + form)
-- SEO meta tags swap per-domain (can add later — `index.html` is shared across domains so the title/OG tags will currently say "Lovable App" on both)
-- Favicon swap per-domain
+Initial v2 pages are scaffolded as minimal placeholders ("v2 — <page name> coming soon") so the routes resolve and the toggle works immediately. You then drop in your design brief / uploaded code and we build each v2 page out, page by page, without risk to v1.
 
-Reply with the two font files and I'll ship it.
+v2 gets its own `Navigation` (forked into `src/components/v2/Navigation.tsx`) so nav styling/structure can diverge. `App.tsx` picks v1 vs v2 nav based on whether the path starts with `/v2`.
+
+Shared/leave-alone for now: `AuthContext`, `ScrollToTop`, `ProtectedRoute`, all `/console` pages, data hooks (`useCreators`, `useBrandAssets`, etc.). v2 pages can import the same hooks so content stays in sync across versions.
+
+## Technical details
+
+- `src/App.tsx`: add `/v2`, `/v2/work`, `/v2/roster`, `/v2/for-brands`, `/v2/for-creators`, `/v2/about` routes above the catch-all. Compute `isV2 = location.pathname.startsWith('/v2')` and render `<NavigationV2 />` instead of `<Navigation />` when true. Keep the existing `hideNav` rules (notagency host + `/notagency` route) intact, and also hide both nav + toggle on console/auth/admin/pitch routes (already the case via the current `hideNav` logic for nav; toggle gets its own allowlist).
+- `src/components/VersionToggle.tsx`: read `useLocation()`, compute the counterpart path, render a `Link` with the opposite label ("View v1" / "View v2"). Hidden via the same route allowlist as above.
+- `src/components/v2/Navigation.tsx`: initial copy of `Navigation.tsx` with links rewritten to `/v2/...`. Free to restyle later.
+- `src/pages/v2/*.tsx`: minimal placeholders importing the v2 nav offset, ready to be filled in.
+- No DB, edge function, RLS, or auth changes. No changes to `/notagency`, `/console/*`, or thenotagency.com host behavior.
+
+## What you can do after this lands
+
+1. Visit any marketing page and click the floating toggle to jump to its v2 counterpart (placeholder for now).
+2. Upload your v2 design brief / code and we'll build v2 pages out one at a time — each page can be compared 1:1 against v1 via the toggle.
+3. When you're ready to promote v2, we either swap the routes or retire v1 pages — your call, no rush.
