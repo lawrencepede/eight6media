@@ -57,7 +57,7 @@ const Navigation = () => {
           style={{
             fontFamily: "var(--font-wordmark)",
             fontSize: "1.5rem",
-            color: "var(--sky)",
+            color: logoColor,
             letterSpacing: "-0.01em",
             lineHeight: 1,
           }}
