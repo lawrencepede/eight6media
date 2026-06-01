@@ -119,6 +119,7 @@ const HeroSection = () => {
 
           <div
             aria-hidden
+            className="fade-up fade-up-delay-5"
             style={{
               position: "absolute",
               top: "-0.5em",
