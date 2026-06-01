@@ -14,15 +14,15 @@ type ScribbleConfig = {
 };
 
 const DEFAULTS: ScribbleConfig = {
-  offsetX: 0,
-  offsetY: 0,
+  offsetX: 1,
+  offsetY: 7,
   scale: 1,
-  textRotate: -8,
-  textOffsetX: 0,
-  textOffsetY: 0,
-  arrowRotate: 0,
-  arrowOffsetX: 0,
-  arrowOffsetY: 0,
+  textRotate: -29,
+  textOffsetX: 50,
+  textOffsetY: -32,
+  arrowRotate: 27,
+  arrowOffsetX: -25,
+  arrowOffsetY: -69,
 };
 
 const STORAGE_KEY = "v2-hero-scribble-v1";
